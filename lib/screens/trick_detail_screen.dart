@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../widgets/consistency_selector.dart';
+import 'submit_trick_screen.dart';
 
 class TrickDetailScreen extends StatefulWidget {
   final String trickId;
@@ -18,7 +19,7 @@ class TrickDetailScreen extends StatefulWidget {
 }
 
 class _TrickDetailScreenState extends State<TrickDetailScreen> {
-  late Future<(Trick, List<Trick>, UserTrick?)> _future;
+  late Future<(Trick, List<Trick>, UserTrick?, bool)> _future;
 
   @override
   void initState() {
@@ -26,14 +27,25 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     _future = _load();
   }
 
-  Future<(Trick, List<Trick>, UserTrick?)> _load() async {
+  Future<(Trick, List<Trick>, UserTrick?, bool)> _load() async {
     final trick = await TricksService.getTrickById(widget.trickId);
-    final prereqs =
-        await TricksService.getTricksByIds(trick.prerequisiteTrickIds);
-    final userTrick = AuthService.isLoggedIn
-        ? await UserTricksService.getUserTrickForTrick(widget.trickId)
-        : null;
-    return (trick, prereqs, userTrick);
+    final prereqsFuture = TricksService.getTricksByIds(trick.prerequisiteTrickIds);
+    final userTrickFuture = AuthService.isLoggedIn
+        ? UserTricksService.getUserTrickForTrick(widget.trickId)
+        : Future.value(null);
+    final profileFuture = AuthService.getCurrentProfile();
+    final prereqs = await prereqsFuture;
+    final userTrick = await userTrickFuture;
+    final profile = await profileFuture;
+    return (trick, prereqs, userTrick, profile?.isAdmin == true);
+  }
+
+  Future<void> _openEdit(Trick trick) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => SubmitTrickScreen(existingTrick: trick)),
+    );
+    setState(() { _future = _load(); });
   }
 
   Future<void> _setConsistency(Consistency c) async {
@@ -55,22 +67,38 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Trick Detail')),
-      body: FutureBuilder<(Trick, List<Trick>, UserTrick?)>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
-          }
-          final (trick, prereqs, userTrick) = snap.data!;
-          return _buildContent(trick, prereqs, userTrick);
-        },
-      ),
+    return FutureBuilder<(Trick, List<Trick>, UserTrick?, bool)>(
+      future: _future,
+      builder: (context, snap) {
+        final trick = snap.data?.$1;
+        final isAdmin = snap.data?.$4 ?? false;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Trick Detail'),
+            actions: [
+              if (isAdmin && trick != null)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Edit Trick',
+                  onPressed: () => _openEdit(trick),
+                ),
+            ],
+          ),
+          body: _buildBody(snap),
+        );
+      },
     );
+  }
+
+  Widget _buildBody(AsyncSnapshot<(Trick, List<Trick>, UserTrick?, bool)> snap) {
+    if (snap.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (snap.hasError) {
+      return Center(child: Text('Error: ${snap.error}'));
+    }
+    final (trick, prereqs, userTrick, _) = snap.data!;
+    return _buildContent(trick, prereqs, userTrick);
   }
 
   Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick) {
@@ -112,7 +140,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               if (trick.startPositionName != null ||
                   trick.endPositionName != null)
                 Chip(
-                  avatar: const Icon(Icons.swap_horiz, size: 16),
+                  //avatar: const Icon(Icons.swap_horiz, size: 16),
                   label: Text(
                     [
                       if (trick.startPositionName != null)

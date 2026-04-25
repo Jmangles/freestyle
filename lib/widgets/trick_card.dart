@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/trick.dart';
+import '../models/user_trick.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
+  final Consistency? consistency;
+  final VoidCallback? onReturn;
 
-  const TrickCard({super.key, required this.trick});
+  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn});
 
   @override
   Widget build(BuildContext context) {
@@ -13,8 +16,12 @@ class TrickCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: consistency?.cardColor,
       child: InkWell(
-        onTap: () => context.push('/trick/${trick.id}'),
+        onTap: () async {
+          await context.push('/trick/${trick.id}');
+          onReturn?.call();
+        },
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

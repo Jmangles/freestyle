@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/trick.dart';
 import '../models/profile.dart';
+import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
+import '../services/user_tricks_service.dart';
 import '../widgets/trick_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<(List<Trick>, Profile?)> _future;
+  late Future<(List<Trick>, Profile?, Map<String, Consistency>)> _future;
 
   @override
   void initState() {
@@ -22,10 +24,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _future = _load();
   }
 
-  Future<(List<Trick>, Profile?)> _load() async {
-    final tricks = await TricksService.getApprovedTricks();
-    final profile = await AuthService.getCurrentProfile();
-    return (tricks, profile);
+  Future<(List<Trick>, Profile?, Map<String, Consistency>)> _load() async {
+    final tricksFuture = TricksService.getApprovedTricks();
+    final profileFuture = AuthService.getCurrentProfile();
+    final userTricksFuture = UserTricksService.getUserTricks();
+    final tricks = await tricksFuture;
+    final profile = await profileFuture;
+    final userTricks = await userTricksFuture;
+    final consistencyMap = {
+      for (final ut in userTricks) ut.trickId: ut.consistency,
+    };
+    return (tricks, profile, consistencyMap);
   }
 
   void _refresh() => setState(() { _future = _load(); });
@@ -53,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(List<Trick>, Profile?)>(
+    return FutureBuilder<(List<Trick>, Profile?, Map<String, Consistency>)>(
       future: _future,
       builder: (context, snap) {
         final profile = snap.data?.$2;
@@ -85,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?)> snap) {
+  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?, Map<String, Consistency>)> snap) {
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -108,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: Text('No tricks yet. Be the first to submit one!'));
     }
 
+    final consistencyMap = snap.data!.$3;
     final grouped = _groupByTier(tricks);
     final tiers = _sortedTiers(grouped.keys.toSet());
 
@@ -129,8 +139,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     childAspectRatio: 1.4,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, i) =>
-                        TrickCard(trick: grouped[tier]![i]),
+                    (context, i) {
+                      final trick = grouped[tier]![i];
+                      return TrickCard(
+                        trick: trick,
+                        consistency: consistencyMap[trick.id],
+                        onReturn: _refresh,
+                      );
+                    },
                     childCount: grouped[tier]!.length,
                   ),
                 ),
