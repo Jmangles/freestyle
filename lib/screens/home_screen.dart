@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<(List<Trick>, Profile?, Map<String, Consistency>)> _future;
+  int _gridSize = 2;
 
   @override
   void initState() {
@@ -38,6 +39,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _refresh() => setState(() { _future = _load(); });
+
+  int _crossAxisCount(double width) {
+    const counts = {1: [4, 6, 8], 2: [3, 4, 5], 3: [2, 3, 4]};
+    final bp = width >= 900 ? 2 : width >= 600 ? 1 : 0;
+    return counts[_gridSize]![bp];
+  }
+
+  Widget _buildSizeSlider() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: Row(
+        children: [
+          const Icon(Icons.view_list, size: 20),
+          Expanded(
+            child: Slider(
+              value: _gridSize.toDouble(),
+              min: 0,
+              max: 3,
+              divisions: 3,
+              onChanged: (v) => setState(() => _gridSize = v.round()),
+            ),
+          ),
+          const Icon(Icons.view_module, size: 20),
+        ],
+      ),
+    );
+  }
 
   Map<String, List<Trick>> _groupByTier(List<Trick> tricks) {
     final map = <String, List<Trick>>{};
@@ -121,41 +149,64 @@ class _HomeScreenState extends State<HomeScreen> {
     final grouped = _groupByTier(tricks);
     final tiers = _sortedTiers(grouped.keys.toSet());
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final crossAxisCount = width >= 900 ? 8 : width >= 600 ? 6 : 4;
-        return RefreshIndicator(
-          onRefresh: () async => _refresh(),
-          child: CustomScrollView(
-            slivers: [
-              for (final tier in tiers) ...[
-                SliverToBoxAdapter(child: _TierHeader(tier: tier)),
-                SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: 4,
-                    crossAxisSpacing: 4,
-                    childAspectRatio: 1.4,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      final trick = grouped[tier]![i];
-                      return TrickCard(
-                        trick: trick,
-                        consistency: consistencyMap[trick.id],
-                        onReturn: _refresh,
-                      );
-                    },
-                    childCount: grouped[tier]!.length,
-                  ),
+    return Column(
+      children: [
+        _buildSizeSlider(),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isListMode = _gridSize == 0;
+              final crossAxisCount = isListMode ? 1 : _crossAxisCount(constraints.maxWidth);
+              return RefreshIndicator(
+                onRefresh: () async => _refresh(),
+                child: CustomScrollView(
+                  slivers: [
+                    for (final tier in tiers) ...[
+                      SliverToBoxAdapter(child: _TierHeader(tier: tier)),
+                      if (isListMode)
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                              final trick = grouped[tier]![i];
+                              return TrickCard(
+                                trick: trick,
+                                consistency: consistencyMap[trick.id],
+                                onReturn: _refresh,
+                                listMode: true,
+                              );
+                            },
+                            childCount: grouped[tier]!.length,
+                          ),
+                        )
+                      else
+                        SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 4,
+                            crossAxisSpacing: 4,
+                            childAspectRatio: 1.4,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                              final trick = grouped[tier]![i];
+                              return TrickCard(
+                                trick: trick,
+                                consistency: consistencyMap[trick.id],
+                                onReturn: _refresh,
+                              );
+                            },
+                            childCount: grouped[tier]!.length,
+                          ),
+                        ),
+                    ],
+                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                  ],
                 ),
-              ],
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
-            ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
