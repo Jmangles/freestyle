@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return (tricks, profile);
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => setState(() { _future = _load(); });
 
   Map<String, List<Trick>> _groupByTier(List<Trick> tricks) {
     final map = <String, List<Trick>>{};

@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
+
 enum Consistency {
-  never('Never'),
+  never('Attempting'),
   once('Once'),
   sometimes('Sometimes'),
   often('Often'),
@@ -8,6 +10,15 @@ enum Consistency {
 
   const Consistency(this.label);
   final String label;
+
+  Color get cardColor => switch (this) {
+    Consistency.never => const Color(0xFFE3F2FD),
+    Consistency.once => const Color(0xFFFFF9C4),
+    Consistency.sometimes => const Color(0xFFFFECB3),
+    Consistency.often => const Color(0xFFDCEDC8),
+    Consistency.generally => const Color(0xFFC8E6C9),
+    Consistency.always => const Color(0xFFA5D6A7),
+  };
 
   static Consistency fromString(String value) => Consistency.values.firstWhere(
         (e) => e.name == value,

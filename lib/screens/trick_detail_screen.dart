@@ -38,7 +38,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
 
   Future<void> _setConsistency(Consistency c) async {
     await UserTricksService.setConsistency(widget.trickId, c);
-    setState(() => _future = _load());
+    setState(() { _future = _load(); });
   }
 
   Future<void> _openVideo(String url) async {
