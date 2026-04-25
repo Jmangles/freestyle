@@ -1,27 +1,25 @@
-const kDifficultyTiers = [
-  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-];
-
 class Trick {
-  final String id;
+  final int id;
   final String givenName;
   final String? technicalName;
-  final String difficultyTier;
+  final int difficultyTier;
   final DateTime dateSubmitted;
   final DateTime? datePerformed;
   final String? originalPerformer;
-  final List<String> prerequisiteTrickIds;
+  final List<int> prerequisiteTrickIds;
   final String? description;
   final String? tips;
   final String? videoLink;
-  final String? startPositionId;
-  final String? endPositionId;
-  final String status;
+  final int? startPositionId;
+  final int? endPositionId;
+  final int status;
   final String? submittedBy;
 
   // Joined via Supabase select
   final String? startPositionName;
   final String? endPositionName;
+
+  String get difficultyLabel => difficultyTier == -1 ? 'TBD' : difficultyTier.toString();
 
   const Trick({
     required this.id,
@@ -47,10 +45,10 @@ class Trick {
     final startPos = json['start_position'] as Map<String, dynamic>?;
     final endPos = json['end_position'] as Map<String, dynamic>?;
     return Trick(
-      id: json['id'] as String,
+      id: json['id'] as int,
       givenName: json['given_name'] as String,
       technicalName: json['technical_name'] as String?,
-      difficultyTier: json['difficulty_tier'] as String,
+      difficultyTier: json['difficulty_tier'] as int,
       dateSubmitted: DateTime.parse(json['date_submitted'] as String),
       datePerformed: json['date_performed'] != null
           ? DateTime.parse(json['date_performed'] as String)
@@ -58,15 +56,15 @@ class Trick {
       originalPerformer: json['original_performer'] as String?,
       prerequisiteTrickIds:
           (json['prerequisite_trick_ids'] as List<dynamic>?)
-                  ?.map((e) => e as String)
+                  ?.map((e) => e as int)
                   .toList() ??
               [],
       description: json['description'] as String?,
       tips: json['tips'] as String?,
       videoLink: json['video_link'] as String?,
-      startPositionId: json['start_position_id'] as String?,
-      endPositionId: json['end_position_id'] as String?,
-      status: json['status'] as String,
+      startPositionId: json['start_position_id'] as int?,
+      endPositionId: json['end_position_id'] as int?,
+      status: json['status'] as int,
       submittedBy: json['submitted_by'] as String?,
       startPositionName: startPos?['name'] as String?,
       endPositionName: endPos?['name'] as String?,
@@ -90,15 +88,15 @@ class Trick {
   Trick copyWith({
     String? givenName,
     String? technicalName,
-    String? difficultyTier,
+    int? difficultyTier,
     DateTime? datePerformed,
     String? originalPerformer,
-    List<String>? prerequisiteTrickIds,
+    List<int>? prerequisiteTrickIds,
     String? description,
     String? tips,
     String? videoLink,
-    String? startPositionId,
-    String? endPositionId,
+    int? startPositionId,
+    int? endPositionId,
   }) =>
       Trick(
         id: id,

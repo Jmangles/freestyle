@@ -26,11 +26,11 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final TextEditingController _description;
   late final TextEditingController _tips;
   late final TextEditingController _videoLink;
-  String _difficultyTier = '5';
+  int _difficultyTier = 5;
   DateTime? _datePerformed;
-  String? _startPositionId;
-  String? _endPositionId;
-  List<String> _prerequisiteIds = [];
+  int? _startPositionId;
+  int? _endPositionId;
+  List<int> _prerequisiteIds = [];
 
   late Future<(List<Position>, List<Trick>)> _metaFuture;
 
@@ -101,7 +101,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         });
       } else {
         final trick = Trick(
-          id: '',
+          id: 0,
           givenName: _givenName.text.trim(),
           technicalName: _technicalName.text.trim().isEmpty
               ? null
@@ -121,7 +121,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               _videoLink.text.trim().isEmpty ? null : _videoLink.text.trim(),
           startPositionId: _startPositionId,
           endPositionId: _endPositionId,
-          status: 'pending',
+          status: 0,
         );
         await TricksService.submitTrick(trick);
       }
@@ -178,18 +178,26 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             _field(_technicalName, 'Technical Name'),
             const SizedBox(height: 12),
             TextFormField(
-              initialValue: _difficultyTier,
+              initialValue: _difficultyTier == -1 ? 'TBD' : _difficultyTier.toString(),
               decoration: const InputDecoration(
-                labelText: 'Difficulty (1–10)',
+                labelText: 'Difficulty (1–10 or TBD)',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (v) => setState(() => _difficultyTier = v.trim()),
+              keyboardType: TextInputType.text,
+              onChanged: (v) {
+                final s = v.trim().toUpperCase();
+                if (s == 'TBD') {
+                  setState(() => _difficultyTier = -1);
+                } else {
+                  final n = int.tryParse(s);
+                  if (n != null) setState(() => _difficultyTier = n);
+                }
+              },
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Required';
-                final s = v.trim();
-                if (s.toUpperCase() == 'TBD') return null;
-                final n = double.tryParse(s);
+                final s = v.trim().toUpperCase();
+                if (s == 'TBD') return null;
+                final n = int.tryParse(s);
                 if (n == null || n < 1 || n > 10) {
                   return 'Enter a number 1–10, or TBD';
                 }
@@ -223,7 +231,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             _field(_originalPerformer, 'Original Performer'),
             const SizedBox(height: 12),
             // Start position
-            DropdownButtonFormField<String?>(
+            DropdownButtonFormField<int?>(
               initialValue: _startPositionId,
               decoration: const InputDecoration(
                   labelText: 'Start Position',
@@ -236,7 +244,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               onChanged: (v) => setState(() => _startPositionId = v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
+            DropdownButtonFormField<int?>(
               initialValue: _endPositionId,
               decoration: const InputDecoration(
                   labelText: 'End Position',
@@ -309,8 +317,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
 
 class _PrerequisiteSelector extends StatelessWidget {
   final List<Trick> allTricks;
-  final List<String> selectedIds;
-  final ValueChanged<List<String>> onChanged;
+  final List<int> selectedIds;
+  final ValueChanged<List<int>> onChanged;
 
   const _PrerequisiteSelector({
     required this.allTricks,
@@ -353,7 +361,7 @@ class _PrerequisiteSelector extends StatelessWidget {
                 .map((t) => Chip(
                       label: Text(t.givenName),
                       onDeleted: () {
-                        final ids = List<String>.from(selectedIds)
+                        final ids = List<int>.from(selectedIds)
                           ..remove(t.id);
                         onChanged(ids);
                       },

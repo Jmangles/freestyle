@@ -31,6 +31,19 @@ def sql_str(s):
     return "'" + s.replace("'", "''") + "'"
 
 
+def parse_difficulty(s):
+    s = s.strip().upper()
+    if not s or s == 'TBD':
+        return '-1'
+    try:
+        n = int(s)
+        if 1 <= n <= 10:
+            return str(n)
+    except ValueError:
+        pass
+    return '-1'
+
+
 rows = []
 positions = set()
 
@@ -94,18 +107,18 @@ lines.append('  description, tips, video_link,')
 lines.append('  start_position_id, end_position_id, status')
 lines.append(')')
 lines.append('select')
-lines.append('  t.given_name, t.technical_name, t.difficulty_tier,')
+lines.append('  t.given_name, t.technical_name, t.difficulty_tier::smallint,')
 lines.append('  t.date_submitted::timestamptz, t.date_performed::date,')
 lines.append('  t.original_performer, t.description, t.tips, t.video_link,')
 lines.append('  sp.id, ep.id,')
-lines.append("  'approved'")
+lines.append("  1")
 lines.append('from (values')
 
 for i, r in enumerate(rows):
     comma = ',' if i < len(rows) - 1 else ''
     given     = sql_str(r['given'])
     tech      = sql_str(r['tech'])
-    diff      = sql_str(r['diff'])
+    diff      = parse_difficulty(r['diff'])
     submitted = parse_submitted(r['submitted'])
     performed = parse_performed(r['performed'])
     performer = sql_str(r['performer'])

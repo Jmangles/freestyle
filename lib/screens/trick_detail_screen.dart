@@ -11,7 +11,7 @@ import '../widgets/consistency_selector.dart';
 import 'submit_trick_screen.dart';
 
 class TrickDetailScreen extends StatefulWidget {
-  final String trickId;
+  final int trickId;
   const TrickDetailScreen({super.key, required this.trickId});
 
   @override
@@ -38,6 +38,33 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     final userTrick = await userTrickFuture;
     final profile = await profileFuture;
     return (trick, prereqs, userTrick, profile?.isAdmin == true);
+  }
+
+  Future<void> _deleteTrick(Trick trick) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Trick'),
+        content: Text('Are you sure you want to delete "${trick.givenName}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await TricksService.deleteTrick(trick.id);
+    if (mounted) context.pop();
   }
 
   Future<void> _openEdit(Trick trick) async {
@@ -76,12 +103,19 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           appBar: AppBar(
             title: const Text('Trick Detail'),
             actions: [
-              if (isAdmin && trick != null)
+              if (isAdmin && trick != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   tooltip: 'Edit Trick',
                   onPressed: () => _openEdit(trick),
                 ),
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error),
+                  tooltip: 'Delete Trick',
+                  onPressed: () => _deleteTrick(trick),
+                ),
+              ],
             ],
           ),
           body: _buildBody(snap),
@@ -131,7 +165,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             runSpacing: 8,
             children: [
               Chip(
-                label: Text(trick.difficultyTier),
+                label: Text(trick.difficultyLabel),
                 backgroundColor: theme.colorScheme.secondaryContainer,
                 labelStyle: TextStyle(
                     color: theme.colorScheme.onSecondaryContainer,

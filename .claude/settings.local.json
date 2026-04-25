@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(flutter --version)",
-      "PowerShell(flutter --version 2>&1)"
+      "PowerShell(flutter --version 2>&1)",
+      "Bash(python tools/generate_import_sql.py)",
+      "Bash(python tools/generate_import_sql2.py)"
     ]
   }
 }

@@ -14,18 +14,18 @@ class TricksService {
     final data = await _client
         .from('tricks')
         .select(_select)
-        .eq('status', 'approved')
+        .eq('status', 1)
         .order('given_name');
     return (data as List).map((e) => Trick.fromJson(e)).toList();
   }
 
-  static Future<Trick> getTrickById(String id) async {
+  static Future<Trick> getTrickById(int id) async {
     final data =
         await _client.from('tricks').select(_select).eq('id', id).single();
     return Trick.fromJson(data);
   }
 
-  static Future<List<Trick>> getTricksByIds(List<String> ids) async {
+  static Future<List<Trick>> getTricksByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
     final data = await _client
         .from('tricks')
@@ -38,7 +38,7 @@ class TricksService {
     final data = await _client
         .from('tricks')
         .select(_select)
-        .eq('status', 'pending')
+        .eq('status', 0)
         .order('date_submitted');
     return (data as List).map((e) => Trick.fromJson(e)).toList();
   }
@@ -50,12 +50,12 @@ class TricksService {
     });
   }
 
-  static Future<void> updateTrickStatus(String id, String status) async {
+  static Future<void> updateTrickStatus(int id, int status) async {
     await _client.from('tricks').update({'status': status}).eq('id', id);
   }
 
   static Future<void> updateTrick(
-      String id, Map<String, dynamic> updates) async {
+      int id, Map<String, dynamic> updates) async {
     await _client.from('tricks').update(updates).eq('id', id);
   }
 
@@ -67,5 +67,9 @@ class TricksService {
 
   static Future<void> addPosition(String name) async {
     await _client.from('positions').insert({'name': name});
+  }
+
+  static Future<void> deleteTrick(int id) async {
+    await _client.from('tricks').delete().eq('id', id);
   }
 }

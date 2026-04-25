@@ -5,7 +5,7 @@
 
 -- Positions (e.g. Standing, Hanging, Sitting)
 create table positions (
-  id   uuid primary key default gen_random_uuid(),
+  id   smallint generated always as identity primary key,
   name text not null unique
 );
 
@@ -18,31 +18,29 @@ create table profiles (
 
 -- Tricks
 create table tricks (
-  id                    uuid primary key default gen_random_uuid(),
+  id                    integer generated always as identity primary key,
   given_name            text not null,
   technical_name        text,
-  difficulty_tier       text not null,
+  difficulty_tier       smallint not null check (difficulty_tier = -1 or difficulty_tier between 1 and 10),
   date_submitted        timestamptz not null default now(),
   date_performed        date,
   original_performer    text,
-  prerequisite_trick_ids uuid[] not null default '{}',
+  prerequisite_trick_ids integer[] not null default '{}',
   description           text,
   tips                  text,
   video_link            text,
-  start_position_id     uuid references positions(id),
-  end_position_id       uuid references positions(id),
-  status                text not null default 'pending'
-                          check (status in ('pending', 'approved', 'rejected')),
+  start_position_id     smallint references positions(id),
+  end_position_id       smallint references positions(id),
+  status                smallint not null default 0 check (status between 0 and 2),
   submitted_by          uuid references auth.users(id)
 );
 
 -- User trick tracking
 create table user_tricks (
-  id          uuid primary key default gen_random_uuid(),
+  id          integer generated always as identity primary key,
   user_id     uuid not null references auth.users(id) on delete cascade,
-  trick_id    uuid not null references tricks(id) on delete cascade,
-  consistency text not null default 'never'
-                check (consistency in ('never','once','sometimes','often','generally','always')),
+  trick_id    integer not null references tricks(id) on delete cascade,
+  consistency smallint not null default 0 check (consistency between 0 and 5),
   unique(user_id, trick_id)
 );
 
@@ -74,7 +72,7 @@ create policy "positions_delete" on positions for delete using (
 
 -- Tricks: approved tricks are public; submitter can read own; admins can read/update all
 create policy "tricks_read_approved" on tricks for select
-  using (status = 'approved');
+  using (status = 1);
 create policy "tricks_read_own" on tricks for select
   using (auth.uid() = submitted_by);
 create policy "tricks_read_admin" on tricks for select
@@ -89,6 +87,18 @@ create policy "user_tricks_select" on user_tricks for select using (auth.uid() =
 create policy "user_tricks_insert" on user_tricks for insert with check (auth.uid() = user_id);
 create policy "user_tricks_update" on user_tricks for update using (auth.uid() = user_id);
 create policy "user_tricks_delete" on user_tricks for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- Grants
+-- ============================================================
+
+grant select                       on positions   to anon, authenticated;
+grant select                       on tricks      to anon, authenticated;
+grant insert                       on tricks      to authenticated;
+grant update                       on tricks      to authenticated;
+grant select                       on profiles    to anon, authenticated;
+grant insert, update               on profiles    to authenticated;
+grant select, insert, update, delete on user_tricks to authenticated;
 
 -- ============================================================
 -- Trigger: auto-create profile on sign-up

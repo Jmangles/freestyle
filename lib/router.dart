@@ -31,7 +31,7 @@ class AppRouter {
       GoRoute(
         path: '/trick/:id',
         builder: (_, state) =>
-            TrickDetailScreen(trickId: state.pathParameters['id']!),
+            TrickDetailScreen(trickId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(
           path: '/submit',

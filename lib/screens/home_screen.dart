@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<(List<Trick>, Profile?, Map<String, Consistency>)> _future;
+  late Future<(List<Trick>, Profile?, Map<int, Consistency>)> _future;
   int _gridSize = 2;
 
   @override
@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _future = _load();
   }
 
-  Future<(List<Trick>, Profile?, Map<String, Consistency>)> _load() async {
+  Future<(List<Trick>, Profile?, Map<int, Consistency>)> _load() async {
     final tricksFuture = TricksService.getApprovedTricks();
     final profileFuture = AuthService.getCurrentProfile();
     final userTricksFuture = UserTricksService.getUserTricks();
@@ -67,30 +67,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Map<String, List<Trick>> _groupByTier(List<Trick> tricks) {
-    final map = <String, List<Trick>>{};
+  Map<int, List<Trick>> _groupByTier(List<Trick> tricks) {
+    final map = <int, List<Trick>>{};
     for (final t in tricks) {
       map.putIfAbsent(t.difficultyTier, () => []).add(t);
     }
     return map;
   }
 
-  List<String> _sortedTiers(Set<String> tiers) {
+  List<int> _sortedTiers(Set<int> tiers) {
     final list = tiers.toList();
-    list.sort((a, b) {
-      final na = double.tryParse(a);
-      final nb = double.tryParse(b);
-      if (na != null && nb != null) return na.compareTo(nb);
-      if (na != null) return -1;
-      if (nb != null) return 1;
-      return a.compareTo(b);
-    });
+    // -1 (TBD) sorts last
+    list.sort((a, b) => a == -1 ? 1 : b == -1 ? -1 : a.compareTo(b));
     return list;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(List<Trick>, Profile?, Map<String, Consistency>)>(
+    return FutureBuilder<(List<Trick>, Profile?, Map<int, Consistency>)>(
       future: _future,
       builder: (context, snap) {
         final profile = snap.data?.$2;
@@ -122,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?, Map<String, Consistency>)> snap) {
+  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?, Map<int, Consistency>)> snap) {
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -212,12 +206,12 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _TierHeader extends StatelessWidget {
-  final String tier;
+  final int tier;
   const _TierHeader({required this.tier});
 
   @override
   Widget build(BuildContext context) {
-    final label = tier == 'TBD' ? 'To Be Determined' : 'Difficulty $tier';
+    final label = tier == -1 ? 'To Be Determined' : 'Difficulty $tier';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(

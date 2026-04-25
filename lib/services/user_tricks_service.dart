@@ -14,7 +14,7 @@ class UserTricksService {
     return (data as List).map((e) => UserTrick.fromJson(e)).toList();
   }
 
-  static Future<UserTrick?> getUserTrickForTrick(String trickId) async {
+  static Future<UserTrick?> getUserTrickForTrick(int trickId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
     final data = await _client
@@ -27,14 +27,14 @@ class UserTricksService {
   }
 
   static Future<void> setConsistency(
-      String trickId, Consistency consistency) async {
+      int trickId, Consistency consistency) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
     await _client.from('user_tricks').upsert(
       {
         'user_id': userId,
         'trick_id': trickId,
-        'consistency': consistency.name,
+        'consistency': consistency.index,
       },
       onConflict: 'user_id,trick_id',
     );

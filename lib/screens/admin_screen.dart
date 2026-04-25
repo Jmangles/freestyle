@@ -30,7 +30,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   void _refresh() => setState(() => _future = _load());
 
-  Future<void> _updateStatus(String id, String status) async {
+  Future<void> _updateStatus(int id, int status) async {
     await TricksService.updateTrickStatus(id, status);
     _refresh();
   }
@@ -137,8 +137,8 @@ class _AdminScreenState extends State<AdminScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, i) => _PendingTrickCard(
           trick: tricks[i],
-          onApprove: () => _updateStatus(tricks[i].id, 'approved'),
-          onReject: () => _updateStatus(tricks[i].id, 'rejected'),
+          onApprove: () => _updateStatus(tricks[i].id, 1),
+          onReject: () => _updateStatus(tricks[i].id, 2),
           onEdit: () async {
             await Navigator.push<void>(
               context,
@@ -175,7 +175,7 @@ class _PendingTrickCard extends StatelessWidget {
       child: ExpansionTile(
         title: Text(trick.givenName,
             style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('${trick.difficultyTier} · submitted ${_fmtDate(trick.dateSubmitted)}'),
+        subtitle: Text('${trick.difficultyLabel} · submitted ${_fmtDate(trick.dateSubmitted)}'),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

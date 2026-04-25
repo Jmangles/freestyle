@@ -43,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _refresh() => setState(() => _future = _load());
 
   Future<void> _updateConsistency(
-      String trickId, Consistency consistency) async {
+      int trickId, Consistency consistency) async {
     await UserTricksService.setConsistency(trickId, consistency);
     _refresh();
   }
@@ -151,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style:
                           const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(
-                    '${trick.difficultyTier} · ${userTrick.consistency.label}',
+                    '${trick.difficultyLabel} · ${userTrick.consistency.label}',
                   ),
                   children: [
                     Padding(

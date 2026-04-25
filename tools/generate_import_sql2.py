@@ -4,45 +4,43 @@ from datetime import datetime
 INPUT_CSV = 'trick-list - trick_list.csv'
 OUTPUT_SQL = 'supabase/import_tricks2.sql'
 
-# Normalise position names to match what's already in the DB
+# Normalise position names to match the first import
 POSITION_MAP = {
     'DOUBLE DROP KNEE': 'DOUBLE DROPKNEE',
     'INWARD DROP KNEE': 'INWARD DROPKNEE',
+    'DROP KNEE':        'DROPKNEE',
 }
 
 def normalise_pos(p):
-    p = p.strip().upper()
+    p = p.strip().upper() if p else ''
     return POSITION_MAP.get(p, p)
 
-def parse_date_added(s):
-    s = s.strip()
+def parse_submitted(s):
+    s = s.strip() if s else ''
     if not s:
         return 'now()'
-    for fmt in ('%d %b %Y', '%b %d %Y', '%Y-%m-%d'):
-        try:
-            dt = datetime.strptime(s, fmt)
-            return f"'{dt.strftime('%Y-%m-%d')}'"
-        except ValueError:
-            pass
-    return 'now()'
+    try:
+        dt = datetime.strptime(s, '%d %b %Y')
+        return f"'{dt.strftime('%Y-%m-%d')}'"
+    except ValueError:
+        return 'now()'
 
 def parse_performed(month, year):
-    month = month.strip()
-    year = year.strip()
-    if year and month:
-        try:
-            dt = datetime.strptime(f'01 {month} {year}', '%d %m %Y')
-            return f"'{dt.strftime('%Y-%m-%d')}'"
-        except ValueError:
-            pass
+    month = month.strip() if month else ''
+    year  = year.strip()  if year  else ''
+    if not year:
+        return 'null'
+    if not month:
+        return f"'{year.zfill(4)}-01-01'"
+    try:
+        dt = datetime.strptime(f'01 {month} {year}', '%d %b %Y')
+        return f"'{dt.strftime('%Y-%m-%d')}'"
+    except ValueError:
         try:
             dt = datetime.strptime(f'01 {month} {year}', '%d %B %Y')
             return f"'{dt.strftime('%Y-%m-%d')}'"
         except ValueError:
-            pass
-    if year:
-        return f"'{year.zfill(4)}-01-01'"
-    return 'null'
+            return f"'{year.zfill(4)}-01-01'"
 
 def sql_str(s):
     s = s.strip() if s else ''
@@ -50,15 +48,17 @@ def sql_str(s):
         return 'null'
     return "'" + s.replace("'", "''") + "'"
 
-def build_video(url, start_time):
-    url = url.strip()
-    if not url:
-        return 'null'
-    start_time = start_time.strip()
-    if start_time and '?t=' not in url and '&t=' not in url:
-        sep = '&' if '?' in url else '?'
-        url = f'{url}{sep}t={start_time}'
-    return sql_str(url)
+def parse_difficulty(s):
+    s = s.strip() if s else ''
+    if not s or s.upper() == 'TBD':
+        return '-1'
+    try:
+        n = int(s)
+        if n == -1 or 1 <= n <= 10:
+            return str(n)
+    except ValueError:
+        pass
+    return '-1'
 
 rows = []
 positions = set()
@@ -68,21 +68,18 @@ with open(INPUT_CSV, encoding='utf-8') as f:
     for row in reader:
         tech  = row['Technical name'].strip()
         given = row['Name'].strip()
-        diff  = row['difficultyLevel'].strip()
-        start = normalise_pos(row['startPos'])
-        end   = normalise_pos(row['endPos'])
+        diff  = row['Difficulty'].strip()
+        start = normalise_pos(row['Start position'])
+        end   = normalise_pos(row['End position'])
 
         if not tech and not given:
             continue
+        if not diff:
+            continue
 
-        # Promote technical name to given name if no given name
         if not given:
             given = tech
             tech = ''
-
-        # Normalise difficulty: blank or '?' → 'TBD'
-        if not diff or diff == '?':
-            diff = 'TBD'
 
         if start:
             positions.add(start)
@@ -90,23 +87,22 @@ with open(INPUT_CSV, encoding='utf-8') as f:
             positions.add(end)
 
         rows.append({
-            'given':      given,
-            'tech':       tech,
-            'diff':       diff,
-            'submitted':  parse_date_added(row['dateAdded']),
-            'performed':  parse_performed(row['monthEstablished'], row['yearEstablished']),
-            'performer':  row['performed b'].strip(),
-            'desc':       row['description'].strip(),
-            'tips':       row['tips'].strip(),
-            'video':      build_video(row['linkToVideo'], row['videoStartTime']),
-            'start':      start,
-            'end':        end,
+            'given':     given,
+            'tech':      tech,
+            'diff':      diff,
+            'submitted': parse_submitted(row.get('dateAdded', '')),
+            'performed': parse_performed(row['monthEstablished'], row['yearEstablished']),
+            'performer': row['Original performer'],
+            'desc':      row['description'],
+            'tips':      row['tips'],
+            'video':     row['linkToVideo'],
+            'start':     start,
+            'end':       end,
         })
 
-# Only insert positions not already present (ON CONFLICT DO NOTHING handles dupes)
 lines = []
 lines.append('-- ==============================================')
-lines.append('-- Trick-list CSV import (second batch)')
+lines.append('-- Freestyle Highline – trick-list import')
 lines.append('-- ==============================================\n')
 
 lines.append('insert into positions (name) values')
@@ -124,24 +120,24 @@ lines.append('  description, tips, video_link,')
 lines.append('  start_position_id, end_position_id, status')
 lines.append(')')
 lines.append('select')
-lines.append('  t.given_name, t.technical_name, t.difficulty_tier,')
+lines.append('  t.given_name, t.technical_name, t.difficulty_tier::smallint,')
 lines.append('  t.date_submitted::timestamptz, t.date_performed::date,')
 lines.append('  t.original_performer, t.description, t.tips, t.video_link,')
 lines.append('  sp.id, ep.id,')
-lines.append("  'approved'")
+lines.append("  1")
 lines.append('from (values')
 
 for i, r in enumerate(rows):
     comma = ',' if i < len(rows) - 1 else ''
     given     = sql_str(r['given'])
     tech      = sql_str(r['tech'])
-    diff      = sql_str(r['diff'])
+    diff      = parse_difficulty(r['diff'])
     submitted = r['submitted']
     performed = r['performed']
     performer = sql_str(r['performer'])
     desc      = sql_str(r['desc'])
     tips      = sql_str(r['tips'])
-    video     = r['video']
+    video     = sql_str(r['video'])
     start     = sql_str(r['start']) if r['start'] else 'null'
     end       = sql_str(r['end'])   if r['end']   else 'null'
     lines.append(
