@@ -39,10 +39,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<String> _sortedTiers(Set<String> tiers) {
-    final ordered = kDifficultyTiers.where(tiers.contains).toList();
-    final extras = tiers.where((t) => !kDifficultyTiers.contains(t)).toList()
-      ..sort();
-    return [...ordered, ...extras];
+    final list = tiers.toList();
+    list.sort((a, b) {
+      final na = double.tryParse(a);
+      final nb = double.tryParse(b);
+      if (na != null && nb != null) return na.compareTo(nb);
+      if (na != null) return -1;
+      if (nb != null) return 1;
+      return a.compareTo(b);
+    });
+    return list;
   }
 
   @override
@@ -105,17 +111,35 @@ class _HomeScreenState extends State<HomeScreen> {
     final grouped = _groupByTier(tricks);
     final tiers = _sortedTiers(grouped.keys.toSet());
 
-    return RefreshIndicator(
-      onRefresh: () async => _refresh(),
-      child: ListView(
-        padding: const EdgeInsets.only(bottom: 80),
-        children: [
-          for (final tier in tiers) ...[
-            _TierHeader(tier: tier),
-            ...grouped[tier]!.map((t) => TrickCard(trick: t)),
-          ],
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 900 ? 8 : width >= 600 ? 6 : 4;
+        return RefreshIndicator(
+          onRefresh: () async => _refresh(),
+          child: CustomScrollView(
+            slivers: [
+              for (final tier in tiers) ...[
+                SliverToBoxAdapter(child: _TierHeader(tier: tier)),
+                SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
+                    childAspectRatio: 1.4,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) =>
+                        TrickCard(trick: grouped[tier]![i]),
+                    childCount: grouped[tier]!.length,
+                  ),
+                ),
+              ],
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -126,10 +150,11 @@ class _TierHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final label = tier == 'TBD' ? 'To Be Determined' : 'Difficulty $tier';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
-        tier,
+        label,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,

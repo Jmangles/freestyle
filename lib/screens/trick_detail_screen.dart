@@ -44,12 +44,12 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   Future<void> _openVideo(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open video link')),
-        );
-      }
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication)
+        || await launchUrl(uri, mode: LaunchMode.platformDefault);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open video link')),
+      );
     }
   }
 

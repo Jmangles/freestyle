@@ -95,9 +95,9 @@ create policy "user_tricks_delete" on user_tricks for delete using (auth.uid() =
 -- ============================================================
 
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into profiles (id, username, is_admin)
+  insert into public.profiles (id, username, is_admin)
   values (new.id, new.raw_user_meta_data->>'username', false);
   return new;
 end;

@@ -26,7 +26,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final TextEditingController _description;
   late final TextEditingController _tips;
   late final TextEditingController _videoLink;
-  String _difficultyTier = kDifficultyTiers.first;
+  String _difficultyTier = '5';
   DateTime? _datePerformed;
   String? _startPositionId;
   String? _endPositionId;
@@ -47,9 +47,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     _tips = TextEditingController(text: t?.tips);
     _videoLink = TextEditingController(text: t?.videoLink);
     if (t != null) {
-      _difficultyTier = kDifficultyTiers.contains(t.difficultyTier)
-          ? t.difficultyTier
-          : kDifficultyTiers.first;
+      _difficultyTier = t.difficultyTier;
       _datePerformed = t.datePerformed;
       _startPositionId = t.startPositionId;
       _endPositionId = t.endPositionId;
@@ -179,15 +177,24 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             const SizedBox(height: 12),
             _field(_technicalName, 'Technical Name'),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            TextFormField(
               initialValue: _difficultyTier,
               decoration: const InputDecoration(
-                  labelText: 'Difficulty Tier',
-                  border: OutlineInputBorder()),
-              items: kDifficultyTiers
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                  .toList(),
-              onChanged: (v) => setState(() => _difficultyTier = v!),
+                labelText: 'Difficulty (1–10)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => setState(() => _difficultyTier = v.trim()),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Required';
+                final s = v.trim();
+                if (s.toUpperCase() == 'TBD') return null;
+                final n = double.tryParse(s);
+                if (n == null || n < 1 || n > 10) {
+                  return 'Enter a number 1–10, or TBD';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             // Date performed

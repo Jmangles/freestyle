@@ -10,41 +10,52 @@ class TrickCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasPositions =
-        trick.startPositionName != null || trick.endPositionName != null;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: () => context.push('/trick/${trick.id}'),
-        title: Text(
-          trick.givenName,
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (trick.technicalName != null &&
-                trick.technicalName != trick.givenName)
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                trick.technicalName!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
+                trick.givenName,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            if (hasPositions)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
+              if (trick.technicalName != null &&
+                  trick.technicalName!.isNotEmpty &&
+                  trick.technicalName != trick.givenName) ...[
+                const SizedBox(height: 2),
+                Text(
+                  trick.technicalName!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const Spacer(),
+              if (trick.startPositionName != null ||
+                  trick.endPositionName != null)
+                Text(
                   _positionText(),
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
@@ -53,8 +64,7 @@ class TrickCard extends StatelessWidget {
     if (trick.startPositionName != null && trick.endPositionName != null) {
       return '${trick.startPositionName} → ${trick.endPositionName}';
     }
-    if (trick.startPositionName != null) return 'From: ${trick.startPositionName}';
-    if (trick.endPositionName != null) return 'To: ${trick.endPositionName}';
-    return '';
+    if (trick.startPositionName != null) return trick.startPositionName!;
+    return trick.endPositionName ?? '';
   }
 }
