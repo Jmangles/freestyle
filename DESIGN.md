@@ -28,4 +28,4 @@ Each user account should be able to track:
 - tricks performed
 - consistency of each trick
 # Tech Stack
-Flutter should be used as this is intended for Android, iOS, and Web. I would like to use Supabase for the database.
+Flutter/Dart should be used as this is intended for Android, iOS, and Web. I would like to use Supabase for the database.
