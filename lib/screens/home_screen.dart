@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final isListMode = _gridSize == 0;
               final crossAxisCount =
                   isListMode ? 1 : _crossAxisCount(constraints.maxWidth);
-              final compact = !isListMode && (constraints.maxWidth / crossAxisCount) < 200;
+              final compact = _gridSize <= 1;
               return RefreshIndicator(
                 onRefresh: () async => _refresh(),
                 child: CustomScrollView(
