@@ -47,19 +47,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final tricks = await tricksFuture;
     final profile = await profileFuture;
     final userTricks = await userTricksFuture;
-    final consistencyMap = {for (final ut in userTricks) ut.trickId: ut.consistency};
+    final consistencyMap = {
+      for (final ut in userTricks) ut.trickId: ut.consistency
+    };
     return (tricks, profile, consistencyMap);
   }
 
   void _refresh() => setState(() => _future = _load());
 
   int _crossAxisCount(double width) {
-    const counts = {1: [4, 6, 8], 2: [3, 4, 5], 3: [2, 3, 4]};
-    final bp = width >= 900 ? 2 : width >= 600 ? 1 : 0;
+    const counts = {
+      1: [4, 6, 8],
+      2: [3, 4, 5],
+      3: [2, 3, 4]
+    };
+    final bp = width >= 900
+        ? 2
+        : width >= 600
+            ? 1
+            : 0;
     return counts[_gridSize]![bp];
   }
 
-  void _showFilterSheet(List<Trick> tricks, Map<int, Consistency> consistencyMap) async {
+  void _showFilterSheet(
+      List<Trick> tricks, Map<int, Consistency> consistencyMap) async {
     final result = await showModalBottomSheet<TrickFilter>(
       context: context,
       isScrollControlled: true,
@@ -128,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?, Map<int, Consistency>)> snap) {
+  Widget _buildBody(
+      AsyncSnapshot<(List<Trick>, Profile?, Map<int, Consistency>)> snap) {
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -137,7 +149,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Failed to load tricks', style: Theme.of(context).textTheme.titleMedium),
+            Text('Failed to load tricks',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             FilledButton(onPressed: _refresh, child: const Text('Retry')),
           ],
@@ -147,7 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final allTricks = snap.data!.$1;
     if (allTricks.isEmpty) {
-      return const Center(child: Text('No tricks yet. Be the first to submit one!'));
+      return const Center(
+          child: Text('No tricks yet. Be the first to submit one!'));
     }
 
     final consistencyMap = snap.data!.$3;
@@ -197,7 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isListMode = _gridSize == 0;
-              final crossAxisCount = isListMode ? 1 : _crossAxisCount(constraints.maxWidth);
+              final crossAxisCount =
+                  isListMode ? 1 : _crossAxisCount(constraints.maxWidth);
               return RefreshIndicator(
                 onRefresh: () async => _refresh(),
                 child: CustomScrollView(
@@ -219,7 +234,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       else
                         SliverGrid(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
@@ -273,7 +289,8 @@ class _ControlBar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
+              SizedBox(
+                width: 250,
                 child: TextButton.icon(
                   style: TextButton.styleFrom(
                     alignment: Alignment.centerLeft,
@@ -281,7 +298,9 @@ class _ControlBar extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: Icon(
-                    sorter.ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                    sorter.ascending
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward,
                     size: 14,
                   ),
                   label: Text(
@@ -292,6 +311,21 @@ class _ControlBar extends StatelessWidget {
                   onPressed: onSortTap,
                 ),
               ),
+              Expanded(
+                child: TextField(
+                  controller: nameSearchController,
+                  onChanged: onNameChanged,
+                  decoration: const InputDecoration(
+                    hintText: 'Search by name...',
+                    prefixIcon: Icon(Icons.search, size: 18),
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  textInputAction: TextInputAction.search,
+                ),
+              ),
+              Padding(padding:EdgeInsetsGeometry.all(20)),
               SizedBox(
                 width: 140,
                 child: Row(
@@ -311,21 +345,6 @@ class _ControlBar extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: TextField(
-              controller: nameSearchController,
-              onChanged: onNameChanged,
-              decoration: const InputDecoration(
-                hintText: 'Search by name...',
-                prefixIcon: Icon(Icons.search, size: 18),
-                isDense: true,
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
-              ),
-              textInputAction: TextInputAction.search,
-            ),
           ),
         ],
       ),
