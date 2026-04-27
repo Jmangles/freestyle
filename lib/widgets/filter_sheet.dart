@@ -1,0 +1,337 @@
+import 'package:flutter/material.dart';
+import '../models/trick.dart';
+import '../models/trick_filter.dart';
+import '../models/user_trick.dart';
+
+class FilterSheet extends StatefulWidget {
+  final List<Trick> tricks;
+  final Map<int, Consistency> consistencyMap;
+  final TrickFilter current;
+
+  const FilterSheet({
+    super.key,
+    required this.tricks,
+    required this.consistencyMap,
+    required this.current,
+  });
+
+  @override
+  State<FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<FilterSheet> {
+  late int _tierMin;
+  late int _tierMax;
+  late bool _includeTbd;
+  late String? _startPosition;
+  late String? _endPosition;
+  late Set<TrickStatus> _statuses;
+  late int? _yearLanded;
+  late TextEditingController _performerController;
+  late TextEditingController _nameController;
+
+  late int _dataMinTier;
+  late int _dataMaxTier;
+  late bool _hasTbd;
+  late bool _hasMultipleNumericTiers;
+  int _dropdownResetKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final numericTiers = widget.tricks
+        .map((t) => t.difficultyTier)
+        .where((t) => t != -1)
+        .toSet()
+        .toList()
+      ..sort();
+    _hasTbd = widget.tricks.any((t) => t.difficultyTier == -1);
+    _dataMinTier = numericTiers.isEmpty ? 1 : numericTiers.first;
+    _dataMaxTier = numericTiers.isEmpty ? 1 : numericTiers.last;
+    _hasMultipleNumericTiers = numericTiers.length > 1;
+
+    _tierMin = widget.current.tierMin ?? _dataMinTier;
+    _tierMax = widget.current.tierMax ?? _dataMaxTier;
+    _includeTbd = widget.current.includeTbd;
+    _startPosition = widget.current.startPosition;
+    _endPosition = widget.current.endPosition;
+    _statuses = Set.from(widget.current.statuses);
+    _yearLanded = widget.current.yearLanded;
+    _performerController = TextEditingController(text: widget.current.performerQuery);
+    _nameController = TextEditingController(text: widget.current.nameQuery);
+  }
+
+  @override
+  void dispose() {
+    _performerController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  List<String> get _availableStartPositions =>
+      widget.tricks.map((t) => t.startPositionName).whereType<String>().toSet().toList()..sort();
+
+  List<String> get _availableEndPositions =>
+      widget.tricks.map((t) => t.endPositionName).whereType<String>().toSet().toList()..sort();
+
+  List<int> get _availableYears =>
+      widget.tricks.map((t) => t.datePerformed?.year).whereType<int>().toSet().toList()
+        ..sort((a, b) => b.compareTo(a));
+
+  void _clearAll() => setState(() {
+        _tierMin = _dataMinTier;
+        _tierMax = _dataMaxTier;
+        _includeTbd = true;
+        _startPosition = null;
+        _endPosition = null;
+        _statuses = {};
+        _yearLanded = null;
+        _performerController.clear();
+        _nameController.clear();
+        _dropdownResetKey++;
+      });
+
+  TrickFilter _buildResult() => TrickFilter(
+        tierMin: _tierMin == _dataMinTier ? null : _tierMin,
+        tierMax: _tierMax == _dataMaxTier ? null : _tierMax,
+        includeTbd: _includeTbd,
+        startPosition: _startPosition,
+        endPosition: _endPosition,
+        statuses: Set.unmodifiable(_statuses),
+        yearLanded: _yearLanded,
+        performerQuery: _performerController.text.trim(),
+        nameQuery: _nameController.text.trim(),
+      );
+
+  Widget _sectionLabel(String label) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final availableStartPositions = _availableStartPositions;
+    final availableEndPositions = _availableEndPositions;
+    final availableYears = _availableYears;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      maxChildSize: 0.95,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            const _SheetHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Filter Tricks',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _clearAll,
+                    child: const Text('Clear All'),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                children: [
+                  if (_hasMultipleNumericTiers || _hasTbd) ...[
+                    _sectionLabel('Difficulty Tier'),
+                    if (_hasMultipleNumericTiers) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Tier $_tierMin',
+                              style: Theme.of(context).textTheme.bodySmall),
+                          Text('Tier $_tierMax',
+                              style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                      RangeSlider(
+                        values: RangeValues(_tierMin.toDouble(), _tierMax.toDouble()),
+                        min: _dataMinTier.toDouble(),
+                        max: _dataMaxTier.toDouble(),
+                        divisions: _dataMaxTier - _dataMinTier,
+                        labels: RangeLabels('Tier $_tierMin', 'Tier $_tierMax'),
+                        onChanged: (v) => setState(() {
+                          _tierMin = v.start.round();
+                          _tierMax = v.end.round();
+                        }),
+                      ),
+                    ],
+                    if (_hasTbd)
+                      FilterChip(
+                        label: const Text('Include TBD'),
+                        selected: _includeTbd,
+                        onSelected: (v) => setState(() => _includeTbd = v),
+                      ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (availableStartPositions.isNotEmpty ||
+                      availableEndPositions.isNotEmpty) ...[
+                    _sectionLabel('Position'),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String?>(
+                            key: ValueKey('start_$_dropdownResetKey'),
+                            initialValue: _startPosition,
+                            decoration: const InputDecoration(
+                              labelText: 'Start',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem(value: null, child: Text('Any')),
+                              for (final pos in availableStartPositions)
+                                DropdownMenuItem(value: pos, child: Text(pos)),
+                            ],
+                            onChanged: (v) => setState(() => _startPosition = v),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String?>(
+                            key: ValueKey('end_$_dropdownResetKey'),
+                            initialValue: _endPosition,
+                            decoration: const InputDecoration(
+                              labelText: 'End',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem(value: null, child: Text('Any')),
+                              for (final pos in availableEndPositions)
+                                DropdownMenuItem(value: pos, child: Text(pos)),
+                            ],
+                            onChanged: (v) => setState(() => _endPosition = v),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  _sectionLabel('Status'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final status in TrickStatus.values)
+                        FilterChip(
+                          label: Text(status.label),
+                          selected: _statuses.contains(status),
+                          onSelected: (v) => setState(() {
+                            if (v) {
+                              _statuses.add(status);
+                            } else {
+                              _statuses.remove(status);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (availableYears.isNotEmpty) ...[
+                    _sectionLabel('Year Landed'),
+                    DropdownButtonFormField<int?>(
+                      key: ValueKey('year_$_dropdownResetKey'),
+                      initialValue: _yearLanded,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Any')),
+                        for (final year in availableYears)
+                          DropdownMenuItem(value: year, child: Text(year.toString())),
+                      ],
+                      onChanged: (v) => setState(() => _yearLanded = v),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  _sectionLabel('Name'),
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      hintText: 'Search by name...',
+                      prefixIcon: Icon(Icons.search),
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionLabel('Original Performer'),
+                  TextField(
+                    controller: _performerController,
+                    decoration: const InputDecoration(
+                      hintText: 'Search by performer...',
+                      prefixIcon: Icon(Icons.search),
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(_buildResult()),
+                    child: const Text('Apply'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}

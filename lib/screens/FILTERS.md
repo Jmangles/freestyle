@@ -1,5 +1,6 @@
 # Filtering
 In the filter window we want users to be able to filter by:
+- Name
 - Difficulty Tier
 - Start Pos
 - End Pos
@@ -8,6 +9,8 @@ In the filter window we want users to be able to filter by:
 - Original performer
 # Specifications
 Here are the hopes for each filter:
+# Name
+Show all tricks with partial matches.
 ## Difficulty Tier
 Slider with a start and end tier
 ## Start and End pos
