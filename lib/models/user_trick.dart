@@ -11,14 +11,26 @@ enum Consistency {
   const Consistency(this.label);
   final String label;
 
-  Color get cardColor => switch (this) {
-    Consistency.never => const Color(0xFFE3F2FD),
-    Consistency.once => const Color(0xFFFFF9C4),
-    Consistency.sometimes => const Color(0xFFFFECB3),
-    Consistency.often => const Color(0xFFDCEDC8),
-    Consistency.generally => const Color(0xFFC8E6C9),
-    Consistency.always => const Color(0xFFA5D6A7),
-  };
+  Color cardColor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return switch (this) {
+        Consistency.never => const Color(0xFF0D2744),
+        Consistency.once => const Color(0xFF332D00),
+        Consistency.sometimes => const Color(0xFF331F00),
+        Consistency.often => const Color(0xFF1A2D10),
+        Consistency.generally => const Color(0xFF123B12),
+        Consistency.always => const Color(0xFF0A3D1A),
+      };
+    }
+    return switch (this) {
+      Consistency.never => const Color(0xFFE3F2FD),
+      Consistency.once => const Color(0xFFFFF9C4),
+      Consistency.sometimes => const Color(0xFFFFECB3),
+      Consistency.often => const Color(0xFFDCEDC8),
+      Consistency.generally => const Color(0xFFC8E6C9),
+      Consistency.always => const Color(0xFFA5D6A7),
+    };
+  }
 
   static Consistency fromString(String value) => Consistency.values.firstWhere(
         (e) => e.name == value,

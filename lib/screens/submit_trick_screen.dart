@@ -137,7 +137,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()), backgroundColor: Colors.red),
+              content: Text(e.toString()), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {

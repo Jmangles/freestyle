@@ -19,7 +19,7 @@ class TrickCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      color: consistency?.cardColor,
+      color: consistency?.cardColor(theme.brightness),
       child: InkWell(
         onTap: () async {
           await context.push('/trick/${trick.id}');
@@ -88,7 +88,7 @@ class TrickCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       clipBehavior: Clip.antiAlias,
-      color: consistency?.cardColor,
+      color: consistency?.cardColor(theme.brightness),
       child: ListTile(
         dense: true,
         title: Text(

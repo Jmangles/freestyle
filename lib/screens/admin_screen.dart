@@ -70,7 +70,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(e.toString()),
-                backgroundColor: Colors.red),
+                backgroundColor: Theme.of(context).colorScheme.error),
           );
         }
       }
