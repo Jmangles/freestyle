@@ -89,7 +89,7 @@ class TrickSorter {
         return a.compareTo(b);
       case PrimarySort.consistency:
         const order = {'Never Attempted': 0, 'Attempting': 1, 'Landed': 2};
-        return (order[a] ?? 0).compareTo(order[b] ?? 0);
+        return (order[b] ?? 0).compareTo(order[a] ?? 0);
     }
   }
 
