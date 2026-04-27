@@ -175,25 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
             .toList();
 
-    if (tricks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.filter_list_off, size: 48),
-            const SizedBox(height: 12),
-            Text('No tricks match your filters',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => setState(() => _filter = const TrickFilter()),
-              child: const Text('Clear Filters'),
-            ),
-          ],
-        ),
-      );
-    }
-
     final groups = _sorter.buildGroups(tricks, consistencyMap);
     final showDifficulty = _sorter.primary != PrimarySort.difficulty;
 
