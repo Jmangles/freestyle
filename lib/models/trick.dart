@@ -13,7 +13,7 @@ class Trick {
   final int? startPositionId;
   final int? endPositionId;
   final int status;
-  final String? submittedBy;
+  final int? submittedBy;
 
   // Joined via Supabase select
   final String? startPositionName;
@@ -65,7 +65,7 @@ class Trick {
       startPositionId: json['start_position_id'] as int?,
       endPositionId: json['end_position_id'] as int?,
       status: json['status'] as int,
-      submittedBy: json['submitted_by'] as String?,
+      submittedBy: json['submitted_by'] as int?,
       startPositionName: startPos?['name'] as String?,
       endPositionName: endPos?['name'] as String?,
     );

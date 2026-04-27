@@ -28,7 +28,7 @@ enum Consistency {
 
 class UserTrick {
   final int id;
-  final String userId;
+  final int userId;
   final int trickId;
   final Consistency consistency;
 
@@ -41,7 +41,7 @@ class UserTrick {
 
   factory UserTrick.fromJson(Map<String, dynamic> json) => UserTrick(
         id: json['id'] as int,
-        userId: json['user_id'] as String,
+        userId: json['user_id'] as int,
         trickId: json['trick_id'] as int,
         consistency: Consistency.values[json['consistency'] as int],
       );

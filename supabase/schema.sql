@@ -11,7 +11,8 @@ create table positions (
 
 -- User profiles (extends auth.users)
 create table profiles (
-  id       uuid primary key references auth.users(id) on delete cascade,
+  int_id   integer generated always as identity primary key,
+  id       uuid unique not null references auth.users(id) on delete cascade,
   username text unique,
   is_admin boolean not null default false
 );
@@ -32,13 +33,13 @@ create table tricks (
   start_position_id     smallint references positions(id),
   end_position_id       smallint references positions(id),
   status                smallint not null default 0 check (status between 0 and 2),
-  submitted_by          uuid references auth.users(id)
+  submitted_by          integer references profiles(int_id) on delete set null
 );
 
 -- User trick tracking
 create table user_tricks (
   id          integer generated always as identity primary key,
-  user_id     uuid not null references auth.users(id) on delete cascade,
+  user_id     integer not null references profiles(int_id) on delete cascade,
   trick_id    integer not null references tricks(id) on delete cascade,
   consistency smallint not null default 0 check (consistency between 0 and 5),
   unique(user_id, trick_id)
@@ -74,19 +75,23 @@ create policy "positions_delete" on positions for delete using (
 create policy "tricks_read_approved" on tricks for select
   using (status = 1);
 create policy "tricks_read_own" on tricks for select
-  using (auth.uid() = submitted_by);
+  using (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "tricks_read_admin" on tricks for select
   using (exists (select 1 from profiles where id = auth.uid() and is_admin = true));
 create policy "tricks_insert" on tricks for insert
-  with check (auth.uid() = submitted_by and auth.uid() is not null);
+  with check (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "tricks_update_admin" on tricks for update
   using (exists (select 1 from profiles where id = auth.uid() and is_admin = true));
 
 -- User tricks: users manage only their own rows
-create policy "user_tricks_select" on user_tricks for select using (auth.uid() = user_id);
-create policy "user_tricks_insert" on user_tricks for insert with check (auth.uid() = user_id);
-create policy "user_tricks_update" on user_tricks for update using (auth.uid() = user_id);
-create policy "user_tricks_delete" on user_tricks for delete using (auth.uid() = user_id);
+create policy "user_tricks_select" on user_tricks for select
+  using (user_id = (select int_id from profiles where id = auth.uid()));
+create policy "user_tricks_insert" on user_tricks for insert
+  with check (user_id = (select int_id from profiles where id = auth.uid()));
+create policy "user_tricks_update" on user_tricks for update
+  using (user_id = (select int_id from profiles where id = auth.uid()));
+create policy "user_tricks_delete" on user_tricks for delete
+  using (user_id = (select int_id from profiles where id = auth.uid()));
 
 -- ============================================================
 -- Grants

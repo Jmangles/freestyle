@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trick.dart';
 import '../models/position.dart';
+import 'auth_service.dart';
 
 class TricksService {
   static final _client = Supabase.instance.client;
@@ -44,9 +45,11 @@ class TricksService {
   }
 
   static Future<void> submitTrick(Trick trick) async {
+    final profile = await AuthService.getCurrentProfile();
+    if (profile == null) return;
     await _client.from('tricks').insert({
       ...trick.toInsertJson(),
-      'submitted_by': _client.auth.currentUser!.id,
+      'submitted_by': profile.intId,
     });
   }
 
