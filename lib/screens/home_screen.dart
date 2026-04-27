@@ -45,7 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load({bool initial = false}) async {
-    if (initial) setState(() { _initialLoading = true; _hasError = false; });
+    if (initial)
+      setState(() {
+        _initialLoading = true;
+        _hasError = false;
+      });
     try {
       final tricksFuture = TricksService.getApprovedTricks();
       final profileFuture = AuthService.getCurrentProfile();
@@ -66,7 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() { _initialLoading = false; _hasError = true; });
+      if (mounted)
+        setState(() {
+          _initialLoading = false;
+          _hasError = true;
+        });
     }
   }
 
@@ -225,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
-                            childAspectRatio: 2.7, // Change to modify trick card height
+                            mainAxisExtent: _gridSize <= 1 ? 64.0 : 112.0,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => TrickCard(
@@ -311,7 +319,7 @@ class _ControlBar extends StatelessWidget {
                   textInputAction: TextInputAction.search,
                 ),
               ),
-              Padding(padding:EdgeInsetsGeometry.all(20)),
+              Padding(padding: EdgeInsetsGeometry.all(20)),
               SizedBox(
                 width: 140,
                 child: Row(

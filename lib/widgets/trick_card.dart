@@ -17,7 +17,10 @@ class TrickCard extends StatelessWidget {
     if (listMode) return _buildListTile(context);
     final theme = Theme.of(context);
 
-    return Card(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 200;
+        return Card(
       clipBehavior: Clip.antiAlias,
       color: consistency?.cardColor(theme.brightness),
       child: InkWell(
@@ -35,10 +38,11 @@ class TrickCard extends StatelessWidget {
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
-                maxLines: 2,
+                maxLines: compact ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (trick.technicalName != null &&
+              if (!compact &&
+                  trick.technicalName != null &&
                   trick.technicalName!.isNotEmpty &&
                   trick.technicalName != trick.givenName) ...[
                 const SizedBox(height: 2),
@@ -77,6 +81,8 @@ class TrickCard extends StatelessWidget {
           ),
         ),
       ),
+        );
+      },
     );
   }
 
