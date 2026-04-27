@@ -26,7 +26,7 @@ class TrickCard extends StatelessWidget {
           onReturn?.call();
         },
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -140,19 +140,38 @@ class _DifficultyBadge extends StatelessWidget {
   final Trick trick;
   const _DifficultyBadge({required this.trick});
 
+  static (Color, Color)? _colorsForTier(int tier) {
+    return switch (tier) {
+      1  => (const Color(0xFF4CAF50), Colors.white),
+      2  => (const Color(0xFF8BC34A), Colors.black),
+      3  => (const Color(0xFFCDDC39), Colors.black),
+      4  => (const Color(0xFFFFCA28), Colors.black),
+      5  => (const Color(0xFFFFA726), Colors.black),
+      6  => (const Color(0xFFFF7043), Colors.white),
+      7  => (const Color(0xFFEF5350), Colors.white),
+      8  => (const Color(0xFFE53935), Colors.white),
+      9  => (const Color(0xFFC62828), Colors.white),
+      10 => (const Color(0xFF7B0000), Colors.white),
+      _  => null, // TBD — use theme colors
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = _colorsForTier(trick.difficultyTier);
+    final bgColor = colors?.$1 ?? theme.colorScheme.secondaryContainer;
+    final fgColor = colors?.$2 ?? theme.colorScheme.onSecondaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
+        color: bgColor,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         trick.difficultyLabel,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
+          color: fgColor,
           fontWeight: FontWeight.w600,
         ),
       ),

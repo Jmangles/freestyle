@@ -20,7 +20,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<(List<Trick>, Profile?, Map<int, Consistency>)> _future;
+  List<Trick> _tricks = [];
+  Profile? _profile;
+  Map<int, Consistency> _consistencyMap = {};
+  bool _initialLoading = true;
+  bool _hasError = false;
   int _gridSize = 2;
   TrickFilter _filter = const TrickFilter();
   TrickSorter _sorter = const TrickSorter();
@@ -31,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _nameSearchController = TextEditingController();
-    _future = _load();
+    _load(initial: true);
   }
 
   @override
@@ -40,20 +44,33 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<(List<Trick>, Profile?, Map<int, Consistency>)> _load() async {
-    final tricksFuture = TricksService.getApprovedTricks();
-    final profileFuture = AuthService.getCurrentProfile();
-    final userTricksFuture = UserTricksService.getUserTricks();
-    final tricks = await tricksFuture;
-    final profile = await profileFuture;
-    final userTricks = await userTricksFuture;
-    final consistencyMap = {
-      for (final ut in userTricks) ut.trickId: ut.consistency
-    };
-    return (tricks, profile, consistencyMap);
+  Future<void> _load({bool initial = false}) async {
+    if (initial) setState(() { _initialLoading = true; _hasError = false; });
+    try {
+      final tricksFuture = TricksService.getApprovedTricks();
+      final profileFuture = AuthService.getCurrentProfile();
+      final userTricksFuture = UserTricksService.getUserTricks();
+      final tricks = await tricksFuture;
+      final profile = await profileFuture;
+      final userTricks = await userTricksFuture;
+      final consistencyMap = {
+        for (final ut in userTricks) ut.trickId: ut.consistency
+      };
+      if (mounted) {
+        setState(() {
+          _tricks = tricks;
+          _profile = profile;
+          _consistencyMap = consistencyMap;
+          _initialLoading = false;
+          _hasError = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _initialLoading = false; _hasError = true; });
+    }
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => _load();
 
   int _crossAxisCount(double width) {
     const counts = {
@@ -69,14 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return counts[_gridSize]![bp];
   }
 
-  void _showFilterSheet(
-      List<Trick> tricks, Map<int, Consistency> consistencyMap) async {
+  void _showFilterSheet() async {
     final result = await showModalBottomSheet<TrickFilter>(
       context: context,
       isScrollControlled: true,
       builder: (context) => FilterSheet(
-        tricks: tricks,
-        consistencyMap: consistencyMap,
+        tricks: _tricks,
+        consistencyMap: _consistencyMap,
         current: _filter,
       ),
     );
@@ -94,57 +110,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(List<Trick>, Profile?, Map<int, Consistency>)>(
-      future: _future,
-      builder: (context, snap) {
-        final profile = snap.data?.$2;
-        final tricks = snap.data?.$1 ?? [];
-        final consistencyMap = snap.data?.$3 ?? {};
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Freestyle Highline'),
-            actions: [
-              if (profile?.isAdmin == true)
-                IconButton(
-                  icon: const Icon(Icons.admin_panel_settings_outlined),
-                  tooltip: 'Admin',
-                  onPressed: () => context.push('/admin'),
-                ),
-              Badge(
-                isLabelVisible: _filter.isActive,
-                label: Text(_filter.activeCount.toString()),
-                child: IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  tooltip: 'Filter',
-                  onPressed: snap.hasData
-                      ? () => _showFilterSheet(tricks, consistencyMap)
-                      : null,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.person_outline),
-                tooltip: 'Profile',
-                onPressed: () => context.push('/profile'),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Freestyle Highline'),
+        actions: [
+          if (_profile?.isAdmin == true)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: 'Admin',
+              onPressed: () => context.push('/admin'),
+            ),
+          Badge(
+            isLabelVisible: _filter.isActive,
+            label: Text(_filter.activeCount.toString()),
+            child: IconButton(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'Filter',
+              onPressed: _initialLoading ? null : _showFilterSheet,
+            ),
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.push('/submit'),
-            icon: const Icon(Icons.add),
-            label: const Text('Submit Trick'),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+            onPressed: () => context.push('/profile'),
           ),
-          body: _buildBody(snap),
-        );
-      },
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/submit'),
+        icon: const Icon(Icons.add),
+        label: const Text('Submit Trick'),
+      ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildBody(
-      AsyncSnapshot<(List<Trick>, Profile?, Map<int, Consistency>)> snap) {
-    if (snap.connectionState == ConnectionState.waiting) {
+  Widget _buildBody() {
+    if (_initialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (snap.hasError) {
+    if (_hasError) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -158,13 +163,13 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final allTricks = snap.data!.$1;
+    final allTricks = _tricks;
     if (allTricks.isEmpty) {
       return const Center(
           child: Text('No tricks yet. Be the first to submit one!'));
     }
 
-    final consistencyMap = snap.data!.$3;
+    final consistencyMap = _consistencyMap;
     final filtered = _filter.apply(allTricks, consistencyMap);
     final nameQ = _nameQuery.toLowerCase();
     final tricks = nameQ.isEmpty
@@ -220,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
-                            childAspectRatio: 1.4,
+                            childAspectRatio: 2.7, // Change to modify trick card height
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => TrickCard(
