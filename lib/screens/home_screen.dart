@@ -30,6 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   TrickSorter _sorter = const TrickSorter();
   late TextEditingController _nameSearchController;
   String _nameQuery = '';
+  List<(String, List<Trick>)> _groups = [];
+  bool _showDifficulty = false;
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _consistencyMap = consistencyMap;
           _initialLoading = false;
           _hasError = false;
+          _recompute();
         });
       }
     } catch (_) {
@@ -76,6 +79,20 @@ class _HomeScreenState extends State<HomeScreen> {
           _hasError = true;
         });
     }
+  }
+
+  void _recompute() {
+    final nameQ = _nameQuery.toLowerCase();
+    final filtered = _filter.apply(_tricks, _consistencyMap);
+    final tricks = nameQ.isEmpty
+        ? filtered
+        : filtered
+            .where((t) =>
+                t.givenName.toLowerCase().contains(nameQ) ||
+                (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
+            .toList();
+    _groups = _sorter.buildGroups(tricks, _consistencyMap);
+    _showDifficulty = _sorter.primary != PrimarySort.difficulty;
   }
 
   void _refresh() => _load();
@@ -104,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
         current: _filter,
       ),
     );
-    if (result != null) setState(() => _filter = result);
+    if (result != null) setState(() { _filter = result; _recompute(); });
   }
 
   void _showSortSheet() async {
@@ -113,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       builder: (context) => SortSheet(current: _sorter),
     );
-    if (result != null) setState(() => _sorter = result);
+    if (result != null) setState(() { _sorter = result; _recompute(); });
   }
 
   @override
@@ -171,25 +188,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final allTricks = _tricks;
-    if (allTricks.isEmpty) {
+    if (_tricks.isEmpty) {
       return const Center(
           child: Text('No tricks yet. Be the first to submit one!'));
     }
 
     final consistencyMap = _consistencyMap;
-    final filtered = _filter.apply(allTricks, consistencyMap);
-    final nameQ = _nameQuery.toLowerCase();
-    final tricks = nameQ.isEmpty
-        ? filtered
-        : filtered
-            .where((t) =>
-                t.givenName.toLowerCase().contains(nameQ) ||
-                (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
-            .toList();
-
-    final groups = _sorter.buildGroups(tricks, consistencyMap);
-    final showDifficulty = _sorter.primary != PrimarySort.difficulty;
 
     return Column(
       children: [
@@ -199,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSortTap: _showSortSheet,
           onGridSizeChanged: (v) => setState(() => _gridSize = v),
           nameSearchController: _nameSearchController,
-          onNameChanged: (v) => setState(() => _nameQuery = v),
+          onNameChanged: (v) => setState(() { _nameQuery = v; _recompute(); }),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -207,21 +211,25 @@ class _HomeScreenState extends State<HomeScreen> {
               final isListMode = _gridSize == 0;
               final crossAxisCount =
                   isListMode ? 1 : _crossAxisCount(constraints.maxWidth);
+              final compact = !isListMode && (constraints.maxWidth / crossAxisCount) < 200;
               return RefreshIndicator(
                 onRefresh: () async => _refresh(),
                 child: CustomScrollView(
                   slivers: [
-                    for (final (label, groupTricks) in groups) ...[
+                    for (final (label, groupTricks) in _groups) ...[
                       SliverToBoxAdapter(child: _GroupHeader(label: label)),
                       if (isListMode)
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (context, i) => TrickCard(
-                              trick: groupTricks[i],
-                              consistency: consistencyMap[groupTricks[i].id],
-                              onReturn: _refresh,
-                              listMode: true,
-                              showDifficulty: showDifficulty,
+                            (context, i) => RepaintBoundary(
+                              key: ValueKey(groupTricks[i].id),
+                              child: TrickCard(
+                                trick: groupTricks[i],
+                                consistency: consistencyMap[groupTricks[i].id],
+                                onReturn: _refresh,
+                                listMode: true,
+                                showDifficulty: _showDifficulty,
+                              ),
                             ),
                             childCount: groupTricks.length,
                           ),
@@ -236,11 +244,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisExtent: _gridSize <= 1 ? 64.0 : 100.0,
                           ),
                           delegate: SliverChildBuilderDelegate(
-                            (context, i) => TrickCard(
-                              trick: groupTricks[i],
-                              consistency: consistencyMap[groupTricks[i].id],
-                              onReturn: _refresh,
-                              showDifficulty: showDifficulty,
+                            (context, i) => RepaintBoundary(
+                              key: ValueKey(groupTricks[i].id),
+                              child: TrickCard(
+                                trick: groupTricks[i],
+                                consistency: consistencyMap[groupTricks[i].id],
+                                onReturn: _refresh,
+                                showDifficulty: _showDifficulty,
+                                compact: compact,
+                              ),
                             ),
                             childCount: groupTricks.length,
                           ),

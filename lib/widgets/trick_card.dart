@@ -9,18 +9,16 @@ class TrickCard extends StatelessWidget {
   final VoidCallback? onReturn;
   final bool listMode;
   final bool showDifficulty;
+  final bool compact;
 
-  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn, this.listMode = false, this.showDifficulty = false});
+  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn, this.listMode = false, this.showDifficulty = false, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
     if (listMode) return _buildListTile(context);
     final theme = Theme.of(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 200;
-        return Card(
+    return Card(
       clipBehavior: Clip.antiAlias,
       color: consistency?.cardColor(theme.brightness),
       child: InkWell(
@@ -81,8 +79,6 @@ class TrickCard extends StatelessWidget {
           ),
         ),
       ),
-        );
-      },
     );
   }
 
