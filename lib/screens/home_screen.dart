@@ -24,11 +24,20 @@ class _HomeScreenState extends State<HomeScreen> {
   int _gridSize = 2;
   TrickFilter _filter = const TrickFilter();
   TrickSorter _sorter = const TrickSorter();
+  late TextEditingController _nameSearchController;
+  String _nameQuery = '';
 
   @override
   void initState() {
     super.initState();
+    _nameSearchController = TextEditingController();
     _future = _load();
+  }
+
+  @override
+  void dispose() {
+    _nameSearchController.dispose();
+    super.dispose();
   }
 
   Future<(List<Trick>, Profile?, Map<int, Consistency>)> _load() async {
@@ -142,7 +151,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final consistencyMap = snap.data!.$3;
-    final tricks = _filter.apply(allTricks, consistencyMap);
+    final filtered = _filter.apply(allTricks, consistencyMap);
+    final nameQ = _nameQuery.toLowerCase();
+    final tricks = nameQ.isEmpty
+        ? filtered
+        : filtered
+            .where((t) =>
+                t.givenName.toLowerCase().contains(nameQ) ||
+                (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
+            .toList();
 
     if (tricks.isEmpty) {
       return Center(
@@ -173,6 +190,8 @@ class _HomeScreenState extends State<HomeScreen> {
           gridSize: _gridSize,
           onSortTap: _showSortSheet,
           onGridSizeChanged: (v) => setState(() => _gridSize = v),
+          nameSearchController: _nameSearchController,
+          onNameChanged: (v) => setState(() => _nameQuery = v),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -234,55 +253,78 @@ class _ControlBar extends StatelessWidget {
   final int gridSize;
   final VoidCallback onSortTap;
   final ValueChanged<int> onGridSizeChanged;
+  final TextEditingController nameSearchController;
+  final ValueChanged<String> onNameChanged;
 
   const _ControlBar({
     required this.sorter,
     required this.gridSize,
     required this.onSortTap,
     required this.onGridSizeChanged,
+    required this.nameSearchController,
+    required this.onNameChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 4),
+      child: Column(
         children: [
-          Expanded(
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              icon: Icon(
-                sorter.ascending ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14,
-              ),
-              label: Text(
-                '${sorter.primary.label}  ·  ${sorter.secondary.label}',
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              onPressed: onSortTap,
-            ),
-          ),
-          SizedBox(
-            width: 140,
-            child: Row(
-              children: [
-                const Icon(Icons.view_list, size: 18),
-                Expanded(
-                  child: Slider(
-                    value: gridSize.toDouble(),
-                    min: 0,
-                    max: 3,
-                    divisions: 3,
-                    onChanged: (v) => onGridSizeChanged(v.round()),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  icon: Icon(
+                    sorter.ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 14,
+                  ),
+                  label: Text(
+                    '${sorter.primary.label}  ·  ${sorter.secondary.label}',
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  onPressed: onSortTap,
                 ),
-                const Icon(Icons.view_module, size: 18),
-              ],
+              ),
+              SizedBox(
+                width: 140,
+                child: Row(
+                  children: [
+                    const Icon(Icons.view_list, size: 18),
+                    Expanded(
+                      child: Slider(
+                        value: gridSize.toDouble(),
+                        min: 0,
+                        max: 3,
+                        divisions: 3,
+                        onChanged: (v) => onGridSizeChanged(v.round()),
+                      ),
+                    ),
+                    const Icon(Icons.view_module, size: 18),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: TextField(
+              controller: nameSearchController,
+              onChanged: onNameChanged,
+              decoration: const InputDecoration(
+                hintText: 'Search by name...',
+                prefixIcon: Icon(Icons.search, size: 18),
+                isDense: true,
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
+              textInputAction: TextInputAction.search,
             ),
           ),
         ],

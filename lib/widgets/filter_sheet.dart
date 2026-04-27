@@ -28,7 +28,6 @@ class _FilterSheetState extends State<FilterSheet> {
   late Set<TrickStatus> _statuses;
   late int? _yearLanded;
   late TextEditingController _performerController;
-  late TextEditingController _nameController;
 
   late int _dataMinTier;
   late int _dataMaxTier;
@@ -58,13 +57,11 @@ class _FilterSheetState extends State<FilterSheet> {
     _statuses = Set.from(widget.current.statuses);
     _yearLanded = widget.current.yearLanded;
     _performerController = TextEditingController(text: widget.current.performerQuery);
-    _nameController = TextEditingController(text: widget.current.nameQuery);
   }
 
   @override
   void dispose() {
     _performerController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 
@@ -87,7 +84,6 @@ class _FilterSheetState extends State<FilterSheet> {
         _statuses = {};
         _yearLanded = null;
         _performerController.clear();
-        _nameController.clear();
         _dropdownResetKey++;
       });
 
@@ -100,7 +96,6 @@ class _FilterSheetState extends State<FilterSheet> {
         statuses: Set.unmodifiable(_statuses),
         yearLanded: _yearLanded,
         performerQuery: _performerController.text.trim(),
-        nameQuery: _nameController.text.trim(),
       );
 
   Widget _sectionLabel(String label) => Padding(
@@ -269,19 +264,6 @@ class _FilterSheetState extends State<FilterSheet> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  _sectionLabel('Name'),
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search by name...',
-                      prefixIcon: Icon(Icons.search),
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 20),
                   _sectionLabel('Original Performer'),
                   TextField(
                     controller: _performerController,
