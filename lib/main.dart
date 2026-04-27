@@ -31,8 +31,9 @@ class HighlineApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4A90D9),
+          seedColor: const Color(0xFF007AFF),
           brightness: Brightness.dark,
+          primary: const Color(0xFFFF5F00),
         ),
         useMaterial3: true,
       ),

@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
-                            mainAxisExtent: _gridSize <= 1 ? 64.0 : 112.0,
+                            mainAxisExtent: _gridSize <= 1 ? 64.0 : 100.0,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => TrickCard(
