@@ -443,6 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 consistency: consistencyMap[trick.id],
                                 onReturn: _refresh,
                                 listMode: true,
+                                showDifficulty: _primarySort != _PrimarySort.difficulty,
                               );
                             },
                             childCount: groupTricks.length,
@@ -463,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 trick: trick,
                                 consistency: consistencyMap[trick.id],
                                 onReturn: _refresh,
+                                showDifficulty: _primarySort != _PrimarySort.difficulty,
                               );
                             },
                             childCount: groupTricks.length,
