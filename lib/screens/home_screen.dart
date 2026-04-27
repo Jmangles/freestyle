@@ -95,6 +95,27 @@ class _TrickFilter {
   }
 }
 
+enum _PrimarySort {
+  difficulty('Difficulty Tier'),
+  startPosition('Start Position'),
+  yearLanded('Year Landed'),
+  consistency('Consistency');
+
+  const _PrimarySort(this.label);
+  final String label;
+}
+
+enum _SecondarySort {
+  difficulty('Difficulty Tier'),
+  startPosition('Start Position'),
+  endPosition('End Position'),
+  consistency('Consistency'),
+  alphabetical('Alphabetical');
+
+  const _SecondarySort(this.label);
+  final String label;
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -106,6 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<(List<Trick>, Profile?, Map<int, Consistency>)> _future;
   int _gridSize = 2;
   _TrickFilter _filter = const _TrickFilter();
+  _PrimarySort _primarySort = _PrimarySort.difficulty;
+  _SecondarySort _secondarySort = _SecondarySort.alphabetical;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -134,40 +158,156 @@ class _HomeScreenState extends State<HomeScreen> {
     return counts[_gridSize]![bp];
   }
 
-  Widget _buildSizeSlider() {
+  String _primaryLabel(Trick t, Map<int, Consistency> consistencyMap) {
+    switch (_primarySort) {
+      case _PrimarySort.difficulty:
+        return t.difficultyTier == -1 ? 'To Be Determined' : 'Difficulty ${t.difficultyTier}';
+      case _PrimarySort.startPosition:
+        return t.startPositionName ?? 'Unknown';
+      case _PrimarySort.yearLanded:
+        return t.datePerformed?.year.toString() ?? 'Unknown';
+      case _PrimarySort.consistency:
+        final c = consistencyMap[t.id];
+        if (c == null) return 'Never Attempted';
+        if (c == Consistency.never) return 'Attempting';
+        return 'Landed';
+    }
+  }
+
+  int _compareGroupLabels(String a, String b) {
+    switch (_primarySort) {
+      case _PrimarySort.difficulty:
+        if (a == 'To Be Determined') return 1;
+        if (b == 'To Be Determined') return -1;
+        final ta = int.tryParse(a.replaceFirst('Difficulty ', '')) ?? 0;
+        final tb = int.tryParse(b.replaceFirst('Difficulty ', '')) ?? 0;
+        return ta.compareTo(tb);
+      case _PrimarySort.startPosition:
+      case _PrimarySort.yearLanded:
+        if (a == 'Unknown') return 1;
+        if (b == 'Unknown') return -1;
+        return a.compareTo(b);
+      case _PrimarySort.consistency:
+        const order = {'Never Attempted': 0, 'Attempting': 1, 'Landed': 2};
+        return (order[a] ?? 0).compareTo(order[b] ?? 0);
+    }
+  }
+
+  int _compareSecondary(Trick a, Trick b, Map<int, Consistency> consistencyMap) {
+    switch (_secondarySort) {
+      case _SecondarySort.difficulty:
+        if (a.difficultyTier == b.difficultyTier) return 0;
+        if (a.difficultyTier == -1) return 1;
+        if (b.difficultyTier == -1) return -1;
+        return a.difficultyTier.compareTo(b.difficultyTier);
+      case _SecondarySort.startPosition:
+        return (a.startPositionName ?? 'zzz').toLowerCase()
+            .compareTo((b.startPositionName ?? 'zzz').toLowerCase());
+      case _SecondarySort.endPosition:
+        return (a.endPositionName ?? 'zzz').toLowerCase()
+            .compareTo((b.endPositionName ?? 'zzz').toLowerCase());
+      case _SecondarySort.consistency:
+        int rank(int id) {
+          final c = consistencyMap[id];
+          if (c == null) return 0;
+          if (c == Consistency.never) return 1;
+          return 2;
+        }
+        return rank(a.id).compareTo(rank(b.id));
+      case _SecondarySort.alphabetical:
+        return a.givenName.toLowerCase().compareTo(b.givenName.toLowerCase());
+    }
+  }
+
+  List<(String, List<Trick>)> _buildSortedGroups(
+    List<Trick> tricks,
+    Map<int, Consistency> consistencyMap,
+  ) {
+    final map = <String, List<Trick>>{};
+    for (final t in tricks) {
+      map.putIfAbsent(_primaryLabel(t, consistencyMap), () => []).add(t);
+    }
+
+    final entries = map.entries.toList()
+      ..sort((a, b) {
+        final cmp = _compareGroupLabels(a.key, b.key);
+        return _sortAscending ? cmp : -cmp;
+      });
+
+    for (final e in entries) {
+      e.value.sort((a, b) {
+        final cmp = _compareSecondary(a, b, consistencyMap);
+        return _sortAscending ? cmp : -cmp;
+      });
+    }
+
+    return [for (final e in entries) (e.key, e.value)];
+  }
+
+  void _showSortSheet() async {
+    final result = await showModalBottomSheet<(_PrimarySort, _SecondarySort, bool)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _SortSheet(
+        primarySort: _primarySort,
+        secondarySort: _secondarySort,
+        ascending: _sortAscending,
+      ),
+    );
+    if (result != null) {
+      setState(() {
+        _primarySort = result.$1;
+        _secondarySort = result.$2;
+        _sortAscending = result.$3;
+      });
+    }
+  }
+
+  Widget _buildControlBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
       child: Row(
         children: [
-          const Icon(Icons.view_list, size: 20),
           Expanded(
-            child: Slider(
-              value: _gridSize.toDouble(),
-              min: 0,
-              max: 3,
-              divisions: 3,
-              onChanged: (v) => setState(() => _gridSize = v.round()),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: Icon(
+                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 14,
+              ),
+              label: Text(
+                '${_primarySort.label}  ·  ${_secondarySort.label}',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              onPressed: _showSortSheet,
             ),
           ),
-          const Icon(Icons.view_module, size: 20),
+          SizedBox(
+            width: 140,
+            child: Row(
+              children: [
+                const Icon(Icons.view_list, size: 18),
+                Expanded(
+                  child: Slider(
+                    value: _gridSize.toDouble(),
+                    min: 0,
+                    max: 3,
+                    divisions: 3,
+                    onChanged: (v) => setState(() => _gridSize = v.round()),
+                  ),
+                ),
+                const Icon(Icons.view_module, size: 18),
+              ],
+            ),
+          ),
         ],
       ),
     );
-  }
-
-  Map<int, List<Trick>> _groupByTier(List<Trick> tricks) {
-    final map = <int, List<Trick>>{};
-    for (final t in tricks) {
-      map.putIfAbsent(t.difficultyTier, () => []).add(t);
-    }
-    return map;
-  }
-
-  List<int> _sortedTiers(Set<int> tiers) {
-    final list = tiers.toList();
-    // -1 (TBD) sorts last
-    list.sort((a, b) => a == -1 ? 1 : b == -1 ? -1 : a.compareTo(b));
-    return list;
   }
 
   void _showFilterSheet(List<Trick> tricks, Map<int, Consistency> consistencyMap) async {
@@ -277,12 +417,11 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final grouped = _groupByTier(tricks);
-    final tiers = _sortedTiers(grouped.keys.toSet());
+    final groups = _buildSortedGroups(tricks, consistencyMap);
 
     return Column(
       children: [
-        _buildSizeSlider(),
+        _buildControlBar(),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -292,13 +431,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 onRefresh: () async => _refresh(),
                 child: CustomScrollView(
                   slivers: [
-                    for (final tier in tiers) ...[
-                      SliverToBoxAdapter(child: _TierHeader(tier: tier)),
+                    for (final (label, groupTricks) in groups) ...[
+                      SliverToBoxAdapter(child: _GroupHeader(label: label)),
                       if (isListMode)
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, i) {
-                              final trick = grouped[tier]![i];
+                              final trick = groupTricks[i];
                               return TrickCard(
                                 trick: trick,
                                 consistency: consistencyMap[trick.id],
@@ -306,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 listMode: true,
                               );
                             },
-                            childCount: grouped[tier]!.length,
+                            childCount: groupTricks.length,
                           ),
                         )
                       else
@@ -319,14 +458,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) {
-                              final trick = grouped[tier]![i];
+                              final trick = groupTricks[i];
                               return TrickCard(
                                 trick: trick,
                                 consistency: consistencyMap[trick.id],
                                 onReturn: _refresh,
                               );
                             },
-                            childCount: grouped[tier]!.length,
+                            childCount: groupTricks.length,
                           ),
                         ),
                     ],
@@ -342,13 +481,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _TierHeader extends StatelessWidget {
-  final int tier;
-  const _TierHeader({required this.tier});
+class _GroupHeader extends StatelessWidget {
+  final String label;
+  const _GroupHeader({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final label = tier == -1 ? 'To Be Determined' : 'Difficulty $tier';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
@@ -359,6 +497,159 @@ class _TierHeader extends StatelessWidget {
               letterSpacing: 1.1,
             ),
       ),
+    );
+  }
+}
+
+class _SortSheet extends StatefulWidget {
+  final _PrimarySort primarySort;
+  final _SecondarySort secondarySort;
+  final bool ascending;
+
+  const _SortSheet({
+    required this.primarySort,
+    required this.secondarySort,
+    required this.ascending,
+  });
+
+  @override
+  State<_SortSheet> createState() => _SortSheetState();
+}
+
+class _SortSheetState extends State<_SortSheet> {
+  late _PrimarySort _primarySort;
+  late _SecondarySort _secondarySort;
+  late bool _ascending;
+
+  @override
+  void initState() {
+    super.initState();
+    _primarySort = widget.primarySort;
+    _secondarySort = widget.secondarySort;
+    _ascending = widget.ascending;
+  }
+
+  Widget _sectionLabel(String label) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      maxChildSize: 0.95,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Sort Tricks',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                children: [
+                  _sectionLabel('Order'),
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(
+                        value: true,
+                        label: Text('Ascending'),
+                        icon: Icon(Icons.arrow_upward, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: false,
+                        label: Text('Descending'),
+                        icon: Icon(Icons.arrow_downward, size: 16),
+                      ),
+                    ],
+                    selected: {_ascending},
+                    onSelectionChanged: (v) => setState(() => _ascending = v.first),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionLabel('Group By'),
+                  RadioGroup<_PrimarySort>(
+                    groupValue: _primarySort,
+                    onChanged: (v) { if (v != null) setState(() => _primarySort = v); },
+                    child: Column(
+                      children: [
+                        for (final sort in _PrimarySort.values)
+                          RadioListTile<_PrimarySort>(
+                            value: sort,
+                            title: Text(sort.label),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionLabel('Sort Within Group By'),
+                  RadioGroup<_SecondarySort>(
+                    groupValue: _secondarySort,
+                    onChanged: (v) { if (v != null) setState(() => _secondarySort = v); },
+                    child: Column(
+                      children: [
+                        for (final sort in _SecondarySort.values)
+                          RadioListTile<_SecondarySort>(
+                            value: sort,
+                            title: Text(sort.label),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context)
+                        .pop((_primarySort, _secondarySort, _ascending)),
+                    child: const Text('Apply'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
