@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../widgets/consistency_selector.dart';
+import '../theme_controller.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -120,6 +121,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                 ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Settings
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ValueListenableBuilder<ThemeMode>(
+                valueListenable: ThemeController.instance,
+                builder: (context, mode, _) {
+                  final isDark = mode == ThemeMode.dark ||
+                      (mode == ThemeMode.system &&
+                          MediaQuery.platformBrightnessOf(context) ==
+                              Brightness.dark);
+                  return SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                        isDark ? Icons.dark_mode : Icons.light_mode),
+                    title: const Text('Dark Mode'),
+                    value: isDark,
+                    onChanged: (on) => ThemeController.instance
+                        .setMode(on ? ThemeMode.dark : ThemeMode.light),
+                  );
+                },
               ),
             ),
           ),

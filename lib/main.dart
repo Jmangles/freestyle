@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'router.dart';
 import 'supabase_config.dart';
+import 'theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,8 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
+  await ThemeController.init();
+
   runApp(const HighlineApp());
 }
 
@@ -19,26 +22,29 @@ class HighlineApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Freestyle Highline',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4A90D9),
-          brightness: Brightness.light,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.instance,
+      builder: (_, mode, __) => MaterialApp.router(
+        title: 'Freestyle Highline',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF4A90D9),
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF007AFF),
-          brightness: Brightness.dark,
-          primary: const Color(0xFFFF5F00),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF007AFF),
+            brightness: Brightness.dark,
+            primary: const Color(0xFFFF5F00),
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        themeMode: mode,
+        routerConfig: AppRouter.router,
       ),
-      themeMode: ThemeMode.system,
-      routerConfig: AppRouter.router,
     );
   }
 }
