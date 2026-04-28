@@ -10,8 +10,9 @@ class TrickCard extends StatelessWidget {
   final bool listMode;
   final bool showDifficulty;
   final bool compact;
+  final bool difficultyModifierOnly;
 
-  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn, this.listMode = false, this.showDifficulty = false, this.compact = false});
+  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn, this.listMode = false, this.showDifficulty = false, this.compact = false, this.difficultyModifierOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +73,7 @@ class TrickCard extends StatelessWidget {
                   else
                     const Spacer(),
                   if (showDifficulty)
-                    _DifficultyBadge(trick: trick),
+                    _DifficultyBadge(trick: trick, modifierOnly: difficultyModifierOnly),
                 ],
               ),
             ],
@@ -123,8 +124,8 @@ class TrickCard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        if (hasPosition) const SizedBox(width: 8),
-        _DifficultyBadge(trick: trick),
+        if (hasPosition && showDifficulty) const SizedBox(width: 8),
+        if (showDifficulty) _DifficultyBadge(trick: trick, modifierOnly: difficultyModifierOnly),
       ],
     );
   }
@@ -140,7 +141,8 @@ class TrickCard extends StatelessWidget {
 
 class _DifficultyBadge extends StatelessWidget {
   final Trick trick;
-  const _DifficultyBadge({required this.trick});
+  final bool modifierOnly;
+  const _DifficultyBadge({required this.trick, this.modifierOnly = false});
 
   static (Color, Color)? _colorsForTier(int rawValue) {
     if (rawValue == -1) return null;
@@ -162,21 +164,37 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = _colorsForTier(trick.difficultyTier);
-    final bgColor = colors?.$1 ?? theme.colorScheme.secondaryContainer;
-    final fgColor = colors?.$2 ?? theme.colorScheme.onSecondaryContainer;
+    final v = trick.difficultyTier;
+
+    if (modifierOnly) {
+      if (v == -1) return const SizedBox.shrink();
+      final mod = (v - 1) % 3; // 0 = minus, 1 = base, 2 = plus
+      if (mod == 1) return const SizedBox.shrink();
+      final isMinus = mod == 0;
+      return _badge(
+        label: isMinus ? '−' : '+',
+        bg: isMinus ? const Color(0xFF90CAF9) : const Color(0xFFFFB300),
+        fg: Colors.black,
+        theme: theme,
+      );
+    }
+
+    final colors = _colorsForTier(v);
+    return _badge(
+      label: trick.difficultyLabel,
+      bg: colors?.$1 ?? theme.colorScheme.secondaryContainer,
+      fg: colors?.$2 ?? theme.colorScheme.onSecondaryContainer,
+      theme: theme,
+    );
+  }
+
+  Widget _badge({required String label, required Color bg, required Color fg, required ThemeData theme}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
       child: Text(
-        trick.difficultyLabel,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: fgColor,
-          fontWeight: FontWeight.w600,
-        ),
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w600),
       ),
     );
   }
