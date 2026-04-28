@@ -1,3 +1,6 @@
+import 'approval_status.dart';
+import '../utils/difficulty_tier.dart';
+
 class Trick {
   final int id;
   final String givenName;
@@ -12,29 +15,18 @@ class Trick {
   final String? videoLink;
   final int? startPositionId;
   final int? endPositionId;
-  final int status;
+  final ApprovalStatus status;
   final int? submittedBy;
 
   // Joined via Supabase select
   final String? startPositionName;
   final String? endPositionName;
 
-  // Converts a raw difficulty value (1–30) to a display label like "1-", "1", "1+".
-  // Every 3 consecutive values map to one logical tier: 1–3 → Tier 1, 4–6 → Tier 2, etc.
-  static String tierLabel(int value) {
-    if (value == -1) return 'TBD';
-    final tier = (value - 1) ~/ 3 + 1;
-    const suffixes = ['-', '', '+'];
-    final suffix = suffixes[(value - 1) % 3];
-    return '$tier$suffix';
-  }
+  static String tierLabel(int value) => DifficultyTier.label(value);
 
-  String get difficultyLabel => Trick.tierLabel(difficultyTier);
+  String get difficultyLabel => DifficultyTier.label(difficultyTier);
 
-  int get difficultyLogicalTier {
-    if (difficultyTier == -1) return -1;
-    return (difficultyTier - 1) ~/ 3 + 1;
-  }
+  int get difficultyLogicalTier => DifficultyTier.logicalTier(difficultyTier);
 
   const Trick({
     required this.id,
@@ -79,7 +71,7 @@ class Trick {
       videoLink: json['video_link'] as String?,
       startPositionId: json['start_position_id'] as int?,
       endPositionId: json['end_position_id'] as int?,
-      status: json['status'] as int,
+      status: ApprovalStatus.fromIndex(json['status'] as int),
       submittedBy: json['submitted_by'] as int?,
       startPositionName: startPos?['name'] as String?,
       endPositionName: endPos?['name'] as String?,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
+import '../utils/difficulty_tier.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
@@ -144,22 +145,8 @@ class _DifficultyBadge extends StatelessWidget {
   final bool modifierOnly;
   const _DifficultyBadge({required this.trick, this.modifierOnly = false});
 
-  static (Color, Color)? _colorsForTier(int rawValue) {
-    if (rawValue == -1) return null;
-    return switch ((rawValue - 1) ~/ 3 + 1) {
-      1  => (const Color(0xFF4CAF50), Colors.white),
-      2  => (const Color(0xFF8BC34A), Colors.black),
-      3  => (const Color(0xFFCDDC39), Colors.black),
-      4  => (const Color(0xFFFFCA28), Colors.black),
-      5  => (const Color(0xFFFFA726), Colors.black),
-      6  => (const Color(0xFFFF7043), Colors.white),
-      7  => (const Color(0xFFEF5350), Colors.white),
-      8  => (const Color(0xFFE53935), Colors.white),
-      9  => (const Color(0xFFC62828), Colors.white),
-      10 => (const Color(0xFF7B0000), Colors.white),
-      _  => null,
-    };
-  }
+  static (Color, Color)? _colorsForTier(int rawValue) =>
+      DifficultyTier.badgeColors(rawValue);
 
   @override
   Widget build(BuildContext context) {

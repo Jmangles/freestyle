@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/screen_data.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
+import '../utils/date_formatters.dart';
 import '../widgets/consistency_selector.dart';
 import 'submit_trick_screen.dart';
 
@@ -19,7 +20,7 @@ class TrickDetailScreen extends StatefulWidget {
 }
 
 class _TrickDetailScreenState extends State<TrickDetailScreen> {
-  late Future<(Trick, List<Trick>, UserTrick?, bool)> _future;
+  late Future<TrickDetailData> _future;
 
   @override
   void initState() {
@@ -27,7 +28,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     _future = _load();
   }
 
-  Future<(Trick, List<Trick>, UserTrick?, bool)> _load() async {
+  Future<TrickDetailData> _load() async {
     final trick = await TricksService.getTrickById(widget.trickId);
     final prereqsFuture = TricksService.getTricksByIds(trick.prerequisiteTrickIds);
     final userTrickFuture = AuthService.isLoggedIn
@@ -37,7 +38,12 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     final prereqs = await prereqsFuture;
     final userTrick = await userTrickFuture;
     final profile = await profileFuture;
-    return (trick, prereqs, userTrick, profile?.isAdmin == true);
+    return TrickDetailData(
+      trick: trick,
+      prerequisites: prereqs,
+      userTrick: userTrick,
+      isAdmin: profile?.isAdmin == true,
+    );
   }
 
   Future<void> _deleteTrick(Trick trick) async {
@@ -94,11 +100,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(Trick, List<Trick>, UserTrick?, bool)>(
+    return FutureBuilder<TrickDetailData>(
       future: _future,
       builder: (context, snap) {
-        final trick = snap.data?.$1;
-        final isAdmin = snap.data?.$4 ?? false;
+        final trick = snap.data?.trick;
+        final isAdmin = snap.data?.isAdmin ?? false;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Trick Detail'),
@@ -124,20 +130,19 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<(Trick, List<Trick>, UserTrick?, bool)> snap) {
+  Widget _buildBody(AsyncSnapshot<TrickDetailData> snap) {
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
     if (snap.hasError) {
       return Center(child: Text('Error: ${snap.error}'));
     }
-    final (trick, prereqs, userTrick, _) = snap.data!;
-    return _buildContent(trick, prereqs, userTrick);
+    final data = snap.data!;
+    return _buildContent(data.trick, data.prerequisites, data.userTrick);
   }
 
   Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick) {
     final theme = Theme.of(context);
-    final dateFmt = DateFormat('d MMM yyyy');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -174,7 +179,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               if (trick.startPositionName != null ||
                   trick.endPositionName != null)
                 Chip(
-                  //avatar: const Icon(Icons.swap_horiz, size: 16),
                   label: Text(
                     [
                       if (trick.startPositionName != null)
@@ -195,10 +199,10 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           if (trick.datePerformed != null)
             _InfoRow(
                 label: 'Date First Performed',
-                value: dateFmt.format(trick.datePerformed!)),
+                value: formatDisplayDate(trick.datePerformed!)),
           _InfoRow(
               label: 'Date Submitted',
-              value: dateFmt.format(trick.dateSubmitted)),
+              value: formatDisplayDate(trick.dateSubmitted)),
 
           // Description
           if (trick.description != null) ...[

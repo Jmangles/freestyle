@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,9 +47,17 @@ class AppRouter {
 }
 
 class _AuthNotifier extends ChangeNotifier {
+  late final StreamSubscription _sub;
+
   _AuthNotifier() {
-    Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+    _sub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       notifyListeners();
     });
+  }
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
   }
 }

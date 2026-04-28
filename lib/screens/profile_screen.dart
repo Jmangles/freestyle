@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/profile.dart';
-import '../models/trick.dart';
+import '../models/screen_data.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -17,7 +17,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Future<(Profile?, List<(UserTrick, Trick?)>)> _future;
+  late Future<ProfileData> _future;
 
   @override
   void initState() {
@@ -25,21 +25,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _future = _load();
   }
 
-  Future<(Profile?, List<(UserTrick, Trick?)>)> _load() async {
+  Future<ProfileData> _load() async {
     final profile = await AuthService.getCurrentProfile();
     final userTricks = await UserTricksService.getUserTricks();
 
-    if (userTricks.isEmpty) return (profile, <(UserTrick, Trick?)>[]);
+    if (userTricks.isEmpty) return ProfileData(profile: profile, entries: []);
 
     final trickIds = userTricks.map((ut) => ut.trickId).toList();
     final tricks = await TricksService.getTricksByIds(trickIds);
     final trickMap = {for (final t in tricks) t.id: t};
 
-    final pairs = userTricks
-        .map((ut) => (ut, trickMap[ut.trickId]))
+    final entries = userTricks
+        .map((ut) => UserTrickEntry(userTrick: ut, trick: trickMap[ut.trickId]))
         .toList();
 
-    return (profile, pairs);
+    return ProfileData(profile: profile, entries: entries);
   }
 
   void _refresh() => setState(() => _future = _load());
@@ -68,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<(Profile?, List<(UserTrick, Trick?)>)>(
+      body: FutureBuilder<ProfileData>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
@@ -77,15 +77,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (snap.hasError) {
             return Center(child: Text('Error: ${snap.error}'));
           }
-          final (profile, pairs) = snap.data!;
-          return _buildContent(profile, pairs);
+          final data = snap.data!;
+          return _buildContent(data.profile, data.entries);
         },
       ),
     );
   }
 
-  Widget _buildContent(
-      Profile? profile, List<(UserTrick, Trick?)> pairs) {
+  Widget _buildContent(Profile? profile, List<UserTrickEntry> entries) {
     final theme = Theme.of(context);
     final user = AuthService.currentUser;
 
@@ -157,13 +156,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 20),
 
           Text(
-            'My Tricks (${pairs.length})',
+            'My Tricks (${entries.length})',
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
 
-          if (pairs.isEmpty)
+          if (entries.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Center(
@@ -171,8 +170,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'No tricks tracked yet.\nBrowse the trick list and set your consistency!')),
             )
           else
-            ...pairs.map((pair) {
-              final (userTrick, trick) = pair;
+            ...entries.map((entry) {
+              final userTrick = entry.userTrick;
+              final trick = entry.trick;
               if (trick == null) return const SizedBox.shrink();
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),

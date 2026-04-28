@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../models/approval_status.dart';
+import '../models/screen_data.dart';
 import '../models/trick.dart';
-import '../models/profile.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
+import '../utils/date_formatters.dart';
 import 'submit_trick_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -13,7 +15,7 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  late Future<(List<Trick>, Profile?)> _future;
+  late Future<AdminData> _future;
 
   @override
   void initState() {
@@ -21,16 +23,16 @@ class _AdminScreenState extends State<AdminScreen> {
     _future = _load();
   }
 
-  Future<(List<Trick>, Profile?)> _load() async {
+  Future<AdminData> _load() async {
     final profile = await AuthService.getCurrentProfile(forceRefresh: true);
-    if (profile?.isAdmin != true) return (<Trick>[], profile);
+    if (profile?.isAdmin != true) return AdminData(pendingTricks: [], profile: profile);
     final tricks = await TricksService.getPendingTricks();
-    return (tricks, profile);
+    return AdminData(pendingTricks: tricks, profile: profile);
   }
 
   void _refresh() => setState(() => _future = _load());
 
-  Future<void> _updateStatus(int id, int status) async {
+  Future<void> _updateStatus(int id, ApprovalStatus status) async {
     await TricksService.updateTrickStatus(id, status);
     _refresh();
   }
@@ -79,10 +81,10 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(List<Trick>, Profile?)>(
+    return FutureBuilder<AdminData>(
       future: _future,
       builder: (context, snap) {
-        final isAdmin = snap.data?.$2?.isAdmin ?? false;
+        final isAdmin = snap.data?.profile?.isAdmin ?? false;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Admin'),
@@ -101,7 +103,7 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<(List<Trick>, Profile?)> snap) {
+  Widget _buildBody(AsyncSnapshot<AdminData> snap) {
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -109,14 +111,14 @@ class _AdminScreenState extends State<AdminScreen> {
       return Center(child: Text('Error: ${snap.error}'));
     }
 
-    final profile = snap.data?.$2;
+    final profile = snap.data?.profile;
     if (profile?.isAdmin != true) {
       return const Center(
         child: Text('You do not have admin access.'),
       );
     }
 
-    final tricks = snap.data!.$1;
+    final tricks = snap.data!.pendingTricks;
     if (tricks.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async => _refresh(),
@@ -137,8 +139,8 @@ class _AdminScreenState extends State<AdminScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, i) => _PendingTrickCard(
           trick: tricks[i],
-          onApprove: () => _updateStatus(tricks[i].id, 1),
-          onReject: () => _updateStatus(tricks[i].id, 2),
+          onApprove: () => _updateStatus(tricks[i].id, ApprovalStatus.approved),
+          onReject: () => _updateStatus(tricks[i].id, ApprovalStatus.rejected),
           onEdit: () async {
             await Navigator.push<void>(
               context,
@@ -175,7 +177,7 @@ class _PendingTrickCard extends StatelessWidget {
       child: ExpansionTile(
         title: Text(trick.givenName,
             style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('${trick.difficultyLabel} · submitted ${_fmtDate(trick.dateSubmitted)}'),
+        subtitle: Text('${trick.difficultyLabel} · submitted ${formatShortDate(trick.dateSubmitted)}'),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -237,7 +239,4 @@ class _PendingTrickCard extends StatelessWidget {
           ),
         ),
       );
-
-  String _fmtDate(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}';
 }

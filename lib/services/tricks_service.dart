@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/approval_status.dart';
 import '../models/trick.dart';
 import '../models/position.dart';
 import 'auth_service.dart';
@@ -15,7 +16,7 @@ class TricksService {
     final data = await _client
         .from('tricks')
         .select(_select)
-        .eq('status', 1)
+        .eq('status', ApprovalStatus.approved.index)
         .order('given_name');
     return (data as List).map((e) => Trick.fromJson(e)).toList();
   }
@@ -39,7 +40,7 @@ class TricksService {
     final data = await _client
         .from('tricks')
         .select(_select)
-        .eq('status', 0)
+        .eq('status', ApprovalStatus.pending.index)
         .order('date_submitted');
     return (data as List).map((e) => Trick.fromJson(e)).toList();
   }
@@ -53,8 +54,8 @@ class TricksService {
     });
   }
 
-  static Future<void> updateTrickStatus(int id, int status) async {
-    await _client.from('tricks').update({'status': status}).eq('id', id);
+  static Future<void> updateTrickStatus(int id, ApprovalStatus status) async {
+    await _client.from('tricks').update({'status': status.index}).eq('id', id);
   }
 
   static Future<void> updateTrick(

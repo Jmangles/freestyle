@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../models/approval_status.dart';
+import '../models/screen_data.dart';
 import '../models/trick.dart';
 import '../models/position.dart';
 import '../services/tricks_service.dart';
+import '../utils/date_formatters.dart';
+import '../utils/string_utils.dart';
 
 class SubmitTrickScreen extends StatefulWidget {
   /// When provided, operates in admin-edit mode instead of submission mode.
@@ -32,7 +35,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   int? _endPositionId;
   List<int> _prerequisiteIds = [];
 
-  late Future<(List<Position>, List<Trick>)> _metaFuture;
+  late Future<SubmitMeta> _metaFuture;
 
   bool get _isEditing => widget.existingTrick != null;
 
@@ -56,10 +59,10 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     _metaFuture = _loadMeta();
   }
 
-  Future<(List<Position>, List<Trick>)> _loadMeta() async {
+  Future<SubmitMeta> _loadMeta() async {
     final positions = await TricksService.getPositions();
     final tricks = await TricksService.getApprovedTricks();
-    return (positions, tricks);
+    return SubmitMeta(positions: positions, tricks: tricks);
   }
 
   @override
@@ -80,22 +83,15 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       if (_isEditing) {
         await TricksService.updateTrick(widget.existingTrick!.id, {
           'given_name': _givenName.text.trim(),
-          'technical_name': _technicalName.text.trim().isEmpty
-              ? null
-              : _technicalName.text.trim(),
+          'technical_name': trimToNull(_technicalName.text),
           'difficulty_tier': _difficultyTier,
           'date_performed':
               _datePerformed?.toIso8601String().split('T').first,
-          'original_performer': _originalPerformer.text.trim().isEmpty
-              ? null
-              : _originalPerformer.text.trim(),
+          'original_performer': trimToNull(_originalPerformer.text),
           'prerequisite_trick_ids': _prerequisiteIds,
-          'description': _description.text.trim().isEmpty
-              ? null
-              : _description.text.trim(),
-          'tips': _tips.text.trim().isEmpty ? null : _tips.text.trim(),
-          'video_link':
-              _videoLink.text.trim().isEmpty ? null : _videoLink.text.trim(),
+          'description': trimToNull(_description.text),
+          'tips': trimToNull(_tips.text),
+          'video_link': trimToNull(_videoLink.text),
           'start_position_id': _startPositionId,
           'end_position_id': _endPositionId,
         });
@@ -103,25 +99,18 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         final trick = Trick(
           id: 0,
           givenName: _givenName.text.trim(),
-          technicalName: _technicalName.text.trim().isEmpty
-              ? null
-              : _technicalName.text.trim(),
+          technicalName: trimToNull(_technicalName.text),
           difficultyTier: _difficultyTier,
           dateSubmitted: DateTime.now(),
           datePerformed: _datePerformed,
-          originalPerformer: _originalPerformer.text.trim().isEmpty
-              ? null
-              : _originalPerformer.text.trim(),
+          originalPerformer: trimToNull(_originalPerformer.text),
           prerequisiteTrickIds: _prerequisiteIds,
-          description: _description.text.trim().isEmpty
-              ? null
-              : _description.text.trim(),
-          tips: _tips.text.trim().isEmpty ? null : _tips.text.trim(),
-          videoLink:
-              _videoLink.text.trim().isEmpty ? null : _videoLink.text.trim(),
+          description: trimToNull(_description.text),
+          tips: trimToNull(_tips.text),
+          videoLink: trimToNull(_videoLink.text),
           startPositionId: _startPositionId,
           endPositionId: _endPositionId,
-          status: 0,
+          status: ApprovalStatus.pending,
         );
         await TricksService.submitTrick(trick);
       }
@@ -151,14 +140,14 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Trick' : 'Submit a Trick'),
       ),
-      body: FutureBuilder<(List<Position>, List<Trick>)>(
+      body: FutureBuilder<SubmitMeta>(
         future: _metaFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final positions = snap.data?.$1 ?? [];
-          final allTricks = snap.data?.$2 ?? [];
+          final positions = snap.data?.positions ?? [];
+          final allTricks = snap.data?.tricks ?? [];
           return _buildForm(positions, allTricks);
         },
       ),
@@ -197,7 +186,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(_datePerformed == null
                   ? 'Date First Performed (optional)'
-                  : 'Date First Performed: ${DateFormat('d MMM yyyy').format(_datePerformed!)}'),
+                  : 'Date First Performed: ${formatDisplayDate(_datePerformed!)}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
