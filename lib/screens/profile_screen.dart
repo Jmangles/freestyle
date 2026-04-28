@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/profile.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
@@ -51,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _signOut() async {
     await AuthService.signOut();
+    if (mounted) context.go('/');
   }
 
   @override

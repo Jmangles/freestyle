@@ -19,7 +19,8 @@ class AppRouter {
       final loc = state.matchedLocation;
       final onAuth = loc == '/login' || loc == '/register';
 
-      if (!loggedIn && !onAuth) return '/login';
+      final isPublic = loc == '/' || loc.startsWith('/trick/');
+      if (!loggedIn && !onAuth && !isPublic) return '/login';
       if (loggedIn && onAuth) return '/';
       return null;
     },

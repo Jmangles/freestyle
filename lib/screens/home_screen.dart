@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../models/profile.dart';
 import '../models/trick.dart';
@@ -34,16 +36,21 @@ class _HomeScreenState extends State<HomeScreen> {
   String _nameQuery = '';
   List<(String, List<Trick>)> _groups = [];
   bool _showDifficulty = false;
+  late final StreamSubscription _authSub;
 
   @override
   void initState() {
     super.initState();
     _nameSearchController = TextEditingController();
     _load(initial: true);
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      _load();
+    });
   }
 
   @override
   void dispose() {
+    _authSub.cancel();
     _nameSearchController.dispose();
     super.dispose();
   }
@@ -153,17 +160,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline),
-            tooltip: 'Profile',
-            onPressed: () => context.push('/profile'),
+            icon: Icon(AuthService.isLoggedIn ? Icons.person_outline : Icons.login),
+            tooltip: AuthService.isLoggedIn ? 'Profile' : 'Sign In',
+            onPressed: () => context.push(AuthService.isLoggedIn ? '/profile' : '/login'),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/submit'),
-        icon: const Icon(Icons.add),
-        label: const Text('Submit Trick'),
-      ),
+      floatingActionButton: AuthService.isLoggedIn
+          ? FloatingActionButton.extended(
+              onPressed: () => context.push('/submit'),
+              icon: const Icon(Icons.add),
+              label: const Text('Submit Trick'),
+            )
+          : null,
       body: _buildBody(),
     );
   }

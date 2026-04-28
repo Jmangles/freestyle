@@ -6,6 +6,7 @@ class UserTricksService {
   static final _client = Supabase.instance.client;
 
   static Future<int?> _getUserIntId() async {
+    if (!AuthService.isLoggedIn) return null;
     final profile = await AuthService.getCurrentProfile();
     return profile?.intId;
   }

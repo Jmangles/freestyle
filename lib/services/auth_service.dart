@@ -46,7 +46,7 @@ class AuthService {
   }
 
   static Future<void> signOut() async {
-    await _client.auth.signOut();
     clearCache();
+    await _client.auth.signOut();
   }
 }
