@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/profile.dart';
@@ -98,17 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _refresh() => _load();
 
   int _crossAxisCount(double width) {
-    const counts = {
-      1: [4, 6, 8],
-      2: [3, 4, 5],
-      3: [2, 3, 4]
+    const sizes = {
+      1: 225,
+      2: 275,
+      3: 325
     };
-    final bp = width >= 900
-        ? 2
-        : width >= 600
-            ? 1
-            : 0;
-    return counts[_gridSize]![bp];
+  
+    return (width / sizes[_gridSize]!).toInt();
   }
 
   void _showFilterSheet() async {
