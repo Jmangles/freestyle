@@ -26,7 +26,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final TextEditingController _description;
   late final TextEditingController _tips;
   late final TextEditingController _videoLink;
-  int _difficultyTier = 5;
+  int _difficultyTier = 14;
   DateTime? _datePerformed;
   int? _startPositionId;
   int? _endPositionId;
@@ -177,32 +177,19 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             const SizedBox(height: 12),
             _field(_technicalName, 'Technical Name'),
             const SizedBox(height: 12),
-            TextFormField(
-              initialValue: _difficultyTier == -1 ? 'TBD' : _difficultyTier.toString(),
+            DropdownButtonFormField<int>(
+              initialValue: _difficultyTier,
               decoration: const InputDecoration(
-                labelText: 'Difficulty (1–10 or TBD)',
+                labelText: 'Difficulty',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: TextInputType.text,
-              onChanged: (v) {
-                final s = v.trim().toUpperCase();
-                if (s == 'TBD') {
-                  setState(() => _difficultyTier = -1);
-                } else {
-                  final n = int.tryParse(s);
-                  if (n != null) setState(() => _difficultyTier = n);
-                }
-              },
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                final s = v.trim().toUpperCase();
-                if (s == 'TBD') return null;
-                final n = int.tryParse(s);
-                if (n == null || n < 1 || n > 10) {
-                  return 'Enter a number 1–10, or TBD';
-                }
-                return null;
-              },
+              items: [
+                const DropdownMenuItem(value: -1, child: Text('TBD')),
+                for (int v = 1; v <= 30; v++)
+                  DropdownMenuItem(value: v, child: Text(Trick.tierLabel(v))),
+              ],
+              onChanged: (v) => setState(() => _difficultyTier = v!),
+              validator: (v) => v == null ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             // Date performed

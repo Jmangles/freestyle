@@ -22,7 +22,7 @@ create table tricks (
   id                    integer generated always as identity primary key,
   given_name            text not null,
   technical_name        text,
-  difficulty_tier       smallint not null check (difficulty_tier = -1 or difficulty_tier between 1 and 10),
+  difficulty_tier       smallint not null check (difficulty_tier = -1 or difficulty_tier between 1 and 30),
   date_submitted        timestamptz not null default now(),
   date_performed        date,
   original_performer    text,

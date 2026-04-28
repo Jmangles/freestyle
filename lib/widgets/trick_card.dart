@@ -123,8 +123,8 @@ class TrickCard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        if (hasPosition && showDifficulty) const SizedBox(width: 8),
-        if (showDifficulty) _DifficultyBadge(trick: trick),
+        if (hasPosition) const SizedBox(width: 8),
+        _DifficultyBadge(trick: trick),
       ],
     );
   }
@@ -142,8 +142,9 @@ class _DifficultyBadge extends StatelessWidget {
   final Trick trick;
   const _DifficultyBadge({required this.trick});
 
-  static (Color, Color)? _colorsForTier(int tier) {
-    return switch (tier) {
+  static (Color, Color)? _colorsForTier(int rawValue) {
+    if (rawValue == -1) return null;
+    return switch ((rawValue - 1) ~/ 3 + 1) {
       1  => (const Color(0xFF4CAF50), Colors.white),
       2  => (const Color(0xFF8BC34A), Colors.black),
       3  => (const Color(0xFFCDDC39), Colors.black),
@@ -154,7 +155,7 @@ class _DifficultyBadge extends StatelessWidget {
       8  => (const Color(0xFFE53935), Colors.white),
       9  => (const Color(0xFFC62828), Colors.white),
       10 => (const Color(0xFF7B0000), Colors.white),
-      _  => null, // TBD — use theme colors
+      _  => null,
     };
   }
 

@@ -61,7 +61,7 @@ class TrickSorter {
   String _groupLabel(Trick t, Map<int, Consistency> consistencyMap) {
     switch (primary) {
       case PrimarySort.difficulty:
-        return t.difficultyTier == -1 ? 'To Be Determined' : 'Difficulty ${t.difficultyTier}';
+        return t.difficultyTier == -1 ? 'To Be Determined' : 'Difficulty ${t.difficultyLogicalTier}';
       case PrimarySort.startPosition:
         return t.startPositionName ?? 'Unknown';
       case PrimarySort.yearLanded:

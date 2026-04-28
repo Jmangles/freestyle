@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late TextEditingController _nameSearchController;
   String _nameQuery = '';
   List<(String, List<Trick>)> _groups = [];
-  bool _showDifficulty = false;
   late final StreamSubscription _authSub;
 
   @override
@@ -101,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
             .toList();
     _groups = _sorter.buildGroups(tricks, _consistencyMap);
-    _showDifficulty = _sorter.primary != PrimarySort.difficulty;
+
   }
 
   void _refresh() => _load();
@@ -235,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 consistency: consistencyMap[groupTricks[i].id],
                                 onReturn: _refresh,
                                 listMode: true,
-                                showDifficulty: _showDifficulty,
+                                showDifficulty: true,
                               ),
                             ),
                             childCount: groupTricks.length,
@@ -257,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 trick: groupTricks[i],
                                 consistency: consistencyMap[groupTricks[i].id],
                                 onReturn: _refresh,
-                                showDifficulty: _showDifficulty,
+                                showDifficulty: true,
                                 compact: compact,
                               ),
                             ),

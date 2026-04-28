@@ -19,7 +19,22 @@ class Trick {
   final String? startPositionName;
   final String? endPositionName;
 
-  String get difficultyLabel => difficultyTier == -1 ? 'TBD' : difficultyTier.toString();
+  // Converts a raw difficulty value (1–30) to a display label like "1-", "1", "1+".
+  // Every 3 consecutive values map to one logical tier: 1–3 → Tier 1, 4–6 → Tier 2, etc.
+  static String tierLabel(int value) {
+    if (value == -1) return 'TBD';
+    final tier = (value - 1) ~/ 3 + 1;
+    const suffixes = ['-', '', '+'];
+    final suffix = suffixes[(value - 1) % 3];
+    return '$tier$suffix';
+  }
+
+  String get difficultyLabel => Trick.tierLabel(difficultyTier);
+
+  int get difficultyLogicalTier {
+    if (difficultyTier == -1) return -1;
+    return (difficultyTier - 1) ~/ 3 + 1;
+  }
 
   const Trick({
     required this.id,

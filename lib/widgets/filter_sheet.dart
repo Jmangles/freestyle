@@ -155,9 +155,9 @@ class _FilterSheetState extends State<FilterSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Tier $_tierMin',
+                          Text('Tier ${Trick.tierLabel(_tierMin)}',
                               style: Theme.of(context).textTheme.bodySmall),
-                          Text('Tier $_tierMax',
+                          Text('Tier ${Trick.tierLabel(_tierMax)}',
                               style: Theme.of(context).textTheme.bodySmall),
                         ],
                       ),
@@ -166,7 +166,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         min: _dataMinTier.toDouble(),
                         max: _dataMaxTier.toDouble(),
                         divisions: _dataMaxTier - _dataMinTier,
-                        labels: RangeLabels('Tier $_tierMin', 'Tier $_tierMax'),
+                        labels: RangeLabels('Tier ${Trick.tierLabel(_tierMin)}', 'Tier ${Trick.tierLabel(_tierMax)}'),
                         onChanged: (v) => setState(() {
                           _tierMin = v.start.round();
                           _tierMax = v.end.round();
