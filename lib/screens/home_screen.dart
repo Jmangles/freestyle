@@ -295,66 +295,86 @@ class _ControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 2, 4, 4),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              TextButton.icon(
-                  style: TextButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  icon: Icon(
-                    sorter.ascending
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    size: 14,
-                  ),
-                  label: Text(
-                    '${sorter.primary.label}  ·  ${sorter.secondary.label}',
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  onPressed: onSortTap,
-                ),
-              Flexible(
-                flex: 6,
-                child: TextField(
-                  controller: nameSearchController,
-                  onChanged: onNameChanged,
-                  decoration: const InputDecoration(
-                    hintText: 'Search by name...',
-                    prefixIcon: Icon(Icons.search, size: 18),
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  textInputAction: TextInputAction.search,
-                ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const fixedWidth = 250.0 + 40.0 + 140.0;
+          final searchFits = constraints.maxWidth - fixedWidth >= 300;
+
+          final sortButton = SizedBox(
+            width: 250,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              const SizedBox(width: 4),
-              Flexible(
-                flex: 2,
-                child: Row(
-                  children: [
-                    const Icon(Icons.view_list, size: 18),
-                    Expanded(
-                      child: Slider(
-                        value: gridSize.toDouble(),
-                        min: 0,
-                        max: 3,
-                        divisions: 3,
-                        onChanged: (v) => onGridSizeChanged(v.round()),
-                      ),
-                    ),
-                    const Icon(Icons.view_module, size: 18),
-                  ],
-                ),
+              icon: Icon(
+                sorter.ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 14,
               ),
-            ],
-          ),
-        ],
+              label: Text(
+                '${sorter.primary.label}  ·  ${sorter.secondary.label}',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              onPressed: onSortTap,
+            ),
+          );
+
+          final searchField = TextField(
+            controller: nameSearchController,
+            onChanged: onNameChanged,
+            decoration: const InputDecoration(
+              hintText: 'Search by name...',
+              prefixIcon: Icon(Icons.search, size: 18),
+              isDense: true,
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(vertical: 8),
+            ),
+            textInputAction: TextInputAction.search,
+          );
+
+          final gridSlider = SizedBox(
+            width: 140,
+            child: Row(
+              children: [
+                const Icon(Icons.view_list, size: 18),
+                Expanded(
+                  child: Slider(
+                    value: gridSize.toDouble(),
+                    min: 0,
+                    max: 3,
+                    divisions: 3,
+                    onChanged: (v) => onGridSizeChanged(v.round()),
+                  ),
+                ),
+                const Icon(Icons.view_module, size: 18),
+              ],
+            ),
+          );
+
+          if (searchFits) {
+            return Row(
+              children: [
+                sortButton,
+                Expanded(child: searchField),
+                const SizedBox(width: 40),
+                gridSlider,
+              ],
+            );
+          } else {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [sortButton, const Spacer(), gridSlider],
+                ),
+                const SizedBox(height: 4),
+                searchField,
+              ],
+            );
+          }
+        },
       ),
     );
   }
