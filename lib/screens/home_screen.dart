@@ -105,13 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _refresh() => _load();
 
   int _crossAxisCount(double width) {
-    const sizes = {
-      1: 225,
-      2: 275,
-      3: 325
-    };
-  
-    return (width / sizes[_gridSize]!).toInt();
+    const sizes = {1: 225, 2: 275, 3: 325};
+    const minCols = {1: 3, 2: 2, 3: 1};
+    final calculated = (width / sizes[_gridSize]!).floor();
+    return calculated.clamp(minCols[_gridSize]!, 20);
   }
 
   void _showFilterSheet() async {
@@ -302,9 +299,7 @@ class _ControlBar extends StatelessWidget {
         children: [
           Row(
             children: [
-              SizedBox(
-                width: 250,
-                child: TextButton.icon(
+              TextButton.icon(
                   style: TextButton.styleFrom(
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -323,8 +318,8 @@ class _ControlBar extends StatelessWidget {
                   ),
                   onPressed: onSortTap,
                 ),
-              ),
-              Expanded(
+              Flexible(
+                flex: 6,
                 child: TextField(
                   controller: nameSearchController,
                   onChanged: onNameChanged,
@@ -338,9 +333,9 @@ class _ControlBar extends StatelessWidget {
                   textInputAction: TextInputAction.search,
                 ),
               ),
-              Padding(padding: EdgeInsetsGeometry.all(20)),
-              SizedBox(
-                width: 140,
+              const SizedBox(width: 4),
+              Flexible(
+                flex: 2,
                 child: Row(
                   children: [
                     const Icon(Icons.view_list, size: 18),
