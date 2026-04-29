@@ -11,6 +11,8 @@ enum Consistency {
   const Consistency(this.label);
   final String label;
 
+  bool get isLanded => this != Consistency.never;
+
   Color cardColor(Brightness brightness) {
     if (brightness == Brightness.dark) {
       return switch (this) {
@@ -38,17 +40,32 @@ enum Consistency {
       );
 }
 
+enum LeashPosition {
+  frontside('Frontside'),
+  backside('Backside'),
+  center('Center');
+
+  const LeashPosition(this.label);
+  final String label;
+}
+
 class UserTrick {
   final int id;
   final int userId;
   final int trickId;
   final Consistency consistency;
+  final int? difficultyVote;
+  final LeashPosition? leashPosition;
+  final String? videoLink;
 
   const UserTrick({
     required this.id,
     required this.userId,
     required this.trickId,
     required this.consistency,
+    this.difficultyVote,
+    this.leashPosition,
+    this.videoLink,
   });
 
   factory UserTrick.fromJson(Map<String, dynamic> json) => UserTrick(
@@ -56,5 +73,10 @@ class UserTrick {
         userId: json['user_id'] as int,
         trickId: json['trick_id'] as int,
         consistency: Consistency.values[json['consistency'] as int],
+        difficultyVote: json['difficulty_vote'] as int?,
+        leashPosition: json['leash_position'] != null
+            ? LeashPosition.values[json['leash_position'] as int]
+            : null,
+        videoLink: json['video_link'] as String?,
       );
 }

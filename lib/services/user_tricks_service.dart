@@ -46,4 +46,23 @@ class UserTricksService {
       onConflict: 'user_id,trick_id',
     );
   }
+
+  static Future<void> setLandedDetails(
+    int trickId, {
+    int? difficultyVote,
+    LeashPosition? leashPosition,
+    String? videoLink,
+  }) async {
+    final intId = await _getUserIntId();
+    if (intId == null) return;
+    await _client
+        .from('user_tricks')
+        .update({
+          'difficulty_vote': difficultyVote,
+          'leash_position': leashPosition?.index,
+          'video_link': videoLink,
+        })
+        .eq('user_id', intId)
+        .eq('trick_id', trickId);
+  }
 }

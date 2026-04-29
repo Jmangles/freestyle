@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../utils/date_formatters.dart';
+import '../utils/difficulty_tier.dart';
 import '../widgets/consistency_selector.dart';
 import 'submit_trick_screen.dart';
 
@@ -265,6 +266,24 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               selected: userTrick?.consistency,
               onChanged: _setConsistency,
             ),
+            if (userTrick != null && userTrick.consistency.isLanded) ...[
+              const SizedBox(height: 20),
+              Text('Landed Details',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('All fields optional',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              _LandedDetailsSection(
+                key: ValueKey(
+                    '${userTrick.difficultyVote}-${userTrick.leashPosition?.index}-${userTrick.videoLink}'),
+                trickId: widget.trickId,
+                userTrick: userTrick,
+                onSaved: () => setState(() { _future = _load(); }),
+              ),
+            ],
           ],
 
           const SizedBox(height: 32),
@@ -296,6 +315,139 @@ class _InfoRow extends StatelessWidget {
           Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
+    );
+  }
+}
+
+class _LandedDetailsSection extends StatefulWidget {
+  final int trickId;
+  final UserTrick userTrick;
+  final VoidCallback onSaved;
+
+  const _LandedDetailsSection({
+    super.key,
+    required this.trickId,
+    required this.userTrick,
+    required this.onSaved,
+  });
+
+  @override
+  State<_LandedDetailsSection> createState() => _LandedDetailsSectionState();
+}
+
+class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
+  int? _difficultyVote;
+  LeashPosition? _leashPosition;
+  late TextEditingController _videoController;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _difficultyVote = widget.userTrick.difficultyVote;
+    _leashPosition = widget.userTrick.leashPosition;
+    _videoController = TextEditingController(text: widget.userTrick.videoLink ?? '');
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    await UserTricksService.setLandedDetails(
+      widget.trickId,
+      difficultyVote: _difficultyVote,
+      leashPosition: _leashPosition,
+      videoLink: _videoController.text.trim().isEmpty ? null : _videoController.text.trim(),
+    );
+    setState(() => _saving = false);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Difficulty Vote', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        if (_difficultyVote == null)
+          TextButton.icon(
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add vote'),
+            onPressed: () => setState(() => _difficultyVote = 15),
+          )
+        else
+          Row(
+            children: [
+              SizedBox(
+                width: 36,
+                child: Text(
+                  DifficultyTier.label(_difficultyVote!),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: _difficultyVote!.toDouble(),
+                  min: 1,
+                  max: 30,
+                  divisions: 29,
+                  onChanged: (v) => setState(() => _difficultyVote = v.round()),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                tooltip: 'Remove vote',
+                onPressed: () => setState(() => _difficultyVote = null),
+              ),
+            ],
+          ),
+        const SizedBox(height: 12),
+        Text('Leash Position', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          children: LeashPosition.values.map((p) {
+            final selected = _leashPosition == p;
+            return ChoiceChip(
+              label: Text(p.label),
+              selected: selected,
+              onSelected: (sel) =>
+                  setState(() => _leashPosition = sel ? p : null),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        Text('Video Link', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        TextField(
+          controller: _videoController,
+          decoration: const InputDecoration(
+            hintText: 'https://',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          keyboardType: TextInputType.url,
+        ),
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save details'),
+        ),
+      ],
     );
   }
 }
