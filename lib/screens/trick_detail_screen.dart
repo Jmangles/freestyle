@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:math' as math;
 import '../models/screen_data.dart';
 import '../models/trick.dart';
+import '../models/trick_vote_stats.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -36,14 +38,17 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
         ? UserTricksService.getUserTrickForTrick(widget.trickId)
         : Future.value(null);
     final profileFuture = AuthService.getCurrentProfile();
+    final voteStatsFuture = UserTricksService.getTrickVoteStats(widget.trickId);
     final prereqs = await prereqsFuture;
     final userTrick = await userTrickFuture;
     final profile = await profileFuture;
+    final voteStats = await voteStatsFuture;
     return TrickDetailData(
       trick: trick,
       prerequisites: prereqs,
       userTrick: userTrick,
       isAdmin: profile?.isAdmin == true,
+      voteStats: voteStats,
     );
   }
 
@@ -139,10 +144,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       return Center(child: Text('Error: ${snap.error}'));
     }
     final data = snap.data!;
-    return _buildContent(data.trick, data.prerequisites, data.userTrick);
+    return _buildContent(data.trick, data.prerequisites, data.userTrick, data.voteStats);
   }
 
-  Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick) {
+  Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick,
+      TrickVoteStats voteStats) {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -252,6 +258,67 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               onPressed: () => _openVideo(trick.videoLink!),
               icon: const Icon(Icons.play_circle_outline),
               label: const Text('Watch Video'),
+            ),
+          ],
+
+          // Community votes
+          if (voteStats.hasAnyData) ...[
+            const Divider(height: 28),
+            Text('Community Votes',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (voteStats.hasDifficultyVotes)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Difficulty',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
+                        const SizedBox(height: 6),
+                        _VoteBarChart(
+                          entries: (voteStats.difficultyVotes.entries.toList()
+                                ..sort((a, b) => a.key.compareTo(b.key)))
+                              .map((e) {
+                            final colors = DifficultyTier.badgeColors(e.key);
+                            return _BarEntry(
+                              label: DifficultyTier.label(e.key),
+                              count: e.value,
+                              color: colors?.$1,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (voteStats.hasDifficultyVotes && voteStats.hasLeashVotes)
+                  const SizedBox(width: 16),
+                if (voteStats.hasLeashVotes)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Leash Position',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
+                        const SizedBox(height: 6),
+                        _VoteBarChart(
+                          entries: (voteStats.leashPositions.entries.toList()
+                                ..sort((a, b) => a.key.compareTo(b.key)))
+                              .map((e) => _BarEntry(
+                                    label: LeashPosition.values[e.key].label,
+                                    count: e.value,
+                                  ))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ],
 
@@ -448,6 +515,82 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
               : const Text('Save details'),
         ),
       ],
+    );
+  }
+}
+
+class _BarEntry {
+  final String label;
+  final int count;
+  final Color? color;
+
+  const _BarEntry({required this.label, required this.count, this.color});
+}
+
+class _VoteBarChart extends StatelessWidget {
+  final List<_BarEntry> entries;
+
+  const _VoteBarChart({required this.entries});
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final maxCount = entries.map((e) => e.count).reduce(math.max);
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: entries.map((entry) {
+        final barColor = entry.color ?? theme.colorScheme.primary;
+        final barHeight = 90 * (entry.count / maxCount);
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 90,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: barHeight,
+                      decoration: BoxDecoration(
+                        color: barColor.withValues(alpha: 0.85),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4)),
+                      ),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${entry.count}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  entry.label,
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

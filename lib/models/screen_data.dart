@@ -1,6 +1,7 @@
 import 'position.dart';
 import 'profile.dart';
 import 'trick.dart';
+import 'trick_vote_stats.dart';
 import 'user_trick.dart';
 
 class TrickDetailData {
@@ -8,12 +9,14 @@ class TrickDetailData {
   final List<Trick> prerequisites;
   final UserTrick? userTrick;
   final bool isAdmin;
+  final TrickVoteStats voteStats;
 
   const TrickDetailData({
     required this.trick,
     required this.prerequisites,
     this.userTrick,
     required this.isAdmin,
+    required this.voteStats,
   });
 }
 

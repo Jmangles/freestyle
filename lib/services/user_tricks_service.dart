@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/trick_vote_stats.dart';
 import '../models/user_trick.dart';
 import 'auth_service.dart';
 
@@ -45,6 +46,12 @@ class UserTricksService {
       },
       onConflict: 'user_id,trick_id',
     );
+  }
+
+  static Future<TrickVoteStats> getTrickVoteStats(int trickId) async {
+    final data = await _client
+        .rpc('get_trick_vote_stats', params: {'p_trick_id': trickId});
+    return TrickVoteStats.fromRpc(data as Map<String, dynamic>);
   }
 
   static Future<void> setLandedDetails(
