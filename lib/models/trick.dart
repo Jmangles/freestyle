@@ -13,6 +13,8 @@ class Trick {
   final String? description;
   final String? tips;
   final String? videoLink;
+  final int? videoStart;
+  final int? videoEnd;
   final int? startPositionId;
   final int? endPositionId;
   final ApprovalStatus status;
@@ -40,6 +42,8 @@ class Trick {
     this.description,
     this.tips,
     this.videoLink,
+    this.videoStart,
+    this.videoEnd,
     this.startPositionId,
     this.endPositionId,
     required this.status,
@@ -69,6 +73,8 @@ class Trick {
       description: json['description'] as String?,
       tips: json['tips'] as String?,
       videoLink: json['video_link'] as String?,
+      videoStart: json['video_start'] as int?,
+      videoEnd: json['video_end'] as int?,
       startPositionId: json['start_position_id'] as int?,
       endPositionId: json['end_position_id'] as int?,
       status: ApprovalStatus.fromIndex(json['status'] as int),
@@ -88,6 +94,8 @@ class Trick {
         'description': description,
         'tips': tips,
         'video_link': videoLink,
+        'video_start': videoStart,
+        'video_end': videoEnd,
         'start_position_id': startPositionId,
         'end_position_id': endPositionId,
       };
@@ -102,6 +110,8 @@ class Trick {
     String? description,
     String? tips,
     String? videoLink,
+    int? videoStart,
+    int? videoEnd,
     int? startPositionId,
     int? endPositionId,
   }) =>
@@ -118,6 +128,8 @@ class Trick {
         description: description ?? this.description,
         tips: tips ?? this.tips,
         videoLink: videoLink ?? this.videoLink,
+        videoStart: videoStart ?? this.videoStart,
+        videoEnd: videoEnd ?? this.videoEnd,
         startPositionId: startPositionId ?? this.startPositionId,
         endPositionId: endPositionId ?? this.endPositionId,
         status: status,

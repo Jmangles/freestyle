@@ -29,6 +29,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final TextEditingController _description;
   late final TextEditingController _tips;
   late final TextEditingController _videoLink;
+  late final TextEditingController _videoStart;
+  late final TextEditingController _videoEnd;
   int _difficultyTier = 14;
   DateTime? _datePerformed;
   int? _startPositionId;
@@ -49,6 +51,10 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     _description = TextEditingController(text: t?.description);
     _tips = TextEditingController(text: t?.tips);
     _videoLink = TextEditingController(text: t?.videoLink);
+    _videoStart = TextEditingController(
+        text: t?.videoStart != null ? '${t!.videoStart}' : '');
+    _videoEnd = TextEditingController(
+        text: t?.videoEnd != null ? '${t!.videoEnd}' : '');
     if (t != null) {
       _difficultyTier = t.difficultyTier;
       _datePerformed = t.datePerformed;
@@ -73,6 +79,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     _description.dispose();
     _tips.dispose();
     _videoLink.dispose();
+    _videoStart.dispose();
+    _videoEnd.dispose();
     super.dispose();
   }
 
@@ -92,6 +100,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
           'description': trimToNull(_description.text),
           'tips': trimToNull(_tips.text),
           'video_link': trimToNull(_videoLink.text),
+          'video_start': int.tryParse(_videoStart.text.trim()),
+          'video_end': int.tryParse(_videoEnd.text.trim()),
           'start_position_id': _startPositionId,
           'end_position_id': _endPositionId,
         });
@@ -108,6 +118,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
           description: trimToNull(_description.text),
           tips: trimToNull(_tips.text),
           videoLink: trimToNull(_videoLink.text),
+          videoStart: int.tryParse(_videoStart.text.trim()),
+          videoEnd: int.tryParse(_videoEnd.text.trim()),
           startPositionId: _startPositionId,
           endPositionId: _endPositionId,
           status: ApprovalStatus.pending,
@@ -248,6 +260,32 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             _field(_tips, 'Tips', maxLines: 4),
             const SizedBox(height: 12),
             _field(_videoLink, 'Video Link (URL)'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _videoStart,
+                    decoration: const InputDecoration(
+                      labelText: 'Loop start (s)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _videoEnd,
+                    decoration: const InputDecoration(
+                      labelText: 'Loop end (s)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _loading ? null : _submit,

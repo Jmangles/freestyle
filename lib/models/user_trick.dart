@@ -57,6 +57,8 @@ class UserTrick {
   final int? difficultyVote;
   final LeashPosition? leashPosition;
   final String? videoLink;
+  final int? videoStart;
+  final int? videoEnd;
 
   const UserTrick({
     required this.id,
@@ -66,6 +68,8 @@ class UserTrick {
     this.difficultyVote,
     this.leashPosition,
     this.videoLink,
+    this.videoStart,
+    this.videoEnd,
   });
 
   factory UserTrick.fromJson(Map<String, dynamic> json) => UserTrick(
@@ -78,5 +82,7 @@ class UserTrick {
             ? LeashPosition.values[json['leash_position'] as int]
             : null,
         videoLink: json['video_link'] as String?,
+        videoStart: json['video_start'] as int?,
+        videoEnd: json['video_end'] as int?,
       );
 }

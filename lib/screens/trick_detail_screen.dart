@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
+import 'package:webview_flutter/webview_flutter.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
 import '../models/trick_vote_stats.dart';
@@ -102,6 +104,18 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
         const SnackBar(content: Text('Could not open video link')),
       );
     }
+  }
+
+  Widget _buildVideoPlayer(String url, int? start, int? end) {
+    final id = _extractYouTubeId(url);
+    if (id != null && _YoutubeLoopPlayer.supported) {
+      return _YoutubeLoopPlayer(videoId: id, startSeconds: start, endSeconds: end);
+    }
+    return FilledButton.icon(
+      onPressed: () => _openVideo(url),
+      icon: const Icon(Icons.play_circle_outline),
+      label: const Text('Watch Video'),
+    );
   }
 
   @override
@@ -254,11 +268,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Video
           if (trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _openVideo(trick.videoLink!),
-              icon: const Icon(Icons.play_circle_outline),
-              label: const Text('Watch Video'),
-            ),
+            _buildVideoPlayer(trick.videoLink!, trick.videoStart, trick.videoEnd),
           ],
 
           // Community votes
@@ -406,29 +416,41 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
   int? _difficultyVote;
   LeashPosition? _leashPosition;
   late TextEditingController _videoController;
+  late TextEditingController _videoStartController;
+  late TextEditingController _videoEndController;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _difficultyVote = widget.userTrick.difficultyVote;
-    _leashPosition = widget.userTrick.leashPosition;
-    _videoController = TextEditingController(text: widget.userTrick.videoLink ?? '');
+    final ut = widget.userTrick;
+    _difficultyVote = ut.difficultyVote;
+    _leashPosition = ut.leashPosition;
+    _videoController = TextEditingController(text: ut.videoLink ?? '');
+    _videoStartController =
+        TextEditingController(text: ut.videoStart != null ? '${ut.videoStart}' : '');
+    _videoEndController =
+        TextEditingController(text: ut.videoEnd != null ? '${ut.videoEnd}' : '');
   }
 
   @override
   void dispose() {
     _videoController.dispose();
+    _videoStartController.dispose();
+    _videoEndController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    final link = _videoController.text.trim();
     await UserTricksService.setLandedDetails(
       widget.trickId,
       difficultyVote: _difficultyVote,
       leashPosition: _leashPosition,
-      videoLink: _videoController.text.trim().isEmpty ? null : _videoController.text.trim(),
+      videoLink: link.isEmpty ? null : link,
+      videoStart: int.tryParse(_videoStartController.text.trim()),
+      videoEnd: int.tryParse(_videoEndController.text.trim()),
     );
     setState(() => _saving = false);
     widget.onSaved();
@@ -437,6 +459,7 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final savedVideoId = _extractYouTubeId(widget.userTrick.videoLink);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -503,6 +526,34 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
           ),
           keyboardType: TextInputType.url,
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _videoStartController,
+                decoration: const InputDecoration(
+                  labelText: 'Loop start (s)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _videoEndController,
+                decoration: const InputDecoration(
+                  labelText: 'Loop end (s)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _saving ? null : _save,
@@ -514,6 +565,16 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
                 )
               : const Text('Save details'),
         ),
+        if (savedVideoId != null && _YoutubeLoopPlayer.supported) ...[
+          const SizedBox(height: 16),
+          Text('Your Landing Video', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 6),
+          _YoutubeLoopPlayer(
+            videoId: savedVideoId,
+            startSeconds: widget.userTrick.videoStart,
+            endSeconds: widget.userTrick.videoEnd,
+          ),
+        ],
       ],
     );
   }
@@ -591,6 +652,104 @@ class _VoteBarChart extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+String? _extractYouTubeId(String? url) {
+  if (url == null || url.isEmpty) return null;
+  final uri = Uri.tryParse(url);
+  if (uri == null) return null;
+  if (uri.host == 'youtu.be') return uri.pathSegments.firstOrNull;
+  if (uri.host.endsWith('youtube.com')) {
+    if (uri.pathSegments.contains('shorts')) {
+      final i = uri.pathSegments.indexOf('shorts');
+      return i + 1 < uri.pathSegments.length ? uri.pathSegments[i + 1] : null;
+    }
+    return uri.queryParameters['v'];
+  }
+  return null;
+}
+
+class _YoutubeLoopPlayer extends StatefulWidget {
+  final String videoId;
+  final int? startSeconds;
+  final int? endSeconds;
+
+  const _YoutubeLoopPlayer({
+    required this.videoId,
+    this.startSeconds,
+    this.endSeconds,
+  });
+
+  static bool get supported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows);
+
+  @override
+  State<_YoutubeLoopPlayer> createState() => _YoutubeLoopPlayerState();
+}
+
+class _YoutubeLoopPlayerState extends State<_YoutubeLoopPlayer> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final start = widget.startSeconds ?? 0;
+    final endParam = widget.endSeconds != null ? 'end:${widget.endSeconds},' : '';
+    final html = '''<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <style>
+    *{margin:0;padding:0}
+    body,html{width:100%;height:100%;background:#000;overflow:hidden}
+    #p{width:100%;height:100%}
+  </style>
+</head>
+<body>
+<div id="p"></div>
+<script>
+  var s=document.createElement('script');
+  s.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+  var player,startSec=$start;
+  function onYouTubeIframeAPIReady(){
+    player=new YT.Player('p',{
+      videoId:'${widget.videoId}',
+      width:'100%',height:'100%',
+      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,playsinline:1,start:$start,$endParam},
+      events:{
+        onReady:function(e){e.target.playVideo();},
+        onStateChange:function(e){
+          if(e.data===YT.PlayerState.ENDED){player.seekTo(startSec,true);player.playVideo();}
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>''';
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(
+        onNavigationRequest: (req) => req.isMainFrame && req.url != 'about:blank'
+            ? NavigationDecision.prevent
+            : NavigationDecision.navigate,
+      ))
+      ..loadHtmlString(html, baseUrl: 'https://www.youtube.com');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: WebViewWidget(controller: _controller),
     );
   }
 }

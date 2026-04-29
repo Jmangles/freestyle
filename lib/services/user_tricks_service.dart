@@ -59,6 +59,8 @@ class UserTricksService {
     int? difficultyVote,
     LeashPosition? leashPosition,
     String? videoLink,
+    int? videoStart,
+    int? videoEnd,
   }) async {
     final intId = await _getUserIntId();
     if (intId == null) return;
@@ -68,6 +70,8 @@ class UserTricksService {
           'difficulty_vote': difficultyVote,
           'leash_position': leashPosition?.index,
           'video_link': videoLink,
+          'video_start': videoStart,
+          'video_end': videoEnd,
         })
         .eq('user_id', intId)
         .eq('trick_id', trickId);
