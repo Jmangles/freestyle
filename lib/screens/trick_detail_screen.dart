@@ -130,10 +130,21 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       builder: (context, snap) {
         final trick = snap.data?.trick;
         final isAdmin = snap.data?.isAdmin ?? false;
+        final routeDepth = GoRouter.of(context)
+            .routerDelegate
+            .currentConfiguration
+            .matches
+            .length;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Trick Detail'),
             actions: [
+              if (routeDepth > 2)
+                IconButton(
+                  icon: const Icon(Icons.home_outlined),
+                  tooltip: 'Home',
+                  onPressed: () => context.go('/'),
+                ),
               IconButton(
                 icon: const Icon(Icons.account_tree_outlined),
                 tooltip: 'View Progression',
