@@ -30,7 +30,7 @@ class _AdminScreenState extends State<AdminScreen> {
     return AdminData(pendingTricks: tricks, profile: profile);
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => setState(() { _future = _load(); });
 
   Future<void> _updateStatus(int id, ApprovalStatus status) async {
     await TricksService.updateTrickStatus(id, status);
@@ -206,7 +206,13 @@ class _PendingTrickCard extends StatelessWidget {
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Approve'),
                       style: FilledButton.styleFrom(
-                          backgroundColor: Colors.green.shade700),
+                        backgroundColor: theme.brightness == Brightness.dark
+                            ? Colors.green.shade400
+                            : Colors.green.shade700,
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white,
+                      ),
                     ),
                     FilledButton.icon(
                       onPressed: onReject,
@@ -228,8 +234,8 @@ class _PendingTrickCard extends StatelessWidget {
 
   Widget _row(String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
-        child: RichText(
-          text: TextSpan(
+        child: Text.rich(
+          TextSpan(
             children: [
               TextSpan(
                   text: '$label: ',
