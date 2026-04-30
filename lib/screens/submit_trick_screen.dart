@@ -387,22 +387,67 @@ class _PrerequisiteSelector extends StatelessWidget {
   }
 
   Future<void> _showPicker(BuildContext context) async {
-    final available =
-        allTricks.where((t) => !selectedIds.contains(t.id)).toList();
+    final available = allTricks
+        .where((t) => !selectedIds.contains(t.id))
+        .toList()
+      ..sort((a, b) =>
+          a.givenName.toLowerCase().compareTo(b.givenName.toLowerCase()));
     if (available.isEmpty) return;
 
+    final searchCtrl = TextEditingController();
     final picked = await showDialog<Trick>(
       context: context,
-      builder: (_) => SimpleDialog(
-        title: const Text('Select Prerequisite'),
-        children: available
-            .map((t) => SimpleDialogOption(
-                  child: Text(t.givenName),
-                  onPressed: () => Navigator.pop(context, t),
-                ))
-            .toList(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final query = searchCtrl.text.toLowerCase();
+          final filtered = query.isEmpty
+              ? available
+              : available
+                  .where((t) => t.givenName.toLowerCase().contains(query))
+                  .toList();
+          return AlertDialog(
+            title: const Text('Select Prerequisite'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: searchCtrl,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Search...',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) => ListTile(
+                        title: Text(filtered[i].givenName),
+                        onTap: () => Navigator.pop(ctx, filtered[i]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        },
       ),
     );
+    searchCtrl.dispose();
     if (picked != null) {
       onChanged([...selectedIds, picked.id]);
     }
