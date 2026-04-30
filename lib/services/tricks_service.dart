@@ -36,6 +36,15 @@ class TricksService {
     return (data as List).map((e) => Trick.fromJson(e)).toList();
   }
 
+  static Future<List<Trick>> getTricksRequiring(int trickId) async {
+    final data = await _client
+        .from('tricks')
+        .select(_select)
+        .eq('status', ApprovalStatus.approved.index)
+        .contains('prerequisite_trick_ids', [trickId]);
+    return (data as List).map((e) => Trick.fromJson(e)).toList();
+  }
+
   static Future<List<Trick>> getPendingTricks() async {
     final data = await _client
         .from('tricks')

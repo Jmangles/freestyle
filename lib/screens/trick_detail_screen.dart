@@ -14,6 +14,7 @@ import '../utils/difficulty_tier.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/youtube_loop_player.dart';
 import 'submit_trick_screen.dart';
+import 'trick_progression_screen.dart';
 
 class TrickDetailScreen extends StatefulWidget {
   final int trickId;
@@ -133,6 +134,16 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           appBar: AppBar(
             title: const Text('Trick Detail'),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.account_tree_outlined),
+                tooltip: 'View Progression',
+                onPressed: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TrickProgressionScreen(trickId: widget.trickId),
+                  ),
+                ),
+              ),
               if (isAdmin && trick != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),

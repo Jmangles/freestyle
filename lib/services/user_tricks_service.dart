@@ -22,6 +22,20 @@ class UserTricksService {
     return (data as List).map((e) => UserTrick.fromJson(e)).toList();
   }
 
+  static Future<Map<int, UserTrick>> getUserTricksForTrickIds(
+      List<int> trickIds) async {
+    if (trickIds.isEmpty) return {};
+    final intId = await _getUserIntId();
+    if (intId == null) return {};
+    final data = await _client
+        .from('user_tricks')
+        .select()
+        .eq('user_id', intId)
+        .inFilter('trick_id', trickIds);
+    final list = (data as List).map((e) => UserTrick.fromJson(e)).toList();
+    return {for (final t in list) t.trickId: t};
+  }
+
   static Future<UserTrick?> getUserTrickForTrick(int trickId) async {
     final intId = await _getUserIntId();
     if (intId == null) return null;
