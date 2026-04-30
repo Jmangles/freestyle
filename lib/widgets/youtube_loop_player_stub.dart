@@ -1,18 +1,20 @@
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class YoutubeLoopPlayer extends StatefulWidget {
   final String videoId;
   final int? startSeconds;
   final int? endSeconds;
+  final bool isPortrait;
 
   const YoutubeLoopPlayer({
     super.key,
     required this.videoId,
     this.startSeconds,
     this.endSeconds,
+    this.isPortrait = false,
   });
 
   static bool get supported =>
@@ -26,11 +28,11 @@ class YoutubeLoopPlayer extends StatefulWidget {
 }
 
 class _YoutubeLoopPlayerState extends State<YoutubeLoopPlayer> {
-  late final WebViewController _controller;
+  bool _open = false;
+  WebViewController? _controller;
 
-  @override
-  void initState() {
-    super.initState();
+  void _initPlayer() {
+    if (_controller != null) return;
     final start = widget.startSeconds ?? 0;
     final endParam =
         widget.endSeconds != null ? 'end:${widget.endSeconds},' : '';
@@ -47,10 +49,9 @@ class _YoutubeLoopPlayerState extends State<YoutubeLoopPlayer> {
   var player,startSec=$start;
   function onYouTubeIframeAPIReady(){
     player=new YT.Player('p',{videoId:'${widget.videoId}',width:'100%',height:'100%',
-      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,playsinline:1,start:$start,$endParam},
+      playerVars:{autoplay:0,controls:1,modestbranding:1,rel:0,playsinline:1,start:$start,$endParam},
       events:{
-        onReady:function(e){e.target.playVideo();},
-        onStateChange:function(e){if(e.data===YT.PlayerState.ENDED){player.seekTo(startSec,true);player.playVideo();}}
+        onStateChange:function(e){if(e.data===YT.PlayerState.ENDED){player.seekTo(startSec,true);}}
       }
     });
   }
@@ -71,9 +72,40 @@ class _YoutubeLoopPlayerState extends State<YoutubeLoopPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: WebViewWidget(controller: _controller),
+    if (!_open) {
+      return FilledButton.icon(
+        icon: const Icon(Icons.play_circle_outline),
+        label: const Text('Watch Video'),
+        onPressed: () {
+          _initPlayer();
+          setState(() => _open = true);
+        },
+      );
+    }
+
+    final maxWidth = widget.isPortrait ? 640.0 : 1280.0;
+    final ratio = widget.isPortrait ? 9.0 / 16.0 : 16.0 / 9.0;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.close, size: 16),
+              label: const Text('Close'),
+              onPressed: () => setState(() => _open = false),
+            ),
+          ),
+          AspectRatio(
+            aspectRatio: ratio,
+            child: WebViewWidget(controller: _controller!),
+          ),
+        ],
+      ),
     );
   }
 }
