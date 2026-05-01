@@ -31,13 +31,14 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final TextEditingController _videoLink;
   late final TextEditingController _videoStart;
   late final TextEditingController _videoEnd;
-  int _difficultyTier = 14;
+  int _difficultyTier = -1;
   DateTime? _datePerformed;
   int? _startPositionId;
   int? _endPositionId;
   List<int> _prerequisiteIds = [];
 
   late Future<SubmitMeta> _metaFuture;
+  late final VoidCallback _nameListener;
 
   bool get _isEditing => widget.existingTrick != null;
 
@@ -63,6 +64,9 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       _prerequisiteIds = List.from(t.prerequisiteTrickIds);
     }
     _metaFuture = _loadMeta();
+    _nameListener = () => setState(() {});
+    _givenName.addListener(_nameListener);
+    _technicalName.addListener(_nameListener);
   }
 
   Future<SubmitMeta> _loadMeta() async {
@@ -73,6 +77,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
 
   @override
   void dispose() {
+    _givenName.removeListener(_nameListener);
+    _technicalName.removeListener(_nameListener);
     _givenName.dispose();
     _technicalName.dispose();
     _originalPerformer.dispose();
@@ -177,6 +183,11 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             _field(_givenName, 'Given Name', required: true),
             const SizedBox(height: 12),
             _field(_technicalName, 'Technical Name'),
+            if (!_isEditing) _SimilarTricksWarning(
+              givenQuery: _givenName.text.trim(),
+              technicalQuery: _technicalName.text.trim(),
+              allTricks: allTricks,
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               initialValue: _difficultyTier,
@@ -327,6 +338,79 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             ? (v) => v == null || v.trim().isEmpty ? 'Required' : null
             : null,
       );
+}
+
+class _SimilarTricksWarning extends StatelessWidget {
+  final String givenQuery;
+  final String technicalQuery;
+  final List<Trick> allTricks;
+
+  const _SimilarTricksWarning({
+    required this.givenQuery,
+    required this.technicalQuery,
+    required this.allTricks,
+  });
+
+  bool _matches(Trick t, String q) {
+    if (q.length < 3) return false;
+    final given = t.givenName.toLowerCase();
+    final technical = (t.technicalName ?? '').toLowerCase();
+    return given.contains(q) || q.contains(given) ||
+        (technical.isNotEmpty && (technical.contains(q) || q.contains(technical)));
+  }
+
+  List<Trick> get _matchedTricks {
+    final gq = givenQuery.toLowerCase();
+    final tq = technicalQuery.toLowerCase();
+    final seen = <int>{};
+    return allTricks.where((t) {
+      if (!seen.add(t.id)) return false;
+      return _matches(t, gq) || _matches(t, tq);
+    }).take(5).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matches = _matchedTricks;
+    if (matches.isEmpty) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.secondaryContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: cs.onSecondaryContainer),
+                const SizedBox(width: 6),
+                Text(
+                  'Tricks with similar names:',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: cs.onSecondaryContainer),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final t in matches)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  t.technicalName != null ? '• ${t.givenName} - ${t.technicalName}' : '• ${t.givenName}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: cs.onSecondaryContainer),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _PrerequisiteSelector extends StatelessWidget {
