@@ -173,6 +173,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   }
 
   Widget _buildForm(List<Position> positions, List<Trick> allTricks) {
+    final sortedPositions = [...positions]..sort((a, b) => a.name.compareTo(b.name));
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -212,7 +213,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                   border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem(value: null, child: Text('None')),
-                ...positions.map((p) =>
+                ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
               onChanged: (v) => setState(() => _startPositionId = v),
@@ -226,7 +227,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                   border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem(value: null, child: Text('None')),
-                ...positions.map((p) =>
+                ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
               onChanged: (v) => setState(() => _endPositionId = v),
