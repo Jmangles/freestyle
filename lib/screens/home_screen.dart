@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Freestyle Highline'),
+        title: const Text('FreestyleDB'),
         actions: [
           if (_profile?.isAdmin == true)
             IconButton(

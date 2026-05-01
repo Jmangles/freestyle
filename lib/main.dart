@@ -28,7 +28,7 @@ class HighlineApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeController.instance,
       builder: (_, mode, __) => MaterialApp.router(
-        title: 'Freestyle Highline',
+        title: 'FreestyleDB',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
