@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/profile.dart';
 import '../models/screen_data.dart';
 import '../models/user_trick.dart';
@@ -57,13 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(l10n.profileTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Sign Out',
+            tooltip: l10n.signOutTooltip,
             onPressed: _signOut,
           ),
         ],
@@ -75,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
+            return Center(child: Text(context.l10n.errorWithDetail(snap.error.toString())));
           }
           final data = snap.data!;
           return _buildContent(data.profile, data.entries);
@@ -86,6 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildContent(Profile? profile, List<UserTrickEntry> entries) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final user = AuthService.currentUser;
 
     return RefreshIndicator(
@@ -93,7 +96,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Account info
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -101,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    profile?.username ?? 'Unknown User',
+                    profile?.username ?? l10n.unknownUser,
                     style: theme.textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
@@ -113,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Chip(
-                        label: const Text('Admin'),
+                        label: Text(l10n.adminLabel),
                         backgroundColor:
                             theme.colorScheme.tertiaryContainer,
                         labelStyle: TextStyle(
@@ -128,7 +130,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 20),
 
-          // Settings
           Card(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -143,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     contentPadding: EdgeInsets.zero,
                     secondary: Icon(
                         isDark ? Icons.dark_mode : Icons.light_mode),
-                    title: const Text('Dark Mode'),
+                    title: Text(l10n.darkModeLabel),
                     value: isDark,
                     onChanged: (on) => ThemeController.instance
                         .setMode(on ? ThemeMode.dark : ThemeMode.light),
@@ -156,18 +157,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 20),
 
           Text(
-            'My Tricks (${entries.length})',
+            l10n.myTricksCount(entries.length),
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
 
           if (entries.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Center(
-                  child: Text(
-                      'No tricks tracked yet.\nBrowse the trick list and set your consistency!')),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(child: Text(l10n.noTricksTracked)),
             )
           else
             ...entries.map((entry) {

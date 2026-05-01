@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/approval_status.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
@@ -38,24 +39,24 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _addPosition(BuildContext context) async {
+    final l10n = context.l10n;
     final ctrl = TextEditingController();
     final name = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Add Position'),
+        title: Text(l10n.addPositionDialogTitle),
         content: TextField(
           controller: ctrl,
-          decoration:
-              const InputDecoration(hintText: 'e.g. Standing, Hanging'),
+          decoration: InputDecoration(hintText: l10n.addPositionHint),
           autofocus: true,
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+              child: Text(l10n.cancelButton)),
           FilledButton(
               onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('Add')),
+              child: Text(l10n.addButton)),
         ],
       ),
     );
@@ -64,7 +65,7 @@ class _AdminScreenState extends State<AdminScreen> {
         await TricksService.addPosition(name);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Position "$name" added.')),
+            SnackBar(content: Text(context.l10n.positionAdded(name))),
           );
         }
       } catch (e) {
@@ -81,18 +82,19 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return FutureBuilder<AdminData>(
       future: _future,
       builder: (context, snap) {
         final canEditTricks = snap.data?.profile?.canEditTricks ?? false;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Admin'),
+            title: Text(l10n.adminTitle),
             actions: [
               if (canEditTricks)
                 IconButton(
                   icon: const Icon(Icons.add_location_alt_outlined),
-                  tooltip: 'Add Position',
+                  tooltip: l10n.addPositionTooltip,
                   onPressed: () => _addPosition(context),
                 ),
             ],
@@ -104,18 +106,17 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Widget _buildBody(AsyncSnapshot<AdminData> snap) {
+    final l10n = context.l10n;
     if (snap.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
     if (snap.hasError) {
-      return Center(child: Text('Error: ${snap.error}'));
+      return Center(child: Text(l10n.errorWithDetail(snap.error.toString())));
     }
 
     final profile = snap.data?.profile;
     if (profile?.canEditTricks != true) {
-      return const Center(
-        child: Text('You do not have admin access.'),
-      );
+      return Center(child: Text(l10n.noAdminAccess));
     }
 
     final tricks = snap.data!.pendingTricks;
@@ -123,9 +124,9 @@ class _AdminScreenState extends State<AdminScreen> {
       return RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: ListView(
-          children: const [
-            SizedBox(height: 120),
-            Center(child: Text('No pending tricks.')),
+          children: [
+            const SizedBox(height: 120),
+            Center(child: Text(l10n.noPendingTricks)),
           ],
         ),
       );
@@ -173,11 +174,12 @@ class _PendingTrickCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Card(
       child: ExpansionTile(
         title: Text(trick.givenName,
             style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('${trick.difficultyLabel} · submitted ${formatShortDate(trick.dateSubmitted)}'),
+        subtitle: Text('${trick.difficultyLabel} · ${l10n.submittedDate(formatShortDate(trick.dateSubmitted))}'),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -185,13 +187,13 @@ class _PendingTrickCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (trick.technicalName != null)
-                  _row('Technical Name', trick.technicalName!),
+                  _row(l10n.technicalNameLabel, trick.technicalName!),
                 if (trick.originalPerformer != null)
-                  _row('Performer', trick.originalPerformer!),
+                  _row(l10n.performerLabel, trick.originalPerformer!),
                 if (trick.description != null)
-                  _row('Description', trick.description!),
-                if (trick.tips != null) _row('Tips', trick.tips!),
-                if (trick.videoLink != null) _row('Video', trick.videoLink!),
+                  _row(l10n.descriptionLabel, trick.description!),
+                if (trick.tips != null) _row(l10n.tipsLabel, trick.tips!),
+                if (trick.videoLink != null) _row(l10n.videoLabel, trick.videoLink!),
                 const SizedBox(height: 12),
                 OverflowBar(
                   spacing: 8,
@@ -199,12 +201,12 @@ class _PendingTrickCard extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Edit'),
+                      label: Text(l10n.editButton),
                     ),
                     FilledButton.icon(
                       onPressed: onApprove,
                       icon: const Icon(Icons.check, size: 18),
-                      label: const Text('Approve'),
+                      label: Text(l10n.approveButton),
                       style: FilledButton.styleFrom(
                         backgroundColor: theme.brightness == Brightness.dark
                             ? Colors.green.shade400
@@ -217,7 +219,7 @@ class _PendingTrickCard extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Reject'),
+                      label: Text(l10n.rejectButton),
                       style: FilledButton.styleFrom(
                           backgroundColor:
                               theme.colorScheme.error),

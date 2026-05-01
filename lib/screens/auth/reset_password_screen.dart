@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations_extension.dart';
 import '../../services/auth_service.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -29,7 +30,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       await AuthService.updatePassword(_passCtrl.text);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated successfully.')),
+          SnackBar(content: Text(context.l10n.passwordUpdatedSuccessfully)),
         );
         context.go('/');
       }
@@ -49,6 +50,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -61,7 +63,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Set New Password',
+                    l10n.setNewPasswordTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -69,35 +71,35 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose a new password for your account.',
+                    l10n.chooseNewPassword,
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _passCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'New Password',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.newPasswordLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
                     autofocus: true,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Enter a new password';
-                      if (v.length < 6) return 'Password must be at least 6 characters';
+                      if (v == null || v.isEmpty) return l10n.enterNewPasswordValidator;
+                      if (v.length < 6) return l10n.passwordMinSixCharsValidator;
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _confirmCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm Password',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.confirmPasswordLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
                     validator: (v) =>
-                        v != _passCtrl.text ? 'Passwords do not match' : null,
+                        v != _passCtrl.text ? l10n.passwordsDoNotMatch : null,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
@@ -108,7 +110,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Update Password'),
+                        : Text(l10n.updatePasswordButton),
                   ),
                 ],
               ),

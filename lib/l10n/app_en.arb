@@ -1,0 +1,187 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "FreestyleDB",
+
+  "cancelButton": "Cancel",
+  "applyButton": "Apply",
+  "addButton": "Add",
+  "editButton": "Edit",
+  "deleteButton": "Delete",
+  "noneOption": "None",
+  "anyOption": "Any",
+  "requiredValidator": "Required",
+  "backTooltip": "Back",
+  "homeTooltip": "Home",
+  "descriptionLabel": "Description",
+  "tipsLabel": "Tips",
+  "prerequisitesLabel": "Prerequisites",
+  "originalPerformerLabel": "Original Performer",
+  "technicalNameLabel": "Technical Name",
+  "difficultyLabel": "Difficulty",
+  "leashPositionLabel": "Leash Position",
+  "loopStartLabel": "Loop start (s)",
+  "loopEndLabel": "Loop end (s)",
+  "searchHint": "Search...",
+
+  "errorWithDetail": "Error: {detail}",
+  "@errorWithDetail": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+
+  "adminLabel": "Admin",
+  "filterTooltip": "Filter",
+  "profileTooltip": "Profile",
+  "signInTooltip": "Sign In",
+  "submitTrickButton": "Submit Trick",
+  "failedToLoadTricks": "Failed to load tricks",
+  "retryButton": "Retry",
+  "noTricksYet": "No tricks yet. Be the first to submit one!",
+  "searchByNameHint": "Search by name...",
+
+  "trickDetailTitle": "Trick Detail",
+  "viewProgressionTooltip": "View Progression",
+  "editTrickTooltip": "Edit Trick",
+  "deleteTrickTooltip": "Delete Trick",
+  "deleteTrickDialogTitle": "Delete Trick",
+  "deleteTrickConfirmMessage": "Are you sure you want to delete \"{name}\"? This cannot be undone.",
+  "@deleteTrickConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "couldNotOpenVideoLink": "Could not open video link",
+  "watchVideoButton": "Watch Video",
+  "dateFirstPerformedLabel": "Date First Performed",
+  "dateSubmittedLabel": "Date Submitted",
+  "communityVotesLabel": "Community Votes",
+  "myConsistencyLabel": "My Consistency",
+  "landedDetailsLabel": "Landed Details",
+  "allFieldsOptional": "All fields optional",
+  "difficultyVoteLabel": "Difficulty Vote",
+  "videoLinkLabel": "Video Link",
+  "videoLinkHint": "https://",
+  "saveDetailsButton": "Save details",
+  "yourLandingVideoLabel": "Your Landing Video",
+
+  "editTrickTitle": "Edit Trick",
+  "submitTrickTitle": "Submit a Trick",
+  "tbdOption": "TBD",
+  "givenNameLabel": "Given Name",
+  "difficultyRequiredLabel": "Difficulty *",
+  "startPositionRequiredLabel": "Start Position *",
+  "endPositionRequiredLabel": "End Position *",
+  "dateFirstPerformedOptional": "Date First Performed (optional)",
+  "dateFirstPerformedWithDate": "Date First Performed: {date}",
+  "@dateFirstPerformedWithDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "videoLinkUrlLabel": "Video Link (URL)",
+  "saveChangesButton": "Save Changes",
+  "submitForReviewButton": "Submit for Review",
+  "trickUpdated": "Trick updated.",
+  "trickSubmittedForReview": "Trick submitted for review!",
+  "similarTricksWarning": "Tricks with similar names:",
+  "selectPrerequisiteTitle": "Select Prerequisite",
+
+  "profileTitle": "Profile",
+  "signOutTooltip": "Sign Out",
+  "unknownUser": "Unknown User",
+  "darkModeLabel": "Dark Mode",
+  "myTricksCount": "My Tricks ({count})",
+  "@myTricksCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noTricksTracked": "No tricks tracked yet.\nBrowse the trick list and set your consistency!",
+
+  "resetPasswordDialogTitle": "Reset Password",
+  "emailLabel": "Email",
+  "sendResetLinkButton": "Send Reset Link",
+  "passwordResetEmailSent": "Password reset email sent — check your inbox.",
+  "signInToYourAccount": "Sign in to your account",
+  "passwordLabel": "Password",
+  "forgotPassword": "Forgot password?",
+  "enterYourEmailValidator": "Enter your email",
+  "enterYourPasswordValidator": "Enter your password",
+  "signInButton": "Sign In",
+  "dontHaveAccountRegister": "Don't have an account? Register",
+
+  "createAccountTitle": "Create Account",
+  "usernameLabel": "Username",
+  "enterUsernameValidator": "Enter a username",
+  "enterPasswordValidator": "Enter a password",
+  "minimumSixCharsValidator": "Minimum 6 characters",
+  "registerButton": "Register",
+  "alreadyHaveAccount": "Already have an account? Sign in",
+  "accountCreated": "Account created! Check your email to confirm, then sign in.",
+
+  "setNewPasswordTitle": "Set New Password",
+  "chooseNewPassword": "Choose a new password for your account.",
+  "newPasswordLabel": "New Password",
+  "confirmPasswordLabel": "Confirm Password",
+  "enterNewPasswordValidator": "Enter a new password",
+  "passwordMinSixCharsValidator": "Password must be at least 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "updatePasswordButton": "Update Password",
+  "passwordUpdatedSuccessfully": "Password updated successfully.",
+
+  "adminTitle": "Admin",
+  "addPositionTooltip": "Add Position",
+  "addPositionDialogTitle": "Add Position",
+  "addPositionHint": "e.g. Standing, Hanging",
+  "positionAdded": "Position \"{name}\" added.",
+  "@positionAdded": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noAdminAccess": "You do not have admin access.",
+  "noPendingTricks": "No pending tricks.",
+  "performerLabel": "Performer",
+  "videoLabel": "Video",
+  "approveButton": "Approve",
+  "rejectButton": "Reject",
+  "submittedDate": "submitted {date}",
+  "@submittedDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "trickProgressionTitle": "Trick Progression",
+  "noPrerequisitesFound": "No prerequisites or unlocked tricks found.",
+  "thisTrickLegend": "This trick",
+  "youveLandedThisLegend": "You've landed this",
+  "notYetLandedLegend": "Not yet landed",
+  "pinchToZoom": "Pinch to zoom · Drag to pan",
+
+  "filterTricksTitle": "Filter Tricks",
+  "clearAllButton": "Clear All",
+  "difficultyTierSection": "Difficulty Tier",
+  "tierRangeLabel": "Tier {tier}",
+  "@tierRangeLabel": {
+    "placeholders": {
+      "tier": { "type": "String" }
+    }
+  },
+  "positionSection": "Position",
+  "startLabel": "Start",
+  "endLabel": "End",
+  "statusSection": "Status",
+  "yearLandedSection": "Year Landed",
+  "includeTbdChip": "Include TBD",
+  "searchByPerformerHint": "Search by performer...",
+
+  "sortTricksTitle": "Sort Tricks",
+  "orderSection": "Order",
+  "ascendingOption": "Ascending",
+  "descendingOption": "Descending",
+  "groupBySection": "Group By",
+  "sortWithinGroupBySection": "Sort Within Group By"
+}

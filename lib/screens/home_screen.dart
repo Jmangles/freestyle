@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/profile.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
@@ -135,14 +136,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FreestyleDB'),
+        title: Text(l10n.appTitle),
         actions: [
           if (_profile?.canEditTricks == true)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined),
-              tooltip: 'Admin',
+              tooltip: l10n.adminLabel,
               onPressed: () => context.push('/admin'),
             ),
           Badge(
@@ -150,13 +152,13 @@ class _HomeScreenState extends State<HomeScreen> {
             label: Text(_filter.activeCount.toString()),
             child: IconButton(
               icon: const Icon(Icons.filter_list),
-              tooltip: 'Filter',
+              tooltip: l10n.filterTooltip,
               onPressed: _initialLoading ? null : _showFilterSheet,
             ),
           ),
           IconButton(
             icon: Icon(AuthService.isLoggedIn ? Icons.person_outline : Icons.login),
-            tooltip: AuthService.isLoggedIn ? 'Profile' : 'Sign In',
+            tooltip: AuthService.isLoggedIn ? l10n.profileTooltip : l10n.signInTooltip,
             onPressed: () => context.push(AuthService.isLoggedIn ? '/profile' : '/login'),
           ),
         ],
@@ -165,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? FloatingActionButton.extended(
               onPressed: () => context.push('/submit'),
               icon: const Icon(Icons.add),
-              label: const Text('Submit Trick'),
+              label: Text(l10n.submitTrickButton),
             )
           : null,
       body: _buildBody(),
@@ -173,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = context.l10n;
     if (_initialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -181,18 +184,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Failed to load tricks',
+            Text(l10n.failedToLoadTricks,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            FilledButton(onPressed: _refresh, child: const Text('Retry')),
+            FilledButton(onPressed: _refresh, child: Text(l10n.retryButton)),
           ],
         ),
       );
     }
 
     if (_tricks.isEmpty) {
-      return const Center(
-          child: Text('No tricks yet. Be the first to submit one!'));
+      return Center(child: Text(l10n.noTricksYet));
     }
 
     final consistencyMap = _consistencyMap;
@@ -304,6 +306,7 @@ class _ControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 2, 4, 4),
       child: LayoutBuilder(
@@ -335,12 +338,12 @@ class _ControlBar extends StatelessWidget {
           final searchField = TextField(
             controller: nameSearchController,
             onChanged: onNameChanged,
-            decoration: const InputDecoration(
-              hintText: 'Search by name...',
-              prefixIcon: Icon(Icons.search, size: 18),
+            decoration: InputDecoration(
+              hintText: l10n.searchByNameHint,
+              prefixIcon: const Icon(Icons.search, size: 18),
               isDense: true,
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
             textInputAction: TextInputAction.search,
           );

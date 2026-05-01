@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/approval_status.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
@@ -22,7 +23,6 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
 
-  // Form controllers
   late final TextEditingController _givenName;
   late final TextEditingController _technicalName;
   late final TextEditingController _originalPerformer;
@@ -135,8 +135,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_isEditing
-              ? 'Trick updated.'
-              : 'Trick submitted for review!'),
+              ? context.l10n.trickUpdated
+              : context.l10n.trickSubmittedForReview),
         ));
         context.pop();
       }
@@ -144,7 +144,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()), backgroundColor: Theme.of(context).colorScheme.error),
+              content: Text(e.toString()),
+              backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
@@ -154,9 +155,10 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Trick' : 'Submit a Trick'),
+        title: Text(_isEditing ? l10n.editTrickTitle : l10n.submitTrickTitle),
       ),
       body: FutureBuilder<SubmitMeta>(
         future: _metaFuture,
@@ -166,13 +168,14 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
           }
           final positions = snap.data?.positions ?? [];
           final allTricks = snap.data?.tricks ?? [];
-          return _buildForm(positions, allTricks);
+          return _buildForm(context, positions, allTricks);
         },
       ),
     );
   }
 
-  Widget _buildForm(List<Position> positions, List<Trick> allTricks) {
+  Widget _buildForm(BuildContext context, List<Position> positions, List<Trick> allTricks) {
+    final l10n = context.l10n;
     final sortedPositions = [...positions]..sort((a, b) => a.name.compareTo(b.name));
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -181,9 +184,9 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _field(_givenName, 'Given Name', required: true),
+            _field(context, _givenName, l10n.givenNameLabel, required: true),
             const SizedBox(height: 12),
-            _field(_technicalName, 'Technical Name'),
+            _field(context, _technicalName, l10n.technicalNameLabel),
             if (!_isEditing) _SimilarTricksWarning(
               givenQuery: _givenName.text.trim(),
               technicalQuery: _technicalName.text.trim(),
@@ -192,54 +195,52 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               initialValue: _difficultyTier,
-              decoration: const InputDecoration(
-                labelText: 'Difficulty *',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.difficultyRequiredLabel,
+                border: const OutlineInputBorder(),
               ),
               items: [
-                const DropdownMenuItem(value: -1, child: Text('TBD')),
+                DropdownMenuItem(value: -1, child: Text(l10n.tbdOption)),
                 for (int v = 1; v <= 30; v++)
                   DropdownMenuItem(value: v, child: Text(Trick.tierLabel(v))),
               ],
               onChanged: (v) => setState(() => _difficultyTier = v!),
-              validator: (v) => v == null ? 'Required' : null,
+              validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
-            // Start position
             DropdownButtonFormField<int?>(
               initialValue: _startPositionId,
-              decoration: const InputDecoration(
-                  labelText: 'Start Position *',
-                  border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: l10n.startPositionRequiredLabel,
+                  border: const OutlineInputBorder()),
               items: [
-                const DropdownMenuItem(value: null, child: Text('None')),
+                DropdownMenuItem(value: null, child: Text(l10n.noneOption)),
                 ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
               onChanged: (v) => setState(() => _startPositionId = v),
-              validator: (v) => v == null ? 'Required' : null,
+              validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int?>(
               initialValue: _endPositionId,
-              decoration: const InputDecoration(
-                  labelText: 'End Position *',
-                  border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: l10n.endPositionRequiredLabel,
+                  border: const OutlineInputBorder()),
               items: [
-                const DropdownMenuItem(value: null, child: Text('None')),
+                DropdownMenuItem(value: null, child: Text(l10n.noneOption)),
                 ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
               onChanged: (v) => setState(() => _endPositionId = v),
-              validator: (v) => v == null ? 'Required' : null,
+              validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
-            // Date performed
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(_datePerformed == null
-                  ? 'Date First Performed (optional)'
-                  : 'Date First Performed: ${formatDisplayDate(_datePerformed!)}'),
+                  ? l10n.dateFirstPerformedOptional
+                  : l10n.dateFirstPerformedWithDate(formatDisplayDate(_datePerformed!))),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -257,9 +258,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            _field(_originalPerformer, 'Original Performer'),
+            _field(context, _originalPerformer, l10n.originalPerformerLabel),
             const SizedBox(height: 12),
-            // Prerequisites
             _PrerequisiteSelector(
               allTricks: allTricks
                   .where((t) =>
@@ -269,20 +269,20 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               onChanged: (ids) => setState(() => _prerequisiteIds = ids),
             ),
             const SizedBox(height: 12),
-            _field(_description, 'Description', maxLines: 4),
+            _field(context, _description, l10n.descriptionLabel, maxLines: 4),
             const SizedBox(height: 12),
-            _field(_tips, 'Tips', maxLines: 4),
+            _field(context, _tips, l10n.tipsLabel, maxLines: 4),
             const SizedBox(height: 12),
-            _field(_videoLink, 'Video Link (URL)'),
+            _field(context, _videoLink, l10n.videoLinkUrlLabel),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _videoStart,
-                    decoration: const InputDecoration(
-                      labelText: 'Loop start (s)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.loopStartLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -291,9 +291,9 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _videoEnd,
-                    decoration: const InputDecoration(
-                      labelText: 'Loop end (s)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.loopEndLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -308,7 +308,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(_isEditing ? 'Save Changes' : 'Submit for Review'),
+                  : Text(_isEditing ? l10n.saveChangesButton : l10n.submitForReviewButton),
             ),
           ],
         ),
@@ -327,21 +327,24 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   }
 
   Widget _field(
+    BuildContext context,
     TextEditingController ctrl,
     String label, {
     bool required = false,
     int maxLines = 1,
-  }) =>
-      TextFormField(
-        controller: ctrl,
-        decoration: InputDecoration(
-            labelText: required ? '$label *' : label,
-            border: const OutlineInputBorder()),
-        maxLines: maxLines,
-        validator: required
-            ? (v) => v == null || v.trim().isEmpty ? 'Required' : null
-            : null,
-      );
+  }) {
+    final l10n = context.l10n;
+    return TextFormField(
+      controller: ctrl,
+      decoration: InputDecoration(
+          labelText: required ? '$label *' : label,
+          border: const OutlineInputBorder()),
+      maxLines: maxLines,
+      validator: required
+          ? (v) => v == null || v.trim().isEmpty ? l10n.requiredValidator : null
+          : null,
+    );
+  }
 }
 
 class _SimilarTricksWarning extends StatelessWidget {
@@ -394,7 +397,7 @@ class _SimilarTricksWarning extends StatelessWidget {
                 Icon(Icons.info_outline, size: 16, color: cs.onSecondaryContainer),
                 const SizedBox(width: 6),
                 Text(
-                  'Tricks with similar names:',
+                  context.l10n.similarTricksWarning,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: cs.onSecondaryContainer),
                 ),
@@ -430,6 +433,7 @@ class _PrerequisiteSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final selected =
         allTricks.where((t) => selectedIds.contains(t.id)).toList();
 
@@ -438,18 +442,18 @@ class _PrerequisiteSelector extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('Prerequisites',
+            Text(l10n.prerequisitesLabel,
                 style: Theme.of(context).textTheme.titleSmall),
             const Spacer(),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
+              label: Text(l10n.addButton),
               onPressed: () => _showPicker(context),
             ),
           ],
         ),
         if (selected.isEmpty)
-          Text('None',
+          Text(l10n.noneOption,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -475,6 +479,7 @@ class _PrerequisiteSelector extends StatelessWidget {
   }
 
   Future<void> _showPicker(BuildContext context) async {
+    final l10n = context.l10n;
     final available = allTricks
         .where((t) => !selectedIds.contains(t.id))
         .toList()
@@ -494,7 +499,7 @@ class _PrerequisiteSelector extends StatelessWidget {
                   .where((t) => t.givenName.toLowerCase().contains(query))
                   .toList();
           return AlertDialog(
-            title: const Text('Select Prerequisite'),
+            title: Text(l10n.selectPrerequisiteTitle),
             content: SizedBox(
               width: double.maxFinite,
               child: Column(
@@ -503,10 +508,10 @@ class _PrerequisiteSelector extends StatelessWidget {
                   TextField(
                     controller: searchCtrl,
                     autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Search...',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: l10n.searchHint,
+                      prefixIcon: const Icon(Icons.search),
+                      border: const OutlineInputBorder(),
                       isDense: true,
                     ),
                     onChanged: (_) => setDialogState(() {}),
@@ -528,7 +533,7 @@ class _PrerequisiteSelector extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancelButton),
               ),
             ],
           );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
 import '../models/user_trick.dart';
@@ -111,6 +112,7 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final availableStartPositions = _availableStartPositions;
     final availableEndPositions = _availableEndPositions;
     final availableYears = _availableYears;
@@ -129,7 +131,7 @@ class _FilterSheetState extends State<FilterSheet> {
               child: Row(
                 children: [
                   Text(
-                    'Filter Tricks',
+                    l10n.filterTricksTitle,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -138,7 +140,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   const Spacer(),
                   TextButton(
                     onPressed: _clearAll,
-                    child: const Text('Clear All'),
+                    child: Text(l10n.clearAllButton),
                   ),
                 ],
               ),
@@ -150,14 +152,14 @@ class _FilterSheetState extends State<FilterSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
                 children: [
                   if (_hasMultipleNumericTiers || _hasTbd) ...[
-                    _sectionLabel('Difficulty Tier'),
+                    _sectionLabel(l10n.difficultyTierSection),
                     if (_hasMultipleNumericTiers) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Tier ${Trick.tierLabel(_tierMin)}',
+                          Text(l10n.tierRangeLabel(Trick.tierLabel(_tierMin)),
                               style: Theme.of(context).textTheme.bodySmall),
-                          Text('Tier ${Trick.tierLabel(_tierMax)}',
+                          Text(l10n.tierRangeLabel(Trick.tierLabel(_tierMax)),
                               style: Theme.of(context).textTheme.bodySmall),
                         ],
                       ),
@@ -166,7 +168,10 @@ class _FilterSheetState extends State<FilterSheet> {
                         min: _dataMinTier.toDouble(),
                         max: _dataMaxTier.toDouble(),
                         divisions: _dataMaxTier - _dataMinTier,
-                        labels: RangeLabels('Tier ${Trick.tierLabel(_tierMin)}', 'Tier ${Trick.tierLabel(_tierMax)}'),
+                        labels: RangeLabels(
+                          l10n.tierRangeLabel(Trick.tierLabel(_tierMin)),
+                          l10n.tierRangeLabel(Trick.tierLabel(_tierMax)),
+                        ),
                         onChanged: (v) => setState(() {
                           _tierMin = v.start.round();
                           _tierMax = v.end.round();
@@ -175,7 +180,7 @@ class _FilterSheetState extends State<FilterSheet> {
                     ],
                     if (_hasTbd)
                       FilterChip(
-                        label: const Text('Include TBD'),
+                        label: Text(l10n.includeTbdChip),
                         selected: _includeTbd,
                         onSelected: (v) => setState(() => _includeTbd = v),
                       ),
@@ -183,7 +188,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   ],
                   if (availableStartPositions.isNotEmpty ||
                       availableEndPositions.isNotEmpty) ...[
-                    _sectionLabel('Position'),
+                    _sectionLabel(l10n.positionSection),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -191,13 +196,13 @@ class _FilterSheetState extends State<FilterSheet> {
                           child: DropdownButtonFormField<String?>(
                             key: ValueKey('start_$_dropdownResetKey'),
                             initialValue: _startPosition,
-                            decoration: const InputDecoration(
-                              labelText: 'Start',
+                            decoration: InputDecoration(
+                              labelText: l10n.startLabel,
                               isDense: true,
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             items: [
-                              const DropdownMenuItem(value: null, child: Text('Any')),
+                              DropdownMenuItem(value: null, child: Text(l10n.anyOption)),
                               for (final pos in availableStartPositions)
                                 DropdownMenuItem(value: pos, child: Text(pos)),
                             ],
@@ -209,13 +214,13 @@ class _FilterSheetState extends State<FilterSheet> {
                           child: DropdownButtonFormField<String?>(
                             key: ValueKey('end_$_dropdownResetKey'),
                             initialValue: _endPosition,
-                            decoration: const InputDecoration(
-                              labelText: 'End',
+                            decoration: InputDecoration(
+                              labelText: l10n.endLabel,
                               isDense: true,
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             items: [
-                              const DropdownMenuItem(value: null, child: Text('Any')),
+                              DropdownMenuItem(value: null, child: Text(l10n.anyOption)),
                               for (final pos in availableEndPositions)
                                 DropdownMenuItem(value: pos, child: Text(pos)),
                             ],
@@ -226,7 +231,7 @@ class _FilterSheetState extends State<FilterSheet> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  _sectionLabel('Status'),
+                  _sectionLabel(l10n.statusSection),
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -247,7 +252,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   ),
                   const SizedBox(height: 20),
                   if (availableYears.isNotEmpty) ...[
-                    _sectionLabel('Year Landed'),
+                    _sectionLabel(l10n.yearLandedSection),
                     DropdownButtonFormField<int?>(
                       key: ValueKey('year_$_dropdownResetKey'),
                       initialValue: _yearLanded,
@@ -256,7 +261,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         border: OutlineInputBorder(),
                       ),
                       items: [
-                        const DropdownMenuItem(value: null, child: Text('Any')),
+                        DropdownMenuItem(value: null, child: Text(l10n.anyOption)),
                         for (final year in availableYears)
                           DropdownMenuItem(value: year, child: Text(year.toString())),
                       ],
@@ -264,14 +269,14 @@ class _FilterSheetState extends State<FilterSheet> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  _sectionLabel('Original Performer'),
+                  _sectionLabel(l10n.originalPerformerLabel),
                   TextField(
                     controller: _performerController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search by performer...',
-                      prefixIcon: Icon(Icons.search),
+                    decoration: InputDecoration(
+                      hintText: l10n.searchByPerformerHint,
+                      prefixIcon: const Icon(Icons.search),
                       isDense: true,
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                     textInputAction: TextInputAction.done,
                     onChanged: (_) => setState(() {}),
@@ -287,7 +292,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pop(_buildResult()),
-                    child: const Text('Apply'),
+                    child: Text(l10n.applyButton),
                   ),
                 ),
               ),

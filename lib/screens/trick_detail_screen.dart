@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
 import '../models/trick_vote_stats.dart';
@@ -56,15 +57,16 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   }
 
   Future<void> _deleteTrick(Trick trick) async {
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Trick'),
-        content: Text('Are you sure you want to delete "${trick.givenName}"? This cannot be undone.'),
+        title: Text(l10n.deleteTrickDialogTitle),
+        content: Text(l10n.deleteTrickConfirmMessage(trick.givenName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -72,7 +74,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               foregroundColor: Theme.of(ctx).colorScheme.onError,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(l10n.deleteButton),
           ),
         ],
       ),
@@ -127,7 +129,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
         || await launchUrl(uri, mode: LaunchMode.platformDefault);
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open video link')),
+        SnackBar(content: Text(context.l10n.couldNotOpenVideoLink)),
       );
     }
   }
@@ -145,12 +147,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     return FilledButton.icon(
       onPressed: () => _openVideo(url),
       icon: const Icon(Icons.play_circle_outline),
-      label: const Text('Watch Video'),
+      label: Text(context.l10n.watchVideoButton),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return FutureBuilder<TrickDetailData>(
       future: _future,
       builder: (context, snap) {
@@ -169,22 +172,22 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Back',
+                  tooltip: l10n.backTooltip,
                   onPressed: () => context.pop(),
                 ),
                 if (routeDepth > 2)
                   IconButton(
                     icon: const Icon(Icons.home_outlined),
-                    tooltip: 'Home',
+                    tooltip: l10n.homeTooltip,
                     onPressed: () => context.go('/'),
                   ),
               ],
             ),
-            title: const Text('Trick Detail'),
+            title: Text(l10n.trickDetailTitle),
             actions: [
               IconButton(
                 icon: const Icon(Icons.account_tree_outlined),
-                tooltip: 'View Progression',
+                tooltip: l10n.viewProgressionTooltip,
                 onPressed: () => Navigator.push<void>(
                   context,
                   MaterialPageRoute(
@@ -195,13 +198,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               if (canEditTricks && trick != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit Trick',
+                  tooltip: l10n.editTrickTooltip,
                   onPressed: () => _openEdit(trick),
                 ),
                 IconButton(
                   icon: Icon(Icons.delete_outline,
                       color: Theme.of(context).colorScheme.error),
-                  tooltip: 'Delete Trick',
+                  tooltip: l10n.deleteTrickTooltip,
                   onPressed: () => _deleteTrick(trick),
                 ),
               ],
@@ -221,7 +224,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
         return const Center(child: CircularProgressIndicator());
       }
       if (snap.hasError) {
-        return Center(child: Text('Error: ${snap.error}'));
+        return Center(child: Text(context.l10n.errorWithDetail(snap.error.toString())));
       }
       return const SizedBox.shrink();
     }
@@ -233,6 +236,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick,
       TrickVoteStats voteStats) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -285,19 +289,19 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Metadata
           if (trick.originalPerformer != null)
             _InfoRow(
-                label: 'Original Performer', value: trick.originalPerformer!),
+                label: l10n.originalPerformerLabel, value: trick.originalPerformer!),
           if (trick.datePerformed != null)
             _InfoRow(
-                label: 'Date First Performed',
+                label: l10n.dateFirstPerformedLabel,
                 value: formatDisplayDate(trick.datePerformed!)),
           _InfoRow(
-              label: 'Date Submitted',
+              label: l10n.dateSubmittedLabel,
               value: formatDisplayDate(trick.dateSubmitted)),
 
           // Description
           if (trick.description != null) ...[
             const SizedBox(height: 16),
-            Text('Description',
+            Text(l10n.descriptionLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
@@ -307,7 +311,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Tips
           if (trick.tips != null) ...[
             const SizedBox(height: 16),
-            Text('Tips',
+            Text(l10n.tipsLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
@@ -317,7 +321,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Prerequisites
           if (prereqs.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Prerequisites',
+            Text(l10n.prerequisitesLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -343,7 +347,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Community votes
           if (voteStats.hasAnyData) ...[
             const Divider(height: 28),
-            Text('Community Votes',
+            Text(l10n.communityVotesLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
@@ -357,7 +361,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Difficulty',
+                        Text(l10n.difficultyLabel,
                             style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 6),
@@ -382,7 +386,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Leash Position',
+                        Text(l10n.leashPositionLabel,
                             style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 6),
@@ -405,7 +409,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
           // Consistency tracker
           if (AuthService.isLoggedIn) ...[
             const Divider(height: 28),
-            Text('My Consistency',
+            Text(l10n.myConsistencyLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -415,11 +419,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
             if (userTrick != null && userTrick.consistency.isLanded) ...[
               const SizedBox(height: 20),
-              Text('Landed Details',
+              Text(l10n.landedDetailsLabel,
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('All fields optional',
+              Text(l10n.allFieldsOptional,
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 12),
@@ -529,6 +533,7 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final savedVideoId = _extractYouTubeId(widget.userTrick.videoLink);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,15 +545,15 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
               width: 140,
               child: DropdownButtonFormField<int?>(
                 initialValue: _difficultyVote,
-                decoration: const InputDecoration(
-                  labelText: 'Difficulty Vote',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.difficultyVoteLabel,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: [
-                  const DropdownMenuItem<int?>(
+                  DropdownMenuItem<int?>(
                     value: null,
-                    child: Text('None'),
+                    child: Text(l10n.noneOption),
                   ),
                   ...List.generate(30, (i) => i + 1).map((v) =>
                       DropdownMenuItem<int?>(
@@ -564,15 +569,15 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
               width: 160,
               child: DropdownButtonFormField<LeashPosition?>(
                 initialValue: _leashPosition,
-                decoration: const InputDecoration(
-                  labelText: 'Leash Position',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.leashPositionLabel,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: [
-                  const DropdownMenuItem<LeashPosition?>(
+                  DropdownMenuItem<LeashPosition?>(
                     value: null,
-                    child: Text('None'),
+                    child: Text(l10n.noneOption),
                   ),
                   ...LeashPosition.values.map((p) =>
                       DropdownMenuItem<LeashPosition?>(
@@ -586,13 +591,13 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
           ],
         ),
         const SizedBox(height: 12),
-        Text('Video Link', style: theme.textTheme.labelLarge),
+        Text(l10n.videoLinkLabel, style: theme.textTheme.labelLarge),
         const SizedBox(height: 4),
         TextField(
           controller: _videoController,
-          decoration: const InputDecoration(
-            hintText: 'https://',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: l10n.videoLinkHint,
+            border: const OutlineInputBorder(),
             isDense: true,
           ),
           keyboardType: TextInputType.url,
@@ -603,9 +608,9 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
             Expanded(
               child: TextField(
                 controller: _videoStartController,
-                decoration: const InputDecoration(
-                  labelText: 'Loop start (s)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.loopStartLabel,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 keyboardType: TextInputType.number,
@@ -615,9 +620,9 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
             Expanded(
               child: TextField(
                 controller: _videoEndController,
-                decoration: const InputDecoration(
-                  labelText: 'Loop end (s)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.loopEndLabel,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 keyboardType: TextInputType.number,
@@ -634,11 +639,11 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save details'),
+              : Text(l10n.saveDetailsButton),
         ),
         if (savedVideoId != null && YoutubeLoopPlayer.supported) ...[
           const SizedBox(height: 16),
-          Text('Your Landing Video', style: theme.textTheme.labelLarge),
+          Text(l10n.yourLandingVideoLabel, style: theme.textTheme.labelLarge),
           const SizedBox(height: 6),
           YoutubeLoopPlayer(
             videoId: savedVideoId,
@@ -791,4 +796,3 @@ String? _extractYouTubeId(String? url) {
   }
   return null;
 }
-

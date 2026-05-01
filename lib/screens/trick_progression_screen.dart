@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
@@ -152,17 +153,17 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
-              tooltip: 'Back',
+              tooltip: context.l10n.backTooltip,
               onPressed: () => Navigator.of(context).pop(),
             ),
             IconButton(
               icon: const Icon(Icons.home_outlined),
-              tooltip: 'Home',
+              tooltip: context.l10n.homeTooltip,
               onPressed: () => context.go('/'),
             ),
           ],
         ),
-        title: const Text('Trick Progression'),
+        title: Text(context.l10n.trickProgressionTitle),
       ),
       body: FutureBuilder<_GraphData>(
         future: _future,
@@ -171,7 +172,7 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
+            return Center(child: Text(context.l10n.errorWithDetail(snap.error.toString())));
           }
           return _GraphView(data: snap.data!);
         },
@@ -231,7 +232,7 @@ class _GraphViewState extends State<_GraphView> {
                     ?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            Text('No prerequisites or unlocked tricks found.',
+            Text(context.l10n.noPrerequisitesFound,
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                 textAlign: TextAlign.center),
           ],
@@ -551,23 +552,23 @@ class _Legend extends StatelessWidget {
           _LegendItem(
             color: theme.colorScheme.primaryContainer,
             borderColor: theme.colorScheme.primary,
-            label: 'This trick',
+            label: context.l10n.thisTrickLegend,
           ),
           if (showProgress)
             _LegendItem(
               color: theme.colorScheme.tertiaryContainer,
               borderColor: theme.colorScheme.tertiary,
-              label: 'You\'ve landed this',
+              label: context.l10n.youveLandedThisLegend,
               icon: Icons.check_circle,
               iconColor: theme.colorScheme.tertiary,
             ),
           _LegendItem(
             color: theme.colorScheme.surface,
             borderColor: theme.colorScheme.outlineVariant,
-            label: 'Not yet landed',
+            label: context.l10n.notYetLandedLegend,
           ),
-          const Text('Pinch to zoom · Drag to pan',
-              style: TextStyle(fontSize: 11)),
+          Text(context.l10n.pinchToZoom,
+              style: const TextStyle(fontSize: 11)),
         ],
       ),
     );

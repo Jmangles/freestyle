@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations_extension.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,16 +24,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _forgotPassword() async {
+    final l10n = context.l10n;
     final emailCtrl = TextEditingController(text: _emailCtrl.text.trim());
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset Password'),
+        title: Text(l10n.resetPasswordDialogTitle),
         content: TextField(
           controller: emailCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.emailLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
@@ -41,11 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Send Reset Link'),
+            child: Text(l10n.sendResetLinkButton),
           ),
         ],
       ),
@@ -60,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService.resetPassword(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset email sent — check your inbox.')),
+          SnackBar(content: Text(context.l10n.passwordResetEmailSent)),
         );
       }
     } catch (e) {
@@ -94,6 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -107,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'FreestyleDB',
+                      l10n.appTitle,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -115,41 +118,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sign in to your account',
+                      l10n.signInToYourAccount,
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
                       controller: _emailCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.emailLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
                       autocorrect: false,
                       autofillHints: const [AutofillHints.email],
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Enter your email' : null,
+                          v == null || v.isEmpty ? l10n.enterYourEmailValidator : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.passwordLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       obscureText: true,
                       autofillHints: const [AutofillHints.password],
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Enter your password' : null,
+                          v == null || v.isEmpty ? l10n.enterYourPasswordValidator : null,
                     ),
                     const SizedBox(height: 4),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: _forgotPassword,
-                        child: const Text('Forgot password?'),
+                        child: Text(l10n.forgotPassword),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -161,12 +164,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Sign In'),
+                          : Text(l10n.signInButton),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => context.go('/register'),
-                      child: const Text("Don't have an account? Register"),
+                      child: Text(l10n.dontHaveAccountRegister),
                     ),
                   ],
                 ),

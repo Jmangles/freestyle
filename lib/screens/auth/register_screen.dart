@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations_extension.dart';
 import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -35,10 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Account created! Check your email to confirm, then sign in.'),
-          ),
+          SnackBar(content: Text(context.l10n.accountCreated)),
         );
         context.go('/login');
       }
@@ -55,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -67,7 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Create Account',
+                    l10n.createAccountTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -76,36 +75,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _usernameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.usernameLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Enter a username' : null,
+                        v == null || v.isEmpty ? l10n.enterUsernameValidator : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.emailLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Enter your email' : null,
+                        v == null || v.isEmpty ? l10n.enterYourEmailValidator : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.passwordLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Enter a password';
-                      if (v.length < 6) return 'Minimum 6 characters';
+                      if (v == null || v.isEmpty) return l10n.enterPasswordValidator;
+                      if (v.length < 6) return l10n.minimumSixCharsValidator;
                       return null;
                     },
                   ),
@@ -118,12 +117,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Register'),
+                        : Text(l10n.registerButton),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => context.go('/login'),
-                    child: const Text('Already have an account? Sign in'),
+                    child: Text(l10n.alreadyHaveAccount),
                   ),
                 ],
               ),

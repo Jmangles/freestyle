@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick_sort.dart';
 
 class SortSheet extends StatefulWidget {
@@ -36,6 +37,7 @@ class _SortSheetState extends State<SortSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
       maxChildSize: 0.95,
@@ -50,7 +52,7 @@ class _SortSheetState extends State<SortSheet> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Sort Tricks',
+                  l10n.sortTricksTitle,
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -64,25 +66,25 @@ class _SortSheetState extends State<SortSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 children: [
-                  _sectionLabel('Order'),
+                  _sectionLabel(l10n.orderSection),
                   SegmentedButton<bool>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: true,
-                        label: Text('Ascending'),
-                        icon: Icon(Icons.arrow_upward, size: 16),
+                        label: Text(l10n.ascendingOption),
+                        icon: const Icon(Icons.arrow_upward, size: 16),
                       ),
                       ButtonSegment(
                         value: false,
-                        label: Text('Descending'),
-                        icon: Icon(Icons.arrow_downward, size: 16),
+                        label: Text(l10n.descendingOption),
+                        icon: const Icon(Icons.arrow_downward, size: 16),
                       ),
                     ],
                     selected: {_ascending},
                     onSelectionChanged: (v) => setState(() => _ascending = v.first),
                   ),
                   const SizedBox(height: 20),
-                  _sectionLabel('Group By'),
+                  _sectionLabel(l10n.groupBySection),
                   RadioGroup<PrimarySort>(
                     groupValue: _primary,
                     onChanged: (v) { if (v != null) setState(() => _primary = v); },
@@ -99,7 +101,7 @@ class _SortSheetState extends State<SortSheet> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _sectionLabel('Sort Within Group By'),
+                  _sectionLabel(l10n.sortWithinGroupBySection),
                   RadioGroup<SecondarySort>(
                     groupValue: _secondary,
                     onChanged: (v) { if (v != null) setState(() => _secondary = v); },
@@ -131,7 +133,7 @@ class _SortSheetState extends State<SortSheet> {
                         ascending: _ascending,
                       ),
                     ),
-                    child: const Text('Apply'),
+                    child: Text(l10n.applyButton),
                   ),
                 ),
               ),
