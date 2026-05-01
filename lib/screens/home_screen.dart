@@ -219,7 +219,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CustomScrollView(
                   slivers: [
                     for (final (label, groupTricks) in _groups) ...[
-                      SliverToBoxAdapter(child: _GroupHeader(label: label)),
+                      SliverToBoxAdapter(
+                        child: _GroupHeader(
+                          label: label,
+                          totalCount: groupTricks.length,
+                          landedCount: AuthService.isLoggedIn
+                              ? groupTricks
+                                  .where((t) =>
+                                      consistencyMap[t.id]?.isLanded == true)
+                                  .length
+                              : null,
+                        ),
+                      ),
                       if (isListMode)
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
@@ -382,19 +393,39 @@ class _ControlBar extends StatelessWidget {
 
 class _GroupHeader extends StatelessWidget {
   final String label;
-  const _GroupHeader({required this.label});
+  final int totalCount;
+  final int? landedCount;
+
+  const _GroupHeader({
+    required this.label,
+    required this.totalCount,
+    this.landedCount,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
+        );
+    final countText = landedCount != null
+        ? '$landedCount / $totalCount'
+        : '$totalCount';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-            ),
+      child: Row(
+        children: [
+          Text(label, style: labelStyle),
+          const SizedBox(width: 8),
+          Text(
+            countText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+          ),
+        ],
       ),
     );
   }
