@@ -192,7 +192,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             DropdownButtonFormField<int>(
               initialValue: _difficultyTier,
               decoration: const InputDecoration(
-                labelText: 'Difficulty',
+                labelText: 'Difficulty *',
                 border: OutlineInputBorder(),
               ),
               items: [
@@ -201,6 +201,35 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                   DropdownMenuItem(value: v, child: Text(Trick.tierLabel(v))),
               ],
               onChanged: (v) => setState(() => _difficultyTier = v!),
+              validator: (v) => v == null ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            // Start position
+            DropdownButtonFormField<int?>(
+              initialValue: _startPositionId,
+              decoration: const InputDecoration(
+                  labelText: 'Start Position *',
+                  border: OutlineInputBorder()),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('None')),
+                ...positions.map((p) =>
+                    DropdownMenuItem(value: p.id, child: Text(p.name))),
+              ],
+              onChanged: (v) => setState(() => _startPositionId = v),
+              validator: (v) => v == null ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              initialValue: _endPositionId,
+              decoration: const InputDecoration(
+                  labelText: 'End Position *',
+                  border: OutlineInputBorder()),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('None')),
+                ...positions.map((p) =>
+                    DropdownMenuItem(value: p.id, child: Text(p.name))),
+              ],
+              onChanged: (v) => setState(() => _endPositionId = v),
               validator: (v) => v == null ? 'Required' : null,
             ),
             const SizedBox(height: 12),
@@ -228,33 +257,6 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
             ),
             const SizedBox(height: 4),
             _field(_originalPerformer, 'Original Performer'),
-            const SizedBox(height: 12),
-            // Start position
-            DropdownButtonFormField<int?>(
-              initialValue: _startPositionId,
-              decoration: const InputDecoration(
-                  labelText: 'Start Position',
-                  border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('None')),
-                ...positions.map((p) =>
-                    DropdownMenuItem(value: p.id, child: Text(p.name))),
-              ],
-              onChanged: (v) => setState(() => _startPositionId = v),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<int?>(
-              initialValue: _endPositionId,
-              decoration: const InputDecoration(
-                  labelText: 'End Position',
-                  border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('None')),
-                ...positions.map((p) =>
-                    DropdownMenuItem(value: p.id, child: Text(p.name))),
-              ],
-              onChanged: (v) => setState(() => _endPositionId = v),
-            ),
             const SizedBox(height: 12),
             // Prerequisites
             _PrerequisiteSelector(
@@ -332,7 +334,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       TextFormField(
         controller: ctrl,
         decoration: InputDecoration(
-            labelText: label, border: const OutlineInputBorder()),
+            labelText: required ? '$label *' : label,
+            border: const OutlineInputBorder()),
         maxLines: maxLines,
         validator: required
             ? (v) => v == null || v.trim().isEmpty ? 'Required' : null
