@@ -137,14 +137,25 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             .length;
         return Scaffold(
           appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leadingWidth: routeDepth > 2 ? 96 : 48,
+            leading: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Back',
+                  onPressed: () => context.pop(),
+                ),
+                if (routeDepth > 2)
+                  IconButton(
+                    icon: const Icon(Icons.home_outlined),
+                    tooltip: 'Home',
+                    onPressed: () => context.go('/'),
+                  ),
+              ],
+            ),
             title: const Text('Trick Detail'),
             actions: [
-              if (routeDepth > 2)
-                IconButton(
-                  icon: const Icon(Icons.home_outlined),
-                  tooltip: 'Home',
-                  onPressed: () => context.go('/'),
-                ),
               IconButton(
                 icon: const Icon(Icons.account_tree_outlined),
                 tooltip: 'View Progression',

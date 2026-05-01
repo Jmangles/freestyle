@@ -145,7 +145,25 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Trick Progression')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 96,
+        leading: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.home_outlined),
+              tooltip: 'Home',
+              onPressed: () => context.go('/'),
+            ),
+          ],
+        ),
+        title: const Text('Trick Progression'),
+      ),
       body: FutureBuilder<_GraphData>(
         future: _future,
         builder: (ctx, snap) {
