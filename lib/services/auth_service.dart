@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile.dart';
 
@@ -43,6 +44,15 @@ class AuthService {
       password: password,
       data: {'username': username},
     );
+  }
+
+  static Future<void> resetPassword(String email) async {
+    final redirectTo = kIsWeb ? Uri.base.resolve('/').toString() : null;
+    await _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+  }
+
+  static Future<void> updatePassword(String newPassword) async {
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
   static Future<void> signOut() async {

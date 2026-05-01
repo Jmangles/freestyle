@@ -501,56 +501,57 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Difficulty Vote', style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
-        if (_difficultyVote == null)
-          TextButton.icon(
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add vote'),
-            onPressed: () => setState(() => _difficultyVote = 15),
-          )
-        else
-          Row(
-            children: [
-              SizedBox(
-                width: 36,
-                child: Text(
-                  DifficultyTier.label(_difficultyVote!),
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 140,
+              child: DropdownButtonFormField<int?>(
+                initialValue: _difficultyVote,
+                decoration: const InputDecoration(
+                  labelText: 'Difficulty Vote',
+                  border: OutlineInputBorder(),
+                  isDense: true,
                 ),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('None'),
+                  ),
+                  ...List.generate(30, (i) => i + 1).map((v) =>
+                      DropdownMenuItem<int?>(
+                        value: v,
+                        child: Text(DifficultyTier.label(v)),
+                      )),
+                ],
+                onChanged: (v) => setState(() => _difficultyVote = v),
               ),
-              Expanded(
-                child: Slider(
-                  value: _difficultyVote!.toDouble(),
-                  min: 1,
-                  max: 30,
-                  divisions: 29,
-                  onChanged: (v) => setState(() => _difficultyVote = v.round()),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 160,
+              child: DropdownButtonFormField<LeashPosition?>(
+                initialValue: _leashPosition,
+                decoration: const InputDecoration(
+                  labelText: 'Leash Position',
+                  border: OutlineInputBorder(),
+                  isDense: true,
                 ),
+                items: [
+                  const DropdownMenuItem<LeashPosition?>(
+                    value: null,
+                    child: Text('None'),
+                  ),
+                  ...LeashPosition.values.map((p) =>
+                      DropdownMenuItem<LeashPosition?>(
+                        value: p,
+                        child: Text(p.label),
+                      )),
+                ],
+                onChanged: (p) => setState(() => _leashPosition = p),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                tooltip: 'Remove vote',
-                onPressed: () => setState(() => _difficultyVote = null),
-              ),
-            ],
-          ),
-        const SizedBox(height: 12),
-        Text('Leash Position', style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          children: LeashPosition.values.map((p) {
-            final selected = _leashPosition == p;
-            return ChoiceChip(
-              label: Text(p.label),
-              selected: selected,
-              onSelected: (sel) =>
-                  setState(() => _leashPosition = sel ? p : null),
-            );
-          }).toList(),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         Text('Video Link', style: theme.textTheme.labelLarge),

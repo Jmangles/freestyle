@@ -7,20 +7,26 @@ import 'screens/home_screen.dart';
 import 'screens/trick_detail_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
 import 'screens/submit_trick_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
 
 class AppRouter {
+  static final _authNotifier = _AuthNotifier();
+
   static final GoRouter router = GoRouter(
     initialLocation: '/',
-    refreshListenable: _AuthNotifier(),
+    refreshListenable: _authNotifier,
     redirect: (context, state) {
-      final loggedIn =
-          Supabase.instance.client.auth.currentSession != null;
+      final loggedIn = Supabase.instance.client.auth.currentSession != null;
       final loc = state.matchedLocation;
-      final onAuth = loc == '/login' || loc == '/register';
 
+      if (_authNotifier.isRecovery) {
+        return loc == '/reset-password' ? null : '/reset-password';
+      }
+
+      final onAuth = loc == '/login' || loc == '/register';
       final isPublic = loc == '/' || loc.startsWith('/trick/');
       if (!loggedIn && !onAuth && !isPublic) return '/login';
       if (loggedIn && onAuth) return '/';
@@ -28,31 +34,47 @@ class AppRouter {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(
-          path: '/register', builder: (_, __) => const RegisterScreen()),
+      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+      GoRoute(path: '/reset-password', builder: (_, __) => const ResetPasswordScreen()),
       GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
       GoRoute(
         path: '/trick/:id',
         builder: (_, state) =>
             TrickDetailScreen(trickId: int.parse(state.pathParameters['id']!)),
       ),
-      GoRoute(
-          path: '/submit',
-          builder: (_, __) => const SubmitTrickScreen()),
+      GoRoute(path: '/submit', builder: (_, __) => const SubmitTrickScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
-      GoRoute(
-          path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
     ],
   );
 }
 
 class _AuthNotifier extends ChangeNotifier {
   late final StreamSubscription _sub;
+  bool _isRecovery = false;
+
+  bool get isRecovery => _isRecovery;
 
   _AuthNotifier() {
-    _sub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      notifyListeners();
-    });
+    _sub = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        if (data.event == AuthChangeEvent.passwordRecovery) {
+          _isRecovery = true;
+        } else if (_isRecovery) {
+          _isRecovery = false;
+        }
+        notifyListeners();
+      },
+      onError: (_) {
+        _isRecovery = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  void clearRecovery() {
+    _isRecovery = false;
+    notifyListeners();
   }
 
   @override
