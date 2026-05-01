@@ -182,10 +182,18 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
 
 // ─── Graph view ──────────────────────────────────────────────────────────────
 
-class _GraphView extends StatelessWidget {
+class _GraphView extends StatefulWidget {
   final _GraphData data;
 
   const _GraphView({required this.data});
+
+  @override
+  State<_GraphView> createState() => _GraphViewState();
+}
+
+class _GraphViewState extends State<_GraphView> {
+  late final TransformationController _transformController;
+  bool _initialTransformSet = false;
 
   static const double _cardW = 150;
   static const double _cardH = 58;
@@ -194,8 +202,21 @@ class _GraphView extends StatelessWidget {
   static const double _pad = 48;
 
   @override
+  void initState() {
+    super.initState();
+    _transformController = TransformationController();
+  }
+
+  @override
+  void dispose() {
+    _transformController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final data = widget.data;
 
     if (data.tricks.length <= 1 && data.edges.isEmpty) {
       return Center(
@@ -258,43 +279,66 @@ class _GraphView extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: InteractiveViewer(
-            constrained: false,
-            minScale: 0.3,
-            maxScale: 2.5,
-            child: SizedBox(
-              width: canvasW,
-              height: canvasH,
-              child: Stack(
-                children: [
-                  CustomPaint(
-                    size: Size(canvasW, canvasH),
-                    painter: _EdgePainter(
-                      edges: data.edges,
-                      positions: positions,
-                      cardW: _cardW,
-                      cardH: _cardH,
-                      color: theme.colorScheme.outlineVariant,
-                    ),
-                  ),
-                  for (final entry in positions.entries)
-                    Positioned(
-                      left: entry.value.dx,
-                      top: entry.value.dy,
-                      width: _cardW,
-                      height: _cardH,
-                      child: _TrickCard(
-                        trick: data.tricks[entry.key]!,
-                        isFocal: entry.key == data.focalId,
-                        userTrick: data.userProgress[entry.key],
-                        onTap: entry.key == data.focalId
-                            ? null
-                            : () => context.push('/trick/${entry.key}'),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final fitScale = math.min(
+                math.min(
+                  constraints.maxWidth / canvasW,
+                  constraints.maxHeight / canvasH,
+                ),
+                1.0,
+              );
+
+              if (!_initialTransformSet) {
+                _initialTransformSet = true;
+                final dx = (constraints.maxWidth - canvasW * fitScale) / 2;
+                final dy = (constraints.maxHeight - canvasH * fitScale) / 2;
+                _transformController.value =
+                    Matrix4.translationValues(dx, dy, 0)..scaleByDouble(fitScale, fitScale, fitScale, 1.0);
+              }
+
+              return InteractiveViewer(
+                constrained: false,
+                boundaryMargin: EdgeInsets.all(double.infinity),
+                minScale: fitScale,
+                maxScale: 2.5,
+                scaleFactor: 600,
+                transformationController: _transformController,
+                child: SizedBox(
+                  width: canvasW,
+                  height: canvasH,
+                  child: Stack(
+                    children: [
+                      CustomPaint(
+                        size: Size(canvasW, canvasH),
+                        painter: _EdgePainter(
+                          edges: data.edges,
+                          positions: positions,
+                          cardW: _cardW,
+                          cardH: _cardH,
+                          color: theme.colorScheme.outlineVariant,
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
+                      for (final entry in positions.entries)
+                        Positioned(
+                          left: entry.value.dx,
+                          top: entry.value.dy,
+                          width: _cardW,
+                          height: _cardH,
+                          child: _TrickCard(
+                            trick: data.tricks[entry.key]!,
+                            isFocal: entry.key == data.focalId,
+                            userTrick: data.userProgress[entry.key],
+                            onTap: entry.key == data.focalId
+                                ? null
+                                : () => context.push('/trick/${entry.key}'),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
         _Legend(showProgress: data.userProgress.isNotEmpty),
