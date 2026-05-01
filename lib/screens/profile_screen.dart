@@ -109,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(user!.email!,
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant)),
-                  if (profile?.isAdmin == true)
+                  if (profile?.canEditTricks == true)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Chip(

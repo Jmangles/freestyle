@@ -10,11 +10,12 @@ create table positions (
 );
 
 -- User profiles (extends auth.users)
+-- flags: bit 0 = can edit tricks (admin-level trick/position management)
 create table profiles (
   int_id   integer generated always as identity primary key,
   id       uuid unique not null references auth.users(id) on delete cascade,
   username text unique,
-  is_admin boolean not null default false
+  flags    smallint not null default 0
 );
 
 -- Tricks
@@ -65,13 +66,13 @@ create policy "profiles_update" on profiles for update using (auth.uid() = id);
 -- Positions: anyone reads, only admins write
 create policy "positions_read" on positions for select using (true);
 create policy "positions_insert" on positions for insert with check (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
+  exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
 );
 create policy "positions_update" on positions for update using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
+  exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
 );
 create policy "positions_delete" on positions for delete using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
+  exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
 );
 
 -- Tricks: approved tricks are public; submitter can read own; admins can read/update all
@@ -80,11 +81,11 @@ create policy "tricks_read_approved" on tricks for select
 create policy "tricks_read_own" on tricks for select
   using (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "tricks_read_admin" on tricks for select
-  using (exists (select 1 from profiles where id = auth.uid() and is_admin = true));
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 create policy "tricks_insert" on tricks for insert
   with check (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "tricks_update_admin" on tricks for update
-  using (exists (select 1 from profiles where id = auth.uid() and is_admin = true));
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 
 -- User tricks: users manage only their own rows
 create policy "user_tricks_select" on user_tricks for select
@@ -115,8 +116,8 @@ grant select, insert, update, delete on user_tricks to authenticated;
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, username, is_admin)
-  values (new.id, new.raw_user_meta_data->>'username', false);
+  insert into public.profiles (id, username, flags)
+  values (new.id, new.raw_user_meta_data->>'username', 0);
   return new;
 end;
 $$;

@@ -8,14 +8,14 @@ class TrickDetailData {
   final Trick trick;
   final List<Trick> prerequisites;
   final UserTrick? userTrick;
-  final bool isAdmin;
+  final bool canEditTricks;
   final TrickVoteStats voteStats;
 
   const TrickDetailData({
     required this.trick,
     required this.prerequisites,
     this.userTrick,
-    required this.isAdmin,
+    required this.canEditTricks,
     required this.voteStats,
   });
 }

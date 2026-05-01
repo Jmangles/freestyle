@@ -11,7 +11,7 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
     authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.implicit,
+      authFlowType: AuthFlowType.pkce,
     ),
   );
 

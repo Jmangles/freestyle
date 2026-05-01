@@ -43,6 +43,7 @@ class AuthService {
       email: email,
       password: password,
       data: {'username': username},
+      emailRedirectTo: kIsWeb ? Uri.base.resolve('/').toString() : null,
     );
   }
 

@@ -49,7 +49,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       trick: trick,
       prerequisites: prereqs,
       userTrick: userTrick,
-      isAdmin: profile?.isAdmin == true,
+      canEditTricks: profile?.canEditTricks == true,
       voteStats: voteStats,
     );
   }
@@ -129,7 +129,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       future: _future,
       builder: (context, snap) {
         final trick = snap.data?.trick;
-        final isAdmin = snap.data?.isAdmin ?? false;
+        final canEditTricks = snap.data?.canEditTricks ?? false;
         final routeDepth = GoRouter.of(context)
             .routerDelegate
             .currentConfiguration
@@ -166,7 +166,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                   ),
                 ),
               ),
-              if (isAdmin && trick != null) ...[
+              if (canEditTricks && trick != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   tooltip: 'Edit Trick',

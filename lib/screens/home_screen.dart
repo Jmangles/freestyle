@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('FreestyleDB'),
         actions: [
-          if (_profile?.isAdmin == true)
+          if (_profile?.canEditTricks == true)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined),
               tooltip: 'Admin',

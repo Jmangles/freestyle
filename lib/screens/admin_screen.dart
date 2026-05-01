@@ -25,7 +25,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<AdminData> _load() async {
     final profile = await AuthService.getCurrentProfile(forceRefresh: true);
-    if (profile?.isAdmin != true) return AdminData(pendingTricks: [], profile: profile);
+    if (profile?.canEditTricks != true) return AdminData(pendingTricks: [], profile: profile);
     final tricks = await TricksService.getPendingTricks();
     return AdminData(pendingTricks: tricks, profile: profile);
   }
@@ -84,12 +84,12 @@ class _AdminScreenState extends State<AdminScreen> {
     return FutureBuilder<AdminData>(
       future: _future,
       builder: (context, snap) {
-        final isAdmin = snap.data?.profile?.isAdmin ?? false;
+        final canEditTricks = snap.data?.profile?.canEditTricks ?? false;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Admin'),
             actions: [
-              if (isAdmin)
+              if (canEditTricks)
                 IconButton(
                   icon: const Icon(Icons.add_location_alt_outlined),
                   tooltip: 'Add Position',
@@ -112,7 +112,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     final profile = snap.data?.profile;
-    if (profile?.isAdmin != true) {
+    if (profile?.canEditTricks != true) {
       return const Center(
         child: Text('You do not have admin access.'),
       );
