@@ -1,0 +1,438 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for French (`fr`).
+class AppLocalizationsFr extends AppLocalizations {
+  AppLocalizationsFr([String locale = 'fr']) : super(locale);
+
+  @override
+  String get appTitle => 'FreestyleDB';
+
+  @override
+  String get cancelButton => 'Annuler';
+
+  @override
+  String get applyButton => 'Appliquer';
+
+  @override
+  String get addButton => 'Ajouter';
+
+  @override
+  String get editButton => 'Modifier';
+
+  @override
+  String get deleteButton => 'Supprimer';
+
+  @override
+  String get noneOption => 'Aucun';
+
+  @override
+  String get anyOption => 'Tous';
+
+  @override
+  String get requiredValidator => 'Requis';
+
+  @override
+  String get backTooltip => 'Retour';
+
+  @override
+  String get homeTooltip => 'Accueil';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get tipsLabel => 'Conseils';
+
+  @override
+  String get prerequisitesLabel => 'Prérequis';
+
+  @override
+  String get originalPerformerLabel => 'Performeur d\'origine';
+
+  @override
+  String get technicalNameLabel => 'Nom technique';
+
+  @override
+  String get difficultyLabel => 'Difficulté';
+
+  @override
+  String get leashPositionLabel => 'Position de laisse';
+
+  @override
+  String get loopStartLabel => 'Début de boucle (s)';
+
+  @override
+  String get loopEndLabel => 'Fin de boucle (s)';
+
+  @override
+  String get searchHint => 'Rechercher...';
+
+  @override
+  String errorWithDetail(String detail) {
+    return 'Erreur : $detail';
+  }
+
+  @override
+  String get adminLabel => 'Admin';
+
+  @override
+  String get filterTooltip => 'Filtrer';
+
+  @override
+  String get profileTooltip => 'Profil';
+
+  @override
+  String get signInTooltip => 'Se connecter';
+
+  @override
+  String get submitTrickButton => 'Soumettre un trick';
+
+  @override
+  String get failedToLoadTricks => 'Échec du chargement des tricks';
+
+  @override
+  String get retryButton => 'Réessayer';
+
+  @override
+  String get noTricksYet =>
+      'Aucun trick pour l\'instant. Soyez le premier à en soumettre un !';
+
+  @override
+  String get searchByNameHint => 'Rechercher par nom...';
+
+  @override
+  String get trickDetailTitle => 'Détail du trick';
+
+  @override
+  String get viewProgressionTooltip => 'Voir la progression';
+
+  @override
+  String get editTrickTooltip => 'Modifier le trick';
+
+  @override
+  String get deleteTrickTooltip => 'Supprimer le trick';
+
+  @override
+  String get deleteTrickDialogTitle => 'Supprimer le trick';
+
+  @override
+  String deleteTrickConfirmMessage(String name) {
+    return 'Êtes-vous sûr de vouloir supprimer \"$name\" ? Cette action est irréversible.';
+  }
+
+  @override
+  String get couldNotOpenVideoLink => 'Impossible d\'ouvrir le lien vidéo';
+
+  @override
+  String get watchVideoButton => 'Regarder la vidéo';
+
+  @override
+  String get dateFirstPerformedLabel => 'Date de première réalisation';
+
+  @override
+  String get dateSubmittedLabel => 'Date de soumission';
+
+  @override
+  String get communityVotesLabel => 'Votes de la communauté';
+
+  @override
+  String get myConsistencyLabel => 'Ma constance';
+
+  @override
+  String get landedDetailsLabel => 'Détails de réception';
+
+  @override
+  String get allFieldsOptional => 'Tous les champs sont optionnels';
+
+  @override
+  String get difficultyVoteLabel => 'Vote de difficulté';
+
+  @override
+  String get videoLinkLabel => 'Lien vidéo';
+
+  @override
+  String get videoLinkHint => 'https://';
+
+  @override
+  String get saveDetailsButton => 'Enregistrer les détails';
+
+  @override
+  String get yourLandingVideoLabel => 'Votre vidéo de réception';
+
+  @override
+  String get editTrickTitle => 'Modifier le trick';
+
+  @override
+  String get submitTrickTitle => 'Soumettre un trick';
+
+  @override
+  String get tbdOption => 'À définir';
+
+  @override
+  String get givenNameLabel => 'Nom donné';
+
+  @override
+  String get difficultyRequiredLabel => 'Difficulté *';
+
+  @override
+  String get startPositionRequiredLabel => 'Position de départ *';
+
+  @override
+  String get endPositionRequiredLabel => 'Position d\'arrivée *';
+
+  @override
+  String get dateFirstPerformedOptional =>
+      'Date de première réalisation (optionnel)';
+
+  @override
+  String dateFirstPerformedWithDate(String date) {
+    return 'Date de première réalisation : $date';
+  }
+
+  @override
+  String get videoLinkUrlLabel => 'Lien vidéo (URL)';
+
+  @override
+  String get saveChangesButton => 'Enregistrer les modifications';
+
+  @override
+  String get submitForReviewButton => 'Soumettre pour révision';
+
+  @override
+  String get trickUpdated => 'Trick mis à jour.';
+
+  @override
+  String get trickSubmittedForReview => 'Trick soumis pour révision !';
+
+  @override
+  String get similarTricksWarning => 'Tricks avec des noms similaires :';
+
+  @override
+  String get selectPrerequisiteTitle => 'Sélectionner un prérequis';
+
+  @override
+  String get profileTitle => 'Profil';
+
+  @override
+  String get signOutTooltip => 'Se déconnecter';
+
+  @override
+  String get unknownUser => 'Utilisateur inconnu';
+
+  @override
+  String get darkModeLabel => 'Mode sombre';
+
+  @override
+  String myTricksCount(int count) {
+    return 'Mes tricks ($count)';
+  }
+
+  @override
+  String get noTricksTracked =>
+      'Aucun trick suivi pour l\'instant.\nParcourez la liste et définissez votre constance !';
+
+  @override
+  String get resetPasswordDialogTitle => 'Réinitialiser le mot de passe';
+
+  @override
+  String get emailLabel => 'E-mail';
+
+  @override
+  String get sendResetLinkButton => 'Envoyer le lien de réinitialisation';
+
+  @override
+  String get passwordResetEmailSent =>
+      'E-mail de réinitialisation envoyé — vérifiez votre boîte de réception.';
+
+  @override
+  String get signInToYourAccount => 'Connectez-vous à votre compte';
+
+  @override
+  String get passwordLabel => 'Mot de passe';
+
+  @override
+  String get forgotPassword => 'Mot de passe oublié ?';
+
+  @override
+  String get enterYourEmailValidator => 'Saisissez votre e-mail';
+
+  @override
+  String get enterYourPasswordValidator => 'Saisissez votre mot de passe';
+
+  @override
+  String get signInButton => 'Se connecter';
+
+  @override
+  String get dontHaveAccountRegister => 'Pas encore de compte ? S\'inscrire';
+
+  @override
+  String get createAccountTitle => 'Créer un compte';
+
+  @override
+  String get usernameLabel => 'Nom d\'utilisateur';
+
+  @override
+  String get enterUsernameValidator => 'Saisissez un nom d\'utilisateur';
+
+  @override
+  String get enterPasswordValidator => 'Saisissez un mot de passe';
+
+  @override
+  String get minimumSixCharsValidator => 'Minimum 6 caractères';
+
+  @override
+  String get registerButton => 'S\'inscrire';
+
+  @override
+  String get alreadyHaveAccount => 'Vous avez déjà un compte ? Se connecter';
+
+  @override
+  String get accountCreated =>
+      'Compte créé ! Vérifiez votre e-mail pour confirmer, puis connectez-vous.';
+
+  @override
+  String get setNewPasswordTitle => 'Définir un nouveau mot de passe';
+
+  @override
+  String get chooseNewPassword =>
+      'Choisissez un nouveau mot de passe pour votre compte.';
+
+  @override
+  String get newPasswordLabel => 'Nouveau mot de passe';
+
+  @override
+  String get confirmPasswordLabel => 'Confirmer le mot de passe';
+
+  @override
+  String get enterNewPasswordValidator => 'Saisissez un nouveau mot de passe';
+
+  @override
+  String get passwordMinSixCharsValidator =>
+      'Le mot de passe doit comporter au moins 6 caractères';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get updatePasswordButton => 'Mettre à jour le mot de passe';
+
+  @override
+  String get passwordUpdatedSuccessfully =>
+      'Mot de passe mis à jour avec succès.';
+
+  @override
+  String get adminTitle => 'Admin';
+
+  @override
+  String get addPositionTooltip => 'Ajouter une position';
+
+  @override
+  String get addPositionDialogTitle => 'Ajouter une position';
+
+  @override
+  String get addPositionHint => 'ex. Debout, Suspendu';
+
+  @override
+  String positionAdded(String name) {
+    return 'Position \"$name\" ajoutée.';
+  }
+
+  @override
+  String get noAdminAccess => 'Vous n\'avez pas accès à l\'administration.';
+
+  @override
+  String get noPendingTricks => 'Aucun trick en attente.';
+
+  @override
+  String get performerLabel => 'Performeur';
+
+  @override
+  String get videoLabel => 'Vidéo';
+
+  @override
+  String get approveButton => 'Approuver';
+
+  @override
+  String get rejectButton => 'Rejeter';
+
+  @override
+  String submittedDate(String date) {
+    return 'soumis le $date';
+  }
+
+  @override
+  String get trickProgressionTitle => 'Progression des tricks';
+
+  @override
+  String get noPrerequisitesFound =>
+      'Aucun prérequis ni trick débloqué trouvé.';
+
+  @override
+  String get thisTrickLegend => 'Ce trick';
+
+  @override
+  String get youveLandedThisLegend => 'Vous avez réussi ce trick';
+
+  @override
+  String get notYetLandedLegend => 'Pas encore réussi';
+
+  @override
+  String get pinchToZoom => 'Pincer pour zoomer · Glisser pour déplacer';
+
+  @override
+  String get filterTricksTitle => 'Filtrer les tricks';
+
+  @override
+  String get clearAllButton => 'Tout effacer';
+
+  @override
+  String get difficultyTierSection => 'Niveau de difficulté';
+
+  @override
+  String tierRangeLabel(String tier) {
+    return 'Niveau $tier';
+  }
+
+  @override
+  String get positionSection => 'Position';
+
+  @override
+  String get startLabel => 'Départ';
+
+  @override
+  String get endLabel => 'Arrivée';
+
+  @override
+  String get statusSection => 'Statut';
+
+  @override
+  String get yearLandedSection => 'Année de réception';
+
+  @override
+  String get includeTbdChip => 'Inclure TBD';
+
+  @override
+  String get searchByPerformerHint => 'Rechercher par performeur...';
+
+  @override
+  String get sortTricksTitle => 'Trier les tricks';
+
+  @override
+  String get orderSection => 'Ordre';
+
+  @override
+  String get ascendingOption => 'Croissant';
+
+  @override
+  String get descendingOption => 'Décroissant';
+
+  @override
+  String get groupBySection => 'Grouper par';
+
+  @override
+  String get sortWithinGroupBySection => 'Trier dans le groupe par';
+}
