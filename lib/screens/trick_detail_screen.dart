@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
 import '../models/trick_vote_stats.dart';
@@ -394,7 +395,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                           entries: (voteStats.leashPositions.entries.toList()
                                 ..sort((a, b) => a.key.compareTo(b.key)))
                               .map((e) => _BarEntry(
-                                    label: LeashPosition.values[e.key].label,
+                                    label: LeashPosition.values[e.key].localizedLabel(l10n),
                                     count: e.value,
                                   ))
                               .toList(),
@@ -582,7 +583,7 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
                   ...LeashPosition.values.map((p) =>
                       DropdownMenuItem<LeashPosition?>(
                         value: p,
-                        child: Text(p.label),
+                        child: Text(p.localizedLabel(l10n)),
                       )),
                 ],
                 onChanged: (p) => setState(() => _leashPosition = p),

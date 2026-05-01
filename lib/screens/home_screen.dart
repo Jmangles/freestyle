@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/profile.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
@@ -223,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     for (final (label, groupTricks) in _groups) ...[
                       SliverToBoxAdapter(
                         child: _GroupHeader(
-                          label: label,
+                          label: translateGroupLabel(label, l10n),
                           totalCount: groupTricks.length,
                           landedCount: AuthService.isLoggedIn
                               ? groupTricks
@@ -327,7 +328,7 @@ class _ControlBar extends StatelessWidget {
                 size: 14,
               ),
               label: Text(
-                '${sorter.primary.label}  ·  ${sorter.secondary.label}',
+                '${sorter.primary.localizedLabel(l10n)}  ·  ${sorter.secondary.localizedLabel(l10n)}',
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall,
               ),

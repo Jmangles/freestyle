@@ -909,6 +909,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sort Within Group By'**
   String get sortWithinGroupBySection;
+
+  /// No description provided for @sortLabelDifficultyTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficulty Tier'**
+  String get sortLabelDifficultyTier;
+
+  /// No description provided for @sortLabelStartPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Position'**
+  String get sortLabelStartPosition;
+
+  /// No description provided for @sortLabelYearLanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Year Landed'**
+  String get sortLabelYearLanded;
+
+  /// No description provided for @sortLabelConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'Consistency'**
+  String get sortLabelConsistency;
+
+  /// No description provided for @sortLabelEndPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'End Position'**
+  String get sortLabelEndPosition;
+
+  /// No description provided for @sortLabelAlphabetical.
+  ///
+  /// In en, this message translates to:
+  /// **'Alphabetical'**
+  String get sortLabelAlphabetical;
+
+  /// No description provided for @statusNeverAttempted.
+  ///
+  /// In en, this message translates to:
+  /// **'Never Attempted'**
+  String get statusNeverAttempted;
+
+  /// No description provided for @statusAttempting.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempting'**
+  String get statusAttempting;
+
+  /// No description provided for @statusLandedAtLeastOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed at least once'**
+  String get statusLandedAtLeastOnce;
+
+  /// No description provided for @consistencyOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get consistencyOnce;
+
+  /// No description provided for @consistencySometimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes'**
+  String get consistencySometimes;
+
+  /// No description provided for @consistencyOften.
+  ///
+  /// In en, this message translates to:
+  /// **'Often'**
+  String get consistencyOften;
+
+  /// No description provided for @consistencyGenerally.
+  ///
+  /// In en, this message translates to:
+  /// **'Generally'**
+  String get consistencyGenerally;
+
+  /// No description provided for @consistencyAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get consistencyAlways;
+
+  /// No description provided for @leashFrontside.
+  ///
+  /// In en, this message translates to:
+  /// **'Frontside'**
+  String get leashFrontside;
+
+  /// No description provided for @leashBackside.
+  ///
+  /// In en, this message translates to:
+  /// **'Backside'**
+  String get leashBackside;
+
+  /// No description provided for @leashCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Center'**
+  String get leashCenter;
+
+  /// No description provided for @groupToBeDetetermined.
+  ///
+  /// In en, this message translates to:
+  /// **'To Be Determined'**
+  String get groupToBeDetetermined;
+
+  /// No description provided for @groupDifficulty.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficulty {tier}'**
+  String groupDifficulty(String tier);
+
+  /// No description provided for @groupUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get groupUnknown;
+
+  /// No description provided for @groupLanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed'**
+  String get groupLanded;
 }
 
 class _AppLocalizationsDelegate

@@ -148,5 +148,31 @@
   "ascendingOption": "Ascendente",
   "descendingOption": "Descendente",
   "groupBySection": "Agrupar por",
-  "sortWithinGroupBySection": "Ordenar dentro del grupo por"
+  "sortWithinGroupBySection": "Ordenar dentro del grupo por",
+
+  "sortLabelDifficultyTier": "Nivel de dificultad",
+  "sortLabelStartPosition": "Posición inicial",
+  "sortLabelYearLanded": "Año de aterrizaje",
+  "sortLabelConsistency": "Consistencia",
+  "sortLabelEndPosition": "Posición final",
+  "sortLabelAlphabetical": "Alfabético",
+
+  "statusNeverAttempted": "Nunca intentado",
+  "statusAttempting": "En aprendizaje",
+  "statusLandedAtLeastOnce": "Aterrizado al menos una vez",
+
+  "consistencyOnce": "Una vez",
+  "consistencySometimes": "A veces",
+  "consistencyOften": "Con frecuencia",
+  "consistencyGenerally": "Generalmente",
+  "consistencyAlways": "Siempre",
+
+  "leashFrontside": "Frontal",
+  "leashBackside": "Trasero",
+  "leashCenter": "Centro",
+
+  "groupToBeDetetermined": "Por definir",
+  "groupDifficulty": "Dificultad {tier}",
+  "groupUnknown": "Desconocido",
+  "groupLanded": "Aterrizado"
 }

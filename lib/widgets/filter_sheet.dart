@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
 import '../models/user_trick.dart';
@@ -238,7 +239,7 @@ class _FilterSheetState extends State<FilterSheet> {
                     children: [
                       for (final status in TrickStatus.values)
                         FilterChip(
-                          label: Text(status.label),
+                          label: Text(status.localizedLabel(l10n)),
                           selected: _statuses.contains(status),
                           onSelected: (v) => setState(() {
                             if (v) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/user_trick.dart';
 
 class ConsistencySelector extends StatelessWidget {
@@ -20,7 +22,7 @@ class ConsistencySelector extends StatelessWidget {
       children: Consistency.values.map((c) {
         final isSelected = c == selected;
         return ChoiceChip(
-          label: Text(c.label),
+          label: Text(c.localizedLabel(context.l10n)),
           selected: isSelected,
           onSelected: (_) => onChanged(c),
           selectedColor: theme.colorScheme.primaryContainer,

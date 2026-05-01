@@ -435,4 +435,69 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sortWithinGroupBySection => 'Trier dans le groupe par';
+
+  @override
+  String get sortLabelDifficultyTier => 'Niveau de difficulté';
+
+  @override
+  String get sortLabelStartPosition => 'Position de départ';
+
+  @override
+  String get sortLabelYearLanded => 'Année de réception';
+
+  @override
+  String get sortLabelConsistency => 'Constance';
+
+  @override
+  String get sortLabelEndPosition => 'Position d\'arrivée';
+
+  @override
+  String get sortLabelAlphabetical => 'Alphabétique';
+
+  @override
+  String get statusNeverAttempted => 'Jamais essayé';
+
+  @override
+  String get statusAttempting => 'En apprentissage';
+
+  @override
+  String get statusLandedAtLeastOnce => 'Réussi au moins une fois';
+
+  @override
+  String get consistencyOnce => 'Une fois';
+
+  @override
+  String get consistencySometimes => 'Parfois';
+
+  @override
+  String get consistencyOften => 'Souvent';
+
+  @override
+  String get consistencyGenerally => 'En général';
+
+  @override
+  String get consistencyAlways => 'Toujours';
+
+  @override
+  String get leashFrontside => 'Face avant';
+
+  @override
+  String get leashBackside => 'Face arrière';
+
+  @override
+  String get leashCenter => 'Centre';
+
+  @override
+  String get groupToBeDetetermined => 'À définir';
+
+  @override
+  String groupDifficulty(String tier) {
+    return 'Difficulté $tier';
+  }
+
+  @override
+  String get groupUnknown => 'Inconnu';
+
+  @override
+  String get groupLanded => 'Réussi';
 }

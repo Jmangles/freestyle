@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/profile.dart';
 import '../models/screen_data.dart';
 import '../models/user_trick.dart';
@@ -180,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style:
                           const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(
-                    '${trick.difficultyLabel} · ${userTrick.consistency.label}',
+                    '${trick.difficultyLabel} · ${userTrick.consistency.localizedLabel(l10n)}',
                   ),
                   children: [
                     Padding(

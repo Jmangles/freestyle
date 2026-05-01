@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/trick_sort.dart';
 
 class SortSheet extends StatefulWidget {
@@ -93,7 +94,7 @@ class _SortSheetState extends State<SortSheet> {
                         for (final sort in PrimarySort.values)
                           RadioListTile<PrimarySort>(
                             value: sort,
-                            title: Text(sort.label),
+                            title: Text(sort.localizedLabel(l10n)),
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
@@ -110,7 +111,7 @@ class _SortSheetState extends State<SortSheet> {
                         for (final sort in SecondarySort.values)
                           RadioListTile<SecondarySort>(
                             value: sort,
-                            title: Text(sort.label),
+                            title: Text(sort.localizedLabel(l10n)),
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                           ),

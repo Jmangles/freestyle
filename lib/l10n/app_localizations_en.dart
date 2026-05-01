@@ -431,4 +431,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sortWithinGroupBySection => 'Sort Within Group By';
+
+  @override
+  String get sortLabelDifficultyTier => 'Difficulty Tier';
+
+  @override
+  String get sortLabelStartPosition => 'Start Position';
+
+  @override
+  String get sortLabelYearLanded => 'Year Landed';
+
+  @override
+  String get sortLabelConsistency => 'Consistency';
+
+  @override
+  String get sortLabelEndPosition => 'End Position';
+
+  @override
+  String get sortLabelAlphabetical => 'Alphabetical';
+
+  @override
+  String get statusNeverAttempted => 'Never Attempted';
+
+  @override
+  String get statusAttempting => 'Attempting';
+
+  @override
+  String get statusLandedAtLeastOnce => 'Landed at least once';
+
+  @override
+  String get consistencyOnce => 'Once';
+
+  @override
+  String get consistencySometimes => 'Sometimes';
+
+  @override
+  String get consistencyOften => 'Often';
+
+  @override
+  String get consistencyGenerally => 'Generally';
+
+  @override
+  String get consistencyAlways => 'Always';
+
+  @override
+  String get leashFrontside => 'Frontside';
+
+  @override
+  String get leashBackside => 'Backside';
+
+  @override
+  String get leashCenter => 'Center';
+
+  @override
+  String get groupToBeDetetermined => 'To Be Determined';
+
+  @override
+  String groupDifficulty(String tier) {
+    return 'Difficulty $tier';
+  }
+
+  @override
+  String get groupUnknown => 'Unknown';
+
+  @override
+  String get groupLanded => 'Landed';
 }

@@ -148,5 +148,31 @@
   "ascendingOption": "Croissant",
   "descendingOption": "Décroissant",
   "groupBySection": "Grouper par",
-  "sortWithinGroupBySection": "Trier dans le groupe par"
+  "sortWithinGroupBySection": "Trier dans le groupe par",
+
+  "sortLabelDifficultyTier": "Niveau de difficulté",
+  "sortLabelStartPosition": "Position de départ",
+  "sortLabelYearLanded": "Année de réception",
+  "sortLabelConsistency": "Constance",
+  "sortLabelEndPosition": "Position d'arrivée",
+  "sortLabelAlphabetical": "Alphabétique",
+
+  "statusNeverAttempted": "Jamais essayé",
+  "statusAttempting": "En apprentissage",
+  "statusLandedAtLeastOnce": "Réussi au moins une fois",
+
+  "consistencyOnce": "Une fois",
+  "consistencySometimes": "Parfois",
+  "consistencyOften": "Souvent",
+  "consistencyGenerally": "En général",
+  "consistencyAlways": "Toujours",
+
+  "leashFrontside": "Face avant",
+  "leashBackside": "Face arrière",
+  "leashCenter": "Centre",
+
+  "groupToBeDetetermined": "À définir",
+  "groupDifficulty": "Difficulté {tier}",
+  "groupUnknown": "Inconnu",
+  "groupLanded": "Réussi"
 }

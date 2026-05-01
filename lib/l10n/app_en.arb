@@ -183,5 +183,36 @@
   "ascendingOption": "Ascending",
   "descendingOption": "Descending",
   "groupBySection": "Group By",
-  "sortWithinGroupBySection": "Sort Within Group By"
+  "sortWithinGroupBySection": "Sort Within Group By",
+
+  "sortLabelDifficultyTier": "Difficulty Tier",
+  "sortLabelStartPosition": "Start Position",
+  "sortLabelYearLanded": "Year Landed",
+  "sortLabelConsistency": "Consistency",
+  "sortLabelEndPosition": "End Position",
+  "sortLabelAlphabetical": "Alphabetical",
+
+  "statusNeverAttempted": "Never Attempted",
+  "statusAttempting": "Attempting",
+  "statusLandedAtLeastOnce": "Landed at least once",
+
+  "consistencyOnce": "Once",
+  "consistencySometimes": "Sometimes",
+  "consistencyOften": "Often",
+  "consistencyGenerally": "Generally",
+  "consistencyAlways": "Always",
+
+  "leashFrontside": "Frontside",
+  "leashBackside": "Backside",
+  "leashCenter": "Center",
+
+  "groupToBeDetetermined": "To Be Determined",
+  "groupDifficulty": "Difficulty {tier}",
+  "@groupDifficulty": {
+    "placeholders": {
+      "tier": { "type": "String" }
+    }
+  },
+  "groupUnknown": "Unknown",
+  "groupLanded": "Landed"
 }
