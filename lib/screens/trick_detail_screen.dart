@@ -26,6 +26,7 @@ class TrickDetailScreen extends StatefulWidget {
 
 class _TrickDetailScreenState extends State<TrickDetailScreen> {
   late Future<TrickDetailData> _future;
+  TrickDetailData? _data;
 
   @override
   void initState() {
@@ -90,6 +91,31 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   }
 
   Future<void> _setConsistency(Consistency c) async {
+    if (_data != null) {
+      final existing = _data!.userTrick;
+      final optimistic = existing != null
+          ? UserTrick(
+              id: existing.id,
+              userId: existing.userId,
+              trickId: existing.trickId,
+              consistency: c,
+              difficultyVote: existing.difficultyVote,
+              leashPosition: existing.leashPosition,
+              videoLink: existing.videoLink,
+              videoStart: existing.videoStart,
+              videoEnd: existing.videoEnd,
+            )
+          : UserTrick(id: -1, userId: -1, trickId: widget.trickId, consistency: c);
+      setState(() {
+        _data = TrickDetailData(
+          trick: _data!.trick,
+          prerequisites: _data!.prerequisites,
+          userTrick: optimistic,
+          canEditTricks: _data!.canEditTricks,
+          voteStats: _data!.voteStats,
+        );
+      });
+    }
     await UserTricksService.setConsistency(widget.trickId, c);
     setState(() { _future = _load(); });
   }
@@ -188,13 +214,19 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   }
 
   Widget _buildBody(AsyncSnapshot<TrickDetailData> snap) {
-    if (snap.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
+    if (snap.hasData) _data = snap.data;
+
+    if (_data == null) {
+      if (snap.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (snap.hasError) {
+        return Center(child: Text('Error: ${snap.error}'));
+      }
+      return const SizedBox.shrink();
     }
-    if (snap.hasError) {
-      return Center(child: Text('Error: ${snap.error}'));
-    }
-    final data = snap.data!;
+
+    final data = _data!;
     return _buildContent(data.trick, data.prerequisites, data.userTrick, data.voteStats);
   }
 
