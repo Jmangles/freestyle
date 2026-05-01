@@ -315,11 +315,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Wrap(
+              spacing: 24,
+              runSpacing: 16,
               children: [
                 if (voteStats.hasDifficultyVotes)
-                  Expanded(
+                  SizedBox(
+                    width: 160,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -327,7 +329,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                             style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 6),
-                        _VoteBarChart(
+                        _VotePieChart(
                           entries: (voteStats.difficultyVotes.entries.toList()
                                 ..sort((a, b) => a.key.compareTo(b.key)))
                               .map((e) {
@@ -342,10 +344,9 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                       ],
                     ),
                   ),
-                if (voteStats.hasDifficultyVotes && voteStats.hasLeashVotes)
-                  const SizedBox(width: 16),
                 if (voteStats.hasLeashVotes)
-                  Expanded(
+                  SizedBox(
+                    width: 160,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -353,7 +354,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                             style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 6),
-                        _VoteBarChart(
+                        _VotePieChart(
                           entries: (voteStats.leashPositions.entries.toList()
                                 ..sort((a, b) => a.key.compareTo(b.key)))
                               .map((e) => _BarEntry(
@@ -626,72 +627,116 @@ class _BarEntry {
   const _BarEntry({required this.label, required this.count, this.color});
 }
 
-class _VoteBarChart extends StatelessWidget {
+class _VotePieChart extends StatelessWidget {
   final List<_BarEntry> entries;
 
-  const _VoteBarChart({required this.entries});
+  const _VotePieChart({required this.entries});
 
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
-    final maxCount = entries.map((e) => e.count).reduce(math.max);
     final theme = Theme.of(context);
+    final total = entries.fold<int>(0, (sum, e) => sum + e.count);
+    final colors = entries
+        .map((e) => e.color ?? theme.colorScheme.primary)
+        .toList();
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: entries.map((entry) {
-        final barColor = entry.color ?? theme.colorScheme.primary;
-        final barHeight = 90 * (entry.count / maxCount);
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      children: [
+        Center(
+          child: SizedBox(
+            width: 110,
+            height: 110,
+            child: CustomPaint(
+              painter: _PieChartPainter(
+                entries: entries,
+                colors: colors,
+                total: total,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...entries.asMap().entries.map((e) {
+          final entry = e.value;
+          final color = colors[e.key];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
               children: [
-                SizedBox(
-                  height: 90,
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      height: barHeight,
-                      decoration: BoxDecoration(
-                        color: barColor.withValues(alpha: 0.85),
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4)),
-                      ),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '${entry.count}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.85),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  entry.label,
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    '${entry.label} (${entry.count})',
+                    style: theme.textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }),
+      ],
     );
   }
+}
+
+class _PieChartPainter extends CustomPainter {
+  final List<_BarEntry> entries;
+  final List<Color> colors;
+  final int total;
+
+  const _PieChartPainter({
+    required this.entries,
+    required this.colors,
+    required this.total,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total == 0) return;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    double startAngle = -math.pi / 2;
+    for (var i = 0; i < entries.length; i++) {
+      final sweep = 2 * math.pi * entries[i].count / total;
+      canvas.drawArc(
+        rect,
+        startAngle,
+        sweep,
+        true,
+        Paint()
+          ..color = colors[i].withValues(alpha: 0.85)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawArc(
+        rect,
+        startAngle,
+        sweep,
+        true,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.4)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke,
+      );
+      startAngle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PieChartPainter old) =>
+      entries != old.entries || total != old.total;
 }
 
 bool _isPortraitUrl(String? url) {
