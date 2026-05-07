@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _nameQuery = '';
   List<(String, List<Trick>)> _groups = [];
   late final StreamSubscription _authSub;
+  late final RealtimeChannel _tricksChannel;
 
   @override
   void initState() {
@@ -46,11 +47,21 @@ class _HomeScreenState extends State<HomeScreen> {
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       _load();
     });
+    _tricksChannel = Supabase.instance.client
+        .channel('public:tricks')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'tricks',
+          callback: (_) => _load(),
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
     _authSub.cancel();
+    Supabase.instance.client.removeChannel(_tricksChannel);
     _nameSearchController.dispose();
     super.dispose();
   }
