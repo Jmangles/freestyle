@@ -488,6 +488,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get leashCenter => 'Centre';
 
   @override
+  String get suggestEditTooltip => 'Suggérer une modification';
+
+  @override
+  String get suggestEditTitle => 'Suggérer une modification';
+
+  @override
+  String get suggestChangesButton => 'Suggérer des modifications';
+
+  @override
+  String get suggestionSubmittedForReview =>
+      'Suggestion soumise pour révision !';
+
+  @override
+  String get suggestionNoChanges =>
+      'Aucune modification détectée — modifiez au moins un champ pour suggérer.';
+
+  @override
+  String get pendingSuggestionsSection => 'Suggestions en attente';
+
+  @override
+  String get noPendingSuggestions => 'Aucune suggestion en attente.';
+
+  @override
+  String forTrickLabel(String name) {
+    return 'Pour : $name';
+  }
+
+  @override
   String get groupToBeDetetermined => 'À définir';
 
   @override

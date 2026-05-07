@@ -125,3 +125,47 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- ============================================================
+-- Trick Suggestions: sparse proposed edits to approved tricks.
+-- Only changed fields are stored; null means "no change to this field".
+-- Every row is implicitly pending — approved rows are deleted after
+-- applying the delta; rejected rows are deleted outright.
+-- ============================================================
+
+create table trick_suggestions (
+  id                     integer generated always as identity primary key,
+  trick_id               integer not null references tricks(id) on delete cascade,
+  given_name             text,
+  technical_name         text,
+  difficulty_tier        smallint check (difficulty_tier = -1 or difficulty_tier between 1 and 30),
+  date_performed         date,
+  original_performer     text,
+  prerequisite_trick_ids integer[],
+  description            text,
+  tips                   text,
+  video_link             text,
+  video_start            integer,
+  video_end              integer,
+  start_position_id      smallint references positions(id),
+  end_position_id        smallint references positions(id),
+  submitted_by           integer references profiles(int_id) on delete set null,
+  date_submitted         timestamptz not null default now()
+);
+
+alter table trick_suggestions enable row level security;
+
+create policy "suggestions_insert" on trick_suggestions for insert
+  with check (submitted_by = (select int_id from profiles where id = auth.uid()));
+
+create policy "suggestions_read_own" on trick_suggestions for select
+  using (submitted_by = (select int_id from profiles where id = auth.uid()));
+
+create policy "suggestions_read_admin" on trick_suggestions for select
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+
+create policy "suggestions_delete_admin" on trick_suggestions for delete
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+
+grant select, insert on trick_suggestions to authenticated;
+grant delete on trick_suggestions to authenticated;

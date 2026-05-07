@@ -206,6 +206,20 @@
   "leashBackside": "Backside",
   "leashCenter": "Center",
 
+  "suggestEditTooltip": "Suggest Edit",
+  "suggestEditTitle": "Suggest Edit",
+  "suggestChangesButton": "Suggest Changes",
+  "suggestionSubmittedForReview": "Suggestion submitted for review!",
+  "suggestionNoChanges": "No changes detected — edit at least one field to suggest.",
+  "pendingSuggestionsSection": "Pending Suggestions",
+  "noPendingSuggestions": "No pending suggestions.",
+  "forTrickLabel": "For: {name}",
+  "@forTrickLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
   "groupToBeDetetermined": "To Be Determined",
   "groupDifficulty": "Difficulty {tier}",
   "@groupDifficulty": {

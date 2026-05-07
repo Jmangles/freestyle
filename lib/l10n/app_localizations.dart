@@ -1012,6 +1012,54 @@ abstract class AppLocalizations {
   /// **'Center'**
   String get leashCenter;
 
+  /// No description provided for @suggestEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest Edit'**
+  String get suggestEditTooltip;
+
+  /// No description provided for @suggestEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest Edit'**
+  String get suggestEditTitle;
+
+  /// No description provided for @suggestChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest Changes'**
+  String get suggestChangesButton;
+
+  /// No description provided for @suggestionSubmittedForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion submitted for review!'**
+  String get suggestionSubmittedForReview;
+
+  /// No description provided for @suggestionNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes detected — edit at least one field to suggest.'**
+  String get suggestionNoChanges;
+
+  /// No description provided for @pendingSuggestionsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Suggestions'**
+  String get pendingSuggestionsSection;
+
+  /// No description provided for @noPendingSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending suggestions.'**
+  String get noPendingSuggestions;
+
+  /// No description provided for @forTrickLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'For: {name}'**
+  String forTrickLabel(String name);
+
   /// No description provided for @groupToBeDetetermined.
   ///
   /// In en, this message translates to:

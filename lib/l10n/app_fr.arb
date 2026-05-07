@@ -171,6 +171,15 @@
   "leashBackside": "Face arrière",
   "leashCenter": "Centre",
 
+  "suggestEditTooltip": "Suggérer une modification",
+  "suggestEditTitle": "Suggérer une modification",
+  "suggestChangesButton": "Suggérer des modifications",
+  "suggestionSubmittedForReview": "Suggestion soumise pour révision !",
+  "suggestionNoChanges": "Aucune modification détectée — modifiez au moins un champ pour suggérer.",
+  "pendingSuggestionsSection": "Suggestions en attente",
+  "noPendingSuggestions": "Aucune suggestion en attente.",
+  "forTrickLabel": "Pour : {name}",
+
   "groupToBeDetetermined": "À définir",
   "groupDifficulty": "Difficulté {tier}",
   "groupUnknown": "Inconnu",

@@ -485,6 +485,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get leashCenter => 'Centro';
 
   @override
+  String get suggestEditTooltip => 'Sugerir edición';
+
+  @override
+  String get suggestEditTitle => 'Sugerir edición';
+
+  @override
+  String get suggestChangesButton => 'Sugerir cambios';
+
+  @override
+  String get suggestionSubmittedForReview =>
+      '¡Sugerencia enviada para revisión!';
+
+  @override
+  String get suggestionNoChanges =>
+      'No se detectaron cambios — edita al menos un campo para sugerir.';
+
+  @override
+  String get pendingSuggestionsSection => 'Sugerencias pendientes';
+
+  @override
+  String get noPendingSuggestions => 'No hay sugerencias pendientes.';
+
+  @override
+  String forTrickLabel(String name) {
+    return 'Para: $name';
+  }
+
+  @override
   String get groupToBeDetetermined => 'Por definir';
 
   @override

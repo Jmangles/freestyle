@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/approval_status.dart';
 import '../models/trick.dart';
+import '../models/trick_suggestion.dart';
 import '../models/position.dart';
 import 'auth_service.dart';
 
@@ -84,5 +85,41 @@ class TricksService {
 
   static Future<void> deleteTrick(int id) async {
     await _client.from('tricks').delete().eq('id', id);
+  }
+
+  static const _suggestionSelect =
+      '*, '
+      'start_position:positions!start_position_id(name), '
+      'end_position:positions!end_position_id(name)';
+
+  static Future<void> submitTrickSuggestion({
+    required int trickId,
+    required Map<String, dynamic> fields,
+  }) async {
+    final profile = await AuthService.getCurrentProfile();
+    if (profile == null) return;
+    await _client.from('trick_suggestions').insert({
+      'trick_id': trickId,
+      ...fields,
+      'submitted_by': profile.intId,
+    });
+  }
+
+  static Future<List<TrickSuggestion>> getPendingSuggestions() async {
+    final data = await _client
+        .from('trick_suggestions')
+        .select(_suggestionSelect)
+        .order('date_submitted');
+    return (data as List).map((e) => TrickSuggestion.fromJson(e)).toList();
+  }
+
+  static Future<void> deleteSuggestion(int id) async {
+    await _client.from('trick_suggestions').delete().eq('id', id);
+  }
+
+  static Future<void> approveSuggestion(TrickSuggestion suggestion) async {
+    final delta = suggestion.toDeltaJson();
+    if (delta.isNotEmpty) await updateTrick(suggestion.trickId, delta);
+    await deleteSuggestion(suggestion.id);
   }
 }

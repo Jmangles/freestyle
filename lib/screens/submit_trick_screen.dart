@@ -13,7 +13,11 @@ class SubmitTrickScreen extends StatefulWidget {
   /// When provided, operates in admin-edit mode instead of submission mode.
   final Trick? existingTrick;
 
-  const SubmitTrickScreen({super.key, this.existingTrick});
+  /// When provided, operates in suggestion mode: form pre-fills from this
+  /// trick and submitting creates a trick_suggestion rather than editing.
+  final Trick? suggestionForTrick;
+
+  const SubmitTrickScreen({super.key, this.existingTrick, this.suggestionForTrick});
 
   @override
   State<SubmitTrickScreen> createState() => _SubmitTrickScreenState();
@@ -41,11 +45,12 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   late final VoidCallback _nameListener;
 
   bool get _isEditing => widget.existingTrick != null;
+  bool get _isSuggesting => widget.suggestionForTrick != null;
 
   @override
   void initState() {
     super.initState();
-    final t = widget.existingTrick;
+    final t = widget.existingTrick ?? widget.suggestionForTrick;
     _givenName = TextEditingController(text: t?.givenName);
     _technicalName = TextEditingController(text: t?.technicalName);
     _originalPerformer = TextEditingController(text: t?.originalPerformer);
@@ -90,27 +95,90 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     super.dispose();
   }
 
+  Map<String, dynamic> get _formFields => {
+        'given_name': _givenName.text.trim(),
+        'technical_name': trimToNull(_technicalName.text),
+        'difficulty_tier': _difficultyTier,
+        'date_performed': _datePerformed?.toIso8601String().split('T').first,
+        'original_performer': trimToNull(_originalPerformer.text),
+        'prerequisite_trick_ids': _prerequisiteIds,
+        'description': trimToNull(_description.text),
+        'tips': trimToNull(_tips.text),
+        'video_link': trimToNull(_videoLink.text),
+        'video_start': int.tryParse(_videoStart.text.trim()),
+        'video_end': int.tryParse(_videoEnd.text.trim()),
+        'start_position_id': _startPositionId,
+        'end_position_id': _endPositionId,
+      };
+
+  /// Compares form values against [original] and returns only changed,
+  /// non-null fields. Null values are excluded because the sparse table
+  /// uses null to mean "no change".
+  Map<String, dynamic> _computeSuggestionDelta(Trick original) {
+    final fields = <String, dynamic>{};
+
+    final name = _givenName.text.trim();
+    if (name.isNotEmpty && name != original.givenName) fields['given_name'] = name;
+
+    final techName = trimToNull(_technicalName.text);
+    if (techName != null && techName != original.technicalName) fields['technical_name'] = techName;
+
+    if (_difficultyTier != original.difficultyTier) fields['difficulty_tier'] = _difficultyTier;
+
+    final origDate = original.datePerformed?.toIso8601String().split('T').first;
+    final suggestedDate = _datePerformed?.toIso8601String().split('T').first;
+    if (suggestedDate != null && suggestedDate != origDate) fields['date_performed'] = suggestedDate;
+
+    final performer = trimToNull(_originalPerformer.text);
+    if (performer != null && performer != original.originalPerformer) fields['original_performer'] = performer;
+
+    final prereqsChanged =
+        _prerequisiteIds.length != original.prerequisiteTrickIds.length ||
+        !_prerequisiteIds.toSet().containsAll(original.prerequisiteTrickIds);
+    if (prereqsChanged) fields['prerequisite_trick_ids'] = _prerequisiteIds;
+
+    final desc = trimToNull(_description.text);
+    if (desc != null && desc != original.description) fields['description'] = desc;
+
+    final tips = trimToNull(_tips.text);
+    if (tips != null && tips != original.tips) fields['tips'] = tips;
+
+    final video = trimToNull(_videoLink.text);
+    if (video != null && video != original.videoLink) fields['video_link'] = video;
+
+    final start = int.tryParse(_videoStart.text.trim());
+    if (start != null && start != original.videoStart) fields['video_start'] = start;
+
+    final end = int.tryParse(_videoEnd.text.trim());
+    if (end != null && end != original.videoEnd) fields['video_end'] = end;
+
+    if (_startPositionId != null && _startPositionId != original.startPositionId) fields['start_position_id'] = _startPositionId;
+    if (_endPositionId != null && _endPositionId != original.endPositionId) fields['end_position_id'] = _endPositionId;
+
+    return fields;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
       if (_isEditing) {
-        await TricksService.updateTrick(widget.existingTrick!.id, {
-          'given_name': _givenName.text.trim(),
-          'technical_name': trimToNull(_technicalName.text),
-          'difficulty_tier': _difficultyTier,
-          'date_performed':
-              _datePerformed?.toIso8601String().split('T').first,
-          'original_performer': trimToNull(_originalPerformer.text),
-          'prerequisite_trick_ids': _prerequisiteIds,
-          'description': trimToNull(_description.text),
-          'tips': trimToNull(_tips.text),
-          'video_link': trimToNull(_videoLink.text),
-          'video_start': int.tryParse(_videoStart.text.trim()),
-          'video_end': int.tryParse(_videoEnd.text.trim()),
-          'start_position_id': _startPositionId,
-          'end_position_id': _endPositionId,
-        });
+        await TricksService.updateTrick(widget.existingTrick!.id, _formFields);
+      } else if (_isSuggesting) {
+        final delta = _computeSuggestionDelta(widget.suggestionForTrick!);
+        if (delta.isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(context.l10n.suggestionNoChanges),
+            ));
+          }
+          setState(() => _loading = false);
+          return;
+        }
+        await TricksService.submitTrickSuggestion(
+          trickId: widget.suggestionForTrick!.id,
+          fields: delta,
+        );
       } else {
         final trick = Trick(
           id: 0,
@@ -136,7 +204,9 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_isEditing
               ? context.l10n.trickUpdated
-              : context.l10n.trickSubmittedForReview),
+              : _isSuggesting
+                  ? context.l10n.suggestionSubmittedForReview
+                  : context.l10n.trickSubmittedForReview),
         ));
         context.pop();
       }
@@ -158,7 +228,11 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? l10n.editTrickTitle : l10n.submitTrickTitle),
+        title: Text(_isEditing
+          ? l10n.editTrickTitle
+          : _isSuggesting
+              ? l10n.suggestEditTitle
+              : l10n.submitTrickTitle),
       ),
       body: FutureBuilder<SubmitMeta>(
         future: _metaFuture,
@@ -308,7 +382,11 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(_isEditing ? l10n.saveChangesButton : l10n.submitForReviewButton),
+                  : Text(_isEditing
+                      ? l10n.saveChangesButton
+                      : _isSuggesting
+                          ? l10n.suggestChangesButton
+                          : l10n.submitForReviewButton),
             ),
           ],
         ),

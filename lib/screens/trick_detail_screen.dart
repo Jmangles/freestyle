@@ -93,6 +93,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     setState(() { _future = _load(); });
   }
 
+  Future<void> _openSuggestEdit(Trick trick) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => SubmitTrickScreen(suggestionForTrick: trick)),
+    );
+  }
+
   Future<void> _setConsistency(Consistency c) async {
     if (_data != null) {
       final existing = _data!.userTrick;
@@ -208,7 +215,12 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                   tooltip: l10n.deleteTrickTooltip,
                   onPressed: () => _deleteTrick(trick),
                 ),
-              ],
+              ] else if (!canEditTricks && AuthService.isLoggedIn && trick != null)
+                IconButton(
+                  icon: const Icon(Icons.rate_review_outlined),
+                  tooltip: l10n.suggestEditTooltip,
+                  onPressed: () => _openSuggestEdit(trick),
+                ),
             ],
           ),
           body: _buildBody(snap),
