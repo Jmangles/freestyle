@@ -1,3 +1,4 @@
+import '../models/tip_type.dart';
 import '../models/trick_filter.dart';
 import '../models/trick_sort.dart';
 import '../models/user_trick.dart';
@@ -46,6 +47,14 @@ extension LeashPositionL10n on LeashPosition {
         LeashPosition.frontside => l10n.leashFrontside,
         LeashPosition.backside => l10n.leashBackside,
         LeashPosition.center => l10n.leashCenter,
+      };
+}
+
+extension TipTypeL10n on TipType {
+  String localizedLabel(AppLocalizations l10n) => switch (this) {
+        TipType.general => l10n.tipTypeGeneral,
+        TipType.rigging => l10n.tipTypeRigging,
+        TipType.health => l10n.tipTypeHealth,
       };
 }
 

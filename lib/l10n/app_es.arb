@@ -183,5 +183,36 @@
   "groupToBeDetetermined": "Por definir",
   "groupDifficulty": "Dificultad {tier}",
   "groupUnknown": "Desconocido",
-  "groupLanded": "Aterrizado"
+  "groupLanded": "Aterrizado",
+
+  "tricksNavLabel": "Trucos",
+  "tipsNavLabel": "Consejos",
+
+  "tipTypeGeneral": "General",
+  "tipTypeRigging": "Aparejo",
+  "tipTypeHealth": "Salud",
+  "allTypesFilter": "Todos",
+
+  "submitTipButton": "Enviar consejo",
+  "submitTipTitle": "Enviar un consejo",
+  "editTipTitle": "Editar consejo",
+  "failedToLoadTips": "Error al cargar los consejos",
+  "noTipsYet": "Sin consejos aún. ¡Sé el primero en enviar uno!",
+  "tipBodyLabel": "Contenido",
+  "tipTitleLabel": "Título",
+  "tipHeaderLabel": "Resumen",
+  "tipTypeLabel": "Categoría",
+  "tipSubmittedForReview": "¡Consejo enviado para revisión!",
+  "tipUpdated": "Consejo actualizado.",
+
+  "noPendingTips": "No hay consejos pendientes.",
+  "pendingTipsSection": "Consejos pendientes",
+  "declineButton": "Rechazar",
+
+  "submittedOnLabel": "Enviado el {date}",
+  "@submittedOnLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  }
 }

@@ -1083,6 +1083,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Landed'**
   String get groupLanded;
+
+  /// No description provided for @tricksNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tricks'**
+  String get tricksNavLabel;
+
+  /// No description provided for @tipsNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips'**
+  String get tipsNavLabel;
+
+  /// No description provided for @tipTypeGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get tipTypeGeneral;
+
+  /// No description provided for @tipTypeRigging.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigging'**
+  String get tipTypeRigging;
+
+  /// No description provided for @tipTypeHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get tipTypeHealth;
+
+  /// No description provided for @allTypesFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allTypesFilter;
+
+  /// No description provided for @submitTipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Tip'**
+  String get submitTipButton;
+
+  /// No description provided for @submitTipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit a Tip'**
+  String get submitTipTitle;
+
+  /// No description provided for @editTipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Tip'**
+  String get editTipTitle;
+
+  /// No description provided for @failedToLoadTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load tips'**
+  String get failedToLoadTips;
+
+  /// No description provided for @noTipsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No tips yet. Be the first to submit one!'**
+  String get noTipsYet;
+
+  /// No description provided for @tipBodyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get tipBodyLabel;
+
+  /// No description provided for @tipTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get tipTitleLabel;
+
+  /// No description provided for @tipHeaderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get tipHeaderLabel;
+
+  /// No description provided for @tipTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get tipTypeLabel;
+
+  /// No description provided for @tipSubmittedForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip submitted for review!'**
+  String get tipSubmittedForReview;
+
+  /// No description provided for @tipUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip updated.'**
+  String get tipUpdated;
+
+  /// No description provided for @noPendingTips.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending tips.'**
+  String get noPendingTips;
+
+  /// No description provided for @pendingTipsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Tips'**
+  String get pendingTipsSection;
+
+  /// No description provided for @declineButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineButton;
+
+  /// No description provided for @submittedOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted on {date}'**
+  String submittedOnLabel(String date);
 }
 
 class _AppLocalizationsDelegate

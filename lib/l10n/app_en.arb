@@ -228,5 +228,36 @@
     }
   },
   "groupUnknown": "Unknown",
-  "groupLanded": "Landed"
+  "groupLanded": "Landed",
+
+  "tricksNavLabel": "Tricks",
+  "tipsNavLabel": "Tips",
+
+  "tipTypeGeneral": "General",
+  "tipTypeRigging": "Rigging",
+  "tipTypeHealth": "Health",
+  "allTypesFilter": "All",
+
+  "submitTipButton": "Submit Tip",
+  "submitTipTitle": "Submit a Tip",
+  "editTipTitle": "Edit Tip",
+  "failedToLoadTips": "Failed to load tips",
+  "noTipsYet": "No tips yet. Be the first to submit one!",
+  "tipBodyLabel": "Body",
+  "tipTitleLabel": "Title",
+  "tipHeaderLabel": "Summary",
+  "tipTypeLabel": "Category",
+  "tipSubmittedForReview": "Tip submitted for review!",
+  "tipUpdated": "Tip updated.",
+
+  "noPendingTips": "No pending tips.",
+  "pendingTipsSection": "Pending Tips",
+  "declineButton": "Decline",
+
+  "submittedOnLabel": "Submitted on {date}",
+  "@submittedOnLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  }
 }

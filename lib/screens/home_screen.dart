@@ -177,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: AuthService.isLoggedIn
           ? FloatingActionButton.extended(
+              heroTag: 'home_fab',
               onPressed: () => context.push('/submit'),
               icon: const Icon(Icons.add),
               label: Text(l10n.submitTrickButton),

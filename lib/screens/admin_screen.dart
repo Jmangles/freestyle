@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../l10n/enum_localizations.dart';
 import '../models/approval_status.dart';
 import '../models/screen_data.dart';
+import '../models/tip.dart';
 import '../models/trick.dart';
 import '../models/trick_suggestion.dart';
 import '../services/auth_service.dart';
+import '../services/tips_service.dart';
 import '../services/tricks_service.dart';
 import '../utils/date_formatters.dart';
+import 'submit_tip_screen.dart';
 import 'submit_trick_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -28,14 +32,18 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<AdminData> _load() async {
     final profile = await AuthService.getCurrentProfile(forceRefresh: true);
     if (profile?.canEditTricks != true) {
-      return AdminData(pendingTricks: [], pendingSuggestions: [], originalTricks: {}, profile: profile);
+      return AdminData(pendingTricks: [], pendingSuggestions: [], originalTricks: {}, pendingTips: [], profile: profile);
     }
-    final tricks = await TricksService.getPendingTricks();
-    final suggestions = await TricksService.getPendingSuggestions();
+    final tricksFuture = TricksService.getPendingTricks();
+    final suggestionsFuture = TricksService.getPendingSuggestions();
+    final tipsFuture = TipsService.getPendingTips();
+    final tricks = await tricksFuture;
+    final suggestions = await suggestionsFuture;
+    final tips = await tipsFuture;
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
-    return AdminData(pendingTricks: tricks, pendingSuggestions: suggestions, originalTricks: originalTricks, profile: profile);
+    return AdminData(pendingTricks: tricks, pendingSuggestions: suggestions, originalTricks: originalTricks, pendingTips: tips, profile: profile);
   }
 
   void _refresh() => setState(() { _future = _load(); });
@@ -52,6 +60,16 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _rejectSuggestion(int id) async {
     await TricksService.deleteSuggestion(id);
+    _refresh();
+  }
+
+  Future<void> _approveTip(int id) async {
+    await TipsService.approveTip(id);
+    _refresh();
+  }
+
+  Future<void> _declineTip(int id) async {
+    await TipsService.deleteTip(id);
     _refresh();
   }
 
@@ -138,8 +156,9 @@ class _AdminScreenState extends State<AdminScreen> {
 
     final tricks = snap.data!.pendingTricks;
     final suggestions = snap.data!.pendingSuggestions;
+    final tips = snap.data!.pendingTips;
 
-    if (tricks.isEmpty && suggestions.isEmpty) {
+    if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: ListView(
@@ -148,6 +167,8 @@ class _AdminScreenState extends State<AdminScreen> {
             Center(child: Text(l10n.noPendingTricks)),
             const SizedBox(height: 8),
             Center(child: Text(l10n.noPendingSuggestions)),
+            const SizedBox(height: 8),
+            Center(child: Text(l10n.noPendingTips)),
           ],
         ),
       );
@@ -188,6 +209,32 @@ class _AdminScreenState extends State<AdminScreen> {
             originalTrick: snap.data!.originalTricks[suggestions[i].trickId],
             onApprove: () => _approveSuggestion(suggestions[i]),
             onReject: () => _rejectSuggestion(suggestions[i].id),
+          ),
+        ],
+      ],
+      if (tips.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Text(l10n.pendingTipsSection,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        for (int i = 0; i < tips.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _PendingTipCard(
+            tip: tips[i],
+            onApprove: () => _approveTip(tips[i].id),
+            onDecline: () => _declineTip(tips[i].id),
+            onEdit: () async {
+              await Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubmitTipScreen(existingTip: tips[i]),
+                ),
+              );
+              _refresh();
+            },
           ),
         ],
       ],
@@ -433,4 +480,90 @@ class _PendingSuggestionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PendingTipCard extends StatelessWidget {
+  final Tip tip;
+  final VoidCallback onApprove;
+  final VoidCallback onDecline;
+  final VoidCallback onEdit;
+
+  const _PendingTipCard({
+    required this.tip,
+    required this.onApprove,
+    required this.onDecline,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Card(
+      child: ExpansionTile(
+        title: Text(tip.title,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          '${tip.type.localizedLabel(l10n)} · ${l10n.submittedDate(formatShortDate(tip.submittedOn))}',
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _row(l10n.tipHeaderLabel, tip.header),
+                _row(l10n.tipBodyLabel, tip.body),
+                const SizedBox(height: 12),
+                OverflowBar(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: Text(l10n.editButton),
+                    ),
+                    FilledButton.icon(
+                      onPressed: onApprove,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(l10n.approveButton),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: theme.brightness == Brightness.dark
+                            ? Colors.green.shade400
+                            : Colors.green.shade700,
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white,
+                      ),
+                    ),
+                    FilledButton.icon(
+                      onPressed: onDecline,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: Text(l10n.declineButton),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              TextSpan(text: value),
+            ],
+          ),
+        ),
+      );
 }

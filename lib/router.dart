@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
+import 'screens/tips_screen.dart';
 import 'screens/trick_detail_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/submit_trick_screen.dart';
+import 'screens/submit_tip_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
+import 'widgets/main_shell.dart';
 
 class AppRouter {
   static final _authNotifier = _AuthNotifier();
@@ -27,7 +30,7 @@ class AppRouter {
       }
 
       final onAuth = loc == '/login' || loc == '/register';
-      final isPublic = loc == '/' || loc.startsWith('/trick/');
+      final isPublic = loc == '/' || loc.startsWith('/trick/') || loc == '/tips';
       if (!loggedIn && !onAuth && !isPublic) return '/login';
       if (loggedIn && onAuth) return '/';
       return null;
@@ -36,15 +39,31 @@ class AppRouter {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/reset-password', builder: (_, __) => const ResetPasswordScreen()),
-      GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
       GoRoute(
         path: '/trick/:id',
         builder: (_, state) =>
             TrickDetailScreen(trickId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(path: '/submit', builder: (_, __) => const SubmitTrickScreen()),
+      GoRoute(path: '/tips/submit', builder: (_, __) => const SubmitTipScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            MainShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/tips', builder: (_, __) => const TipsScreen()),
+            ],
+          ),
+        ],
+      ),
     ],
   );
 }

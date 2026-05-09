@@ -183,5 +183,36 @@
   "groupToBeDetetermined": "À définir",
   "groupDifficulty": "Difficulté {tier}",
   "groupUnknown": "Inconnu",
-  "groupLanded": "Réussi"
+  "groupLanded": "Réussi",
+
+  "tricksNavLabel": "Tricks",
+  "tipsNavLabel": "Conseils",
+
+  "tipTypeGeneral": "Général",
+  "tipTypeRigging": "Gréement",
+  "tipTypeHealth": "Santé",
+  "allTypesFilter": "Tous",
+
+  "submitTipButton": "Soumettre un conseil",
+  "submitTipTitle": "Soumettre un conseil",
+  "editTipTitle": "Modifier le conseil",
+  "failedToLoadTips": "Échec du chargement des conseils",
+  "noTipsYet": "Pas encore de conseils. Soyez le premier à en soumettre un !",
+  "tipBodyLabel": "Contenu",
+  "tipTitleLabel": "Titre",
+  "tipHeaderLabel": "Résumé",
+  "tipTypeLabel": "Catégorie",
+  "tipSubmittedForReview": "Conseil soumis pour révision !",
+  "tipUpdated": "Conseil mis à jour.",
+
+  "noPendingTips": "Aucun conseil en attente.",
+  "pendingTipsSection": "Conseils en attente",
+  "declineButton": "Refuser",
+
+  "submittedOnLabel": "Soumis le {date}",
+  "@submittedOnLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  }
 }

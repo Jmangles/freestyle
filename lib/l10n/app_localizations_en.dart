@@ -523,4 +523,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupLanded => 'Landed';
+
+  @override
+  String get tricksNavLabel => 'Tricks';
+
+  @override
+  String get tipsNavLabel => 'Tips';
+
+  @override
+  String get tipTypeGeneral => 'General';
+
+  @override
+  String get tipTypeRigging => 'Rigging';
+
+  @override
+  String get tipTypeHealth => 'Health';
+
+  @override
+  String get allTypesFilter => 'All';
+
+  @override
+  String get submitTipButton => 'Submit Tip';
+
+  @override
+  String get submitTipTitle => 'Submit a Tip';
+
+  @override
+  String get editTipTitle => 'Edit Tip';
+
+  @override
+  String get failedToLoadTips => 'Failed to load tips';
+
+  @override
+  String get noTipsYet => 'No tips yet. Be the first to submit one!';
+
+  @override
+  String get tipBodyLabel => 'Body';
+
+  @override
+  String get tipTitleLabel => 'Title';
+
+  @override
+  String get tipHeaderLabel => 'Summary';
+
+  @override
+  String get tipTypeLabel => 'Category';
+
+  @override
+  String get tipSubmittedForReview => 'Tip submitted for review!';
+
+  @override
+  String get tipUpdated => 'Tip updated.';
+
+  @override
+  String get noPendingTips => 'No pending tips.';
+
+  @override
+  String get pendingTipsSection => 'Pending Tips';
+
+  @override
+  String get declineButton => 'Decline';
+
+  @override
+  String submittedOnLabel(String date) {
+    return 'Submitted on $date';
+  }
 }

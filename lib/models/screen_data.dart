@@ -1,5 +1,6 @@
 import 'position.dart';
 import 'profile.dart';
+import 'tip.dart';
 import 'trick.dart';
 import 'trick_suggestion.dart';
 import 'trick_vote_stats.dart';
@@ -73,12 +74,14 @@ class AdminData {
   final List<Trick> pendingTricks;
   final List<TrickSuggestion> pendingSuggestions;
   final Map<int, Trick> originalTricks;
+  final List<Tip> pendingTips;
   final Profile? profile;
 
   const AdminData({
     required this.pendingTricks,
     required this.pendingSuggestions,
     required this.originalTricks,
+    required this.pendingTips,
     this.profile,
   });
 }

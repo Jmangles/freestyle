@@ -528,4 +528,70 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get groupLanded => 'Réussi';
+
+  @override
+  String get tricksNavLabel => 'Tricks';
+
+  @override
+  String get tipsNavLabel => 'Conseils';
+
+  @override
+  String get tipTypeGeneral => 'Général';
+
+  @override
+  String get tipTypeRigging => 'Gréement';
+
+  @override
+  String get tipTypeHealth => 'Santé';
+
+  @override
+  String get allTypesFilter => 'Tous';
+
+  @override
+  String get submitTipButton => 'Soumettre un conseil';
+
+  @override
+  String get submitTipTitle => 'Soumettre un conseil';
+
+  @override
+  String get editTipTitle => 'Modifier le conseil';
+
+  @override
+  String get failedToLoadTips => 'Échec du chargement des conseils';
+
+  @override
+  String get noTipsYet =>
+      'Pas encore de conseils. Soyez le premier à en soumettre un !';
+
+  @override
+  String get tipBodyLabel => 'Contenu';
+
+  @override
+  String get tipTitleLabel => 'Titre';
+
+  @override
+  String get tipHeaderLabel => 'Résumé';
+
+  @override
+  String get tipTypeLabel => 'Catégorie';
+
+  @override
+  String get tipSubmittedForReview => 'Conseil soumis pour révision !';
+
+  @override
+  String get tipUpdated => 'Conseil mis à jour.';
+
+  @override
+  String get noPendingTips => 'Aucun conseil en attente.';
+
+  @override
+  String get pendingTipsSection => 'Conseils en attente';
+
+  @override
+  String get declineButton => 'Refuser';
+
+  @override
+  String submittedOnLabel(String date) {
+    return 'Soumis le $date';
+  }
 }
