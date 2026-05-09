@@ -4,6 +4,7 @@ import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/profile.dart';
 import '../models/screen_data.dart';
+import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -29,19 +30,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<ProfileData> _load() async {
     final profile = await AuthService.getCurrentProfile();
-    final userTricks = await UserTricksService.getUserTricks();
+    final (userTricks, allTricks) = await (
+      UserTricksService.getUserTricks(),
+      TricksService.getApprovedTricks(),
+    ).wait;
 
-    if (userTricks.isEmpty) return ProfileData(profile: profile, entries: []);
-
-    final trickIds = userTricks.map((ut) => ut.trickId).toList();
-    final tricks = await TricksService.getTricksByIds(trickIds);
-    final trickMap = {for (final t in tricks) t.id: t};
+    final trickMap = {for (final t in allTricks) t.id: t};
 
     final entries = userTricks
         .map((ut) => UserTrickEntry(userTrick: ut, trick: trickMap[ut.trickId]))
         .toList();
 
-    return ProfileData(profile: profile, entries: entries);
+    final whatsNext = _computeWhatsNext(userTricks, allTricks);
+
+    return ProfileData(profile: profile, entries: entries, whatsNext: whatsNext);
+  }
+
+  WhatsNextData _computeWhatsNext(List<UserTrick> userTricks, List<Trick> allTricks) {
+    final landedIds = <int>{
+      for (final ut in userTricks)
+        if (ut.consistency.isLanded) ut.trickId,
+    };
+    final trackedIds = {for (final ut in userTricks) ut.trickId};
+
+    // Category 1: all prerequisites met, not yet tracked
+    final unlocked = allTricks
+        .where((t) =>
+            !trackedIds.contains(t.id) &&
+            t.prerequisiteTrickIds.isNotEmpty &&
+            t.prerequisiteTrickIds.every((id) => landedIds.contains(id)))
+        .toList()
+      ..sort((a, b) => a.difficultyTier.compareTo(b.difficultyTier));
+
+    // Category 2: at least one but not all prerequisites met, not tracked
+    final partiallyUnlocked = allTricks
+        .where((t) =>
+            !trackedIds.contains(t.id) &&
+            t.prerequisiteTrickIds.isNotEmpty &&
+            t.prerequisiteTrickIds.any((id) => landedIds.contains(id)) &&
+            !t.prerequisiteTrickIds.every((id) => landedIds.contains(id)))
+        .toList()
+      ..sort((a, b) {
+        final aCount = a.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
+        final bCount = b.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
+        return bCount.compareTo(aCount);
+      });
+
+    // Category 3: tricks that, once landed, unlock the most immediate next tricks
+    final unlockCountMap = <int, int>{};
+    for (final t in allTricks) {
+      if (landedIds.contains(t.id)) continue;
+      for (final prereqId in t.prerequisiteTrickIds) {
+        if (!landedIds.contains(prereqId)) {
+          final othersAllLanded = t.prerequisiteTrickIds
+              .where((id) => id != prereqId)
+              .every((id) => landedIds.contains(id));
+          if (othersAllLanded) {
+            unlockCountMap[prereqId] = (unlockCountMap[prereqId] ?? 0) + 1;
+          }
+        }
+      }
+    }
+
+    final highValue = allTricks
+        .where((t) => !landedIds.contains(t.id) && (unlockCountMap[t.id] ?? 0) > 0)
+        .map((t) => HighValueTarget(trick: t, unlockCount: unlockCountMap[t.id]!))
+        .toList()
+      ..sort((a, b) => b.unlockCount.compareTo(a.unlockCount));
+
+    return WhatsNextData(
+      unlocked: unlocked,
+      partiallyUnlocked: partiallyUnlocked,
+      highValue: highValue.take(10).toList(),
+    );
   }
 
   void _refresh() => setState(() => _future = _load());
@@ -81,13 +142,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Center(child: Text(context.l10n.errorWithDetail(snap.error.toString())));
           }
           final data = snap.data!;
-          return _buildContent(data.profile, data.entries);
+          return _buildContent(data.profile, data.entries, data.whatsNext);
         },
       ),
     );
   }
 
-  Widget _buildContent(Profile? profile, List<UserTrickEntry> entries) {
+  Widget _buildContent(Profile? profile, List<UserTrickEntry> entries, WhatsNextData whatsNext) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final user = AuthService.currentUser;
@@ -155,6 +216,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
+          if (!whatsNext.isEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              "What's Next",
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ..._buildWhatsNextSections(whatsNext, theme),
+          ],
+
           const SizedBox(height: 20),
 
           Text(
@@ -197,6 +269,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }),
         ],
+      ),
+    );
+  }
+
+  List<Widget> _buildWhatsNextSections(WhatsNextData whatsNext, ThemeData theme) {
+    return [
+      if (whatsNext.unlocked.isNotEmpty)
+        _whatsNextCard(
+          title: 'Ready to Start',
+          subtitle: 'All prerequisites met — start working on these',
+          icon: Icons.lock_open,
+          color: theme.colorScheme.primary,
+          tricks: whatsNext.unlocked,
+        ),
+      if (whatsNext.partiallyUnlocked.isNotEmpty)
+        _whatsNextCard(
+          title: 'Making Progress',
+          subtitle: 'You have at least one prerequisite for these',
+          icon: Icons.trending_up,
+          color: theme.colorScheme.secondary,
+          tricks: whatsNext.partiallyUnlocked,
+        ),
+      if (whatsNext.highValue.isNotEmpty)
+        _highValueCard(whatsNext.highValue, theme),
+    ];
+  }
+
+  Widget _whatsNextCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<Trick> tricks,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        leading: Icon(icon, color: color),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(subtitle),
+        initiallyExpanded: false,
+        children: tricks.map((t) => ListTile(
+          title: Text(t.givenName),
+          subtitle: Text(t.difficultyLabel),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/trick/${t.id}'),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _highValueCard(List<HighValueTarget> targets, ThemeData theme) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        leading: Icon(Icons.star, color: theme.colorScheme.tertiary),
+        title: const Text('High-Value Targets', style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Landing these unlocks the most new tricks'),
+        initiallyExpanded: false,
+        children: targets.map((hv) => ListTile(
+          title: Text(hv.trick.givenName),
+          subtitle: Text(hv.trick.difficultyLabel),
+          trailing: Chip(
+            label: Text('unlocks ${hv.unlockCount}'),
+            backgroundColor: theme.colorScheme.tertiaryContainer,
+            labelStyle: TextStyle(
+              color: theme.colorScheme.onTertiaryContainer,
+              fontSize: 12,
+            ),
+            visualDensity: VisualDensity.compact,
+          ),
+          onTap: () => context.push('/trick/${hv.trick.id}'),
+        )).toList(),
       ),
     );
   }

@@ -5,6 +5,28 @@ import 'trick_suggestion.dart';
 import 'trick_vote_stats.dart';
 import 'user_trick.dart';
 
+class HighValueTarget {
+  final Trick trick;
+  final int unlockCount;
+
+  const HighValueTarget({required this.trick, required this.unlockCount});
+}
+
+class WhatsNextData {
+  final List<Trick> unlocked;
+  final List<Trick> partiallyUnlocked;
+  final List<HighValueTarget> highValue;
+
+  const WhatsNextData({
+    required this.unlocked,
+    required this.partiallyUnlocked,
+    required this.highValue,
+  });
+
+  bool get isEmpty =>
+      unlocked.isEmpty && partiallyUnlocked.isEmpty && highValue.isEmpty;
+}
+
 class TrickDetailData {
   final Trick trick;
   final List<Trick> prerequisites;
@@ -38,8 +60,13 @@ class UserTrickEntry {
 class ProfileData {
   final Profile? profile;
   final List<UserTrickEntry> entries;
+  final WhatsNextData whatsNext;
 
-  const ProfileData({this.profile, required this.entries});
+  const ProfileData({
+    this.profile,
+    required this.entries,
+    required this.whatsNext,
+  });
 }
 
 class AdminData {
