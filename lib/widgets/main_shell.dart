@@ -5,7 +5,7 @@ import '../l10n/app_localizations_extension.dart';
 class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
-  static const _breakpoint = 600.0;
+  static const _breakpoint = 800.0;
 
   const MainShell({super.key, required this.navigationShell});
 

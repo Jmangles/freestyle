@@ -245,16 +245,23 @@ class _TipTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ExpansionTile(
         leading: Icon(_tipTypeIcon(tip.type), color: colorScheme.primary),
-        title: Text(tip.title,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Row(
+        title: Row(
           children: [
             Expanded(
-              child: Text(
-                tip.header,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(tip.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(
+                    tip.header,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
@@ -292,7 +299,7 @@ class _TypeChip extends StatelessWidget {
       label: Text(type.localizedLabel(l10n)),
       avatar: Icon(_tipTypeIcon(type), size: 14),
       padding: EdgeInsets.zero,
-      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+      labelPadding: const EdgeInsets.only(right: 9),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
     );
