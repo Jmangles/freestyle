@@ -325,6 +325,11 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
       }
     }
 
+    final isMobile = switch (Theme.of(context).platform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
+
     return Column(
       children: [
         Expanded(
@@ -396,9 +401,21 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
                                 trick: data.tricks[entry.key]!,
                                 isFocal: entry.key == data.focalId,
                                 userTrick: data.userProgress[entry.key],
-                                onTap: entry.key == data.focalId
-                                    ? null
-                                    : () => context.push('/trick/${entry.key}'),
+                                onTap: isMobile
+                                    ? () {
+                                        if (_hoveredId == entry.key) {
+                                          if (entry.key != data.focalId) {
+                                            context.push('/trick/${entry.key}');
+                                          } else {
+                                            _onHoverEnd();
+                                          }
+                                        } else {
+                                          _onHoverStart(entry.key);
+                                        }
+                                      }
+                                    : entry.key == data.focalId
+                                        ? null
+                                        : () => context.push('/trick/${entry.key}'),
                               ),
                             ),
                           ),
