@@ -87,11 +87,6 @@ class TricksService {
     await _client.from('tricks').delete().eq('id', id);
   }
 
-  static const _suggestionSelect =
-      '*, '
-      'start_position:positions!start_position_id(name), '
-      'end_position:positions!end_position_id(name)';
-
   static Future<void> submitTrickSuggestion({
     required int trickId,
     required Map<String, dynamic> fields,
@@ -108,7 +103,7 @@ class TricksService {
   static Future<List<TrickSuggestion>> getPendingSuggestions() async {
     final data = await _client
         .from('trick_suggestions')
-        .select(_suggestionSelect)
+        .select(_select)
         .order('date_submitted');
     return (data as List).map((e) => TrickSuggestion.fromJson(e)).toList();
   }

@@ -34,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
   TrickFilter _filter = const TrickFilter();
   TrickSorter _sorter = const TrickSorter();
   late TextEditingController _nameSearchController;
-  String _nameQuery = '';
   List<(String, List<Trick>)> _groups = [];
   late final StreamSubscription _authSub;
   late final RealtimeChannel _tricksChannel;
@@ -67,11 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load({bool initial = false}) async {
-    if (initial)
+    if (initial) {
       setState(() {
         _initialLoading = true;
         _hasError = false;
       });
+    }
     try {
       final tricksFuture = TricksService.getApprovedTricks();
       final profileFuture = AuthService.getCurrentProfile();
@@ -93,16 +93,17 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _initialLoading = false;
           _hasError = true;
         });
+      }
     }
   }
 
   void _recompute() {
-    final nameQ = _nameQuery.toLowerCase();
+    final nameQ = _nameSearchController.text.toLowerCase();
     final filtered = _filter.apply(_tricks, _consistencyMap);
     final tricks = nameQ.isEmpty
         ? filtered
@@ -112,10 +113,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
             .toList();
     _groups = _sorter.buildGroups(tricks, _consistencyMap);
-
   }
 
   void _refresh() => _load();
+
+  Widget _buildTrickCard(Trick trick, {bool listMode = false, bool compact = false}) {
+    return RepaintBoundary(
+      key: ValueKey(trick.id),
+      child: TrickCard(
+        trick: trick,
+        consistency: _consistencyMap[trick.id],
+        onReturn: _refresh,
+        listMode: listMode,
+        showDifficulty: true,
+        difficultyModifierOnly: _sorter.primary == PrimarySort.difficulty,
+        compact: compact,
+      ),
+    );
+  }
 
   int _crossAxisCount(double width) {
     const sizes = {1: 225, 2: 275, 3: 325};
@@ -210,8 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return Center(child: Text(l10n.noTricksYet));
     }
 
-    final consistencyMap = _consistencyMap;
-
     return Column(
       children: [
         _ControlBar(
@@ -220,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSortTap: _showSortSheet,
           onGridSizeChanged: (v) => setState(() => _gridSize = v),
           nameSearchController: _nameSearchController,
-          onNameChanged: (v) => setState(() { _nameQuery = v; _recompute(); }),
+          onNameChanged: (_) => setState(() => _recompute()),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -241,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           landedCount: AuthService.isLoggedIn
                               ? groupTricks
                                   .where((t) =>
-                                      consistencyMap[t.id]?.isLanded == true)
+                                      _consistencyMap[t.id]?.isLanded == true)
                                   .length
                               : null,
                         ),
@@ -249,17 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (isListMode)
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (context, i) => RepaintBoundary(
-                              key: ValueKey(groupTricks[i].id),
-                              child: TrickCard(
-                                trick: groupTricks[i],
-                                consistency: consistencyMap[groupTricks[i].id],
-                                onReturn: _refresh,
-                                listMode: true,
-                                showDifficulty: true,
-                                difficultyModifierOnly: _sorter.primary == PrimarySort.difficulty,
-                              ),
-                            ),
+                            (context, i) => _buildTrickCard(groupTricks[i], listMode: true),
                             childCount: groupTricks.length,
                           ),
                         )
@@ -270,20 +273,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
-                            mainAxisExtent: _gridSize <= 1 ? 64.0 : 100.0,
+                            mainAxisExtent: compact ? 64.0 : 100.0,
                           ),
                           delegate: SliverChildBuilderDelegate(
-                            (context, i) => RepaintBoundary(
-                              key: ValueKey(groupTricks[i].id),
-                              child: TrickCard(
-                                trick: groupTricks[i],
-                                consistency: consistencyMap[groupTricks[i].id],
-                                onReturn: _refresh,
-                                showDifficulty: true,
-                                difficultyModifierOnly: _sorter.primary == PrimarySort.difficulty,
-                                compact: compact,
-                              ),
-                            ),
+                            (context, i) => _buildTrickCard(groupTricks[i], compact: compact),
                             childCount: groupTricks.length,
                           ),
                         ),

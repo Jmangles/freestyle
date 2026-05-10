@@ -132,7 +132,7 @@ class _SubmitTipScreenState extends State<SubmitTipScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<TipType>(
-              value: _type,
+              initialValue: _type,
               decoration: InputDecoration(
                 labelText: l10n.tipTypeLabel,
                 border: const OutlineInputBorder(),

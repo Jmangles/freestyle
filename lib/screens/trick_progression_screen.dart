@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
+import '../widgets/back_home_leading.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -149,20 +150,7 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leadingWidth: 96,
-        leading: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              tooltip: context.l10n.backTooltip,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            IconButton(
-              icon: const Icon(Icons.home_outlined),
-              tooltip: context.l10n.homeTooltip,
-              onPressed: () => context.go('/'),
-            ),
-          ],
-        ),
+        leading: const BackHomeLeading(showHome: true),
         title: Text(context.l10n.trickProgressionTitle),
       ),
       body: FutureBuilder<_GraphData>(

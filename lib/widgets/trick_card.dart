@@ -13,7 +13,16 @@ class TrickCard extends StatelessWidget {
   final bool compact;
   final bool difficultyModifierOnly;
 
-  const TrickCard({super.key, required this.trick, this.consistency, this.onReturn, this.listMode = false, this.showDifficulty = false, this.compact = false, this.difficultyModifierOnly = false});
+  const TrickCard({
+    super.key,
+    required this.trick,
+    this.consistency,
+    this.onReturn,
+    this.listMode = false,
+    this.showDifficulty = false,
+    this.compact = false,
+    this.difficultyModifierOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -145,9 +154,6 @@ class _DifficultyBadge extends StatelessWidget {
   final bool modifierOnly;
   const _DifficultyBadge({required this.trick, this.modifierOnly = false});
 
-  static (Color, Color)? _colorsForTier(int rawValue) =>
-      DifficultyTier.badgeColors(rawValue);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -166,7 +172,7 @@ class _DifficultyBadge extends StatelessWidget {
       );
     }
 
-    final colors = _colorsForTier(v);
+    final colors = DifficultyTier.badgeColors(v);
     return _badge(
       label: trick.difficultyLabel,
       bg: colors?.$1 ?? theme.colorScheme.secondaryContainer,

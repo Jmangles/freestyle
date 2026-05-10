@@ -13,6 +13,31 @@ import '../utils/date_formatters.dart';
 import 'submit_tip_screen.dart';
 import 'submit_trick_screen.dart';
 
+ButtonStyle _approveButtonStyle(ThemeData theme) => FilledButton.styleFrom(
+      backgroundColor: theme.brightness == Brightness.dark
+          ? Colors.green.shade400
+          : Colors.green.shade700,
+      foregroundColor:
+          theme.brightness == Brightness.dark ? Colors.black : Colors.white,
+    );
+
+ButtonStyle _rejectButtonStyle(ThemeData theme) =>
+    FilledButton.styleFrom(backgroundColor: theme.colorScheme.error);
+
+Widget _labelRow(String label, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+                text: '$label: ',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
 
@@ -95,6 +120,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ],
       ),
     );
+    ctrl.dispose();
     if (name != null && name.isNotEmpty) {
       try {
         await TricksService.addPosition(name);
@@ -279,13 +305,13 @@ class _PendingTrickCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (trick.technicalName != null)
-                  _row(l10n.technicalNameLabel, trick.technicalName!),
+                  _labelRow(l10n.technicalNameLabel, trick.technicalName!),
                 if (trick.originalPerformer != null)
-                  _row(l10n.performerLabel, trick.originalPerformer!),
+                  _labelRow(l10n.performerLabel, trick.originalPerformer!),
                 if (trick.description != null)
-                  _row(l10n.descriptionLabel, trick.description!),
-                if (trick.tips != null) _row(l10n.tipsLabel, trick.tips!),
-                if (trick.videoLink != null) _row(l10n.videoLabel, trick.videoLink!),
+                  _labelRow(l10n.descriptionLabel, trick.description!),
+                if (trick.tips != null) _labelRow(l10n.tipsLabel, trick.tips!),
+                if (trick.videoLink != null) _labelRow(l10n.videoLabel, trick.videoLink!),
                 const SizedBox(height: 12),
                 OverflowBar(
                   spacing: 8,
@@ -299,22 +325,13 @@ class _PendingTrickCard extends StatelessWidget {
                       onPressed: onApprove,
                       icon: const Icon(Icons.check, size: 18),
                       label: Text(l10n.approveButton),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: theme.brightness == Brightness.dark
-                            ? Colors.green.shade400
-                            : Colors.green.shade700,
-                        foregroundColor: theme.brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white,
-                      ),
+                      style: _approveButtonStyle(theme),
                     ),
                     FilledButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.close, size: 18),
                       label: Text(l10n.rejectButton),
-                      style: FilledButton.styleFrom(
-                          backgroundColor:
-                              theme.colorScheme.error),
+                      style: _rejectButtonStyle(theme),
                     ),
                   ],
                 ),
@@ -325,20 +342,6 @@ class _PendingTrickCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                  text: '$label: ',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              TextSpan(text: value),
-            ],
-          ),
-        ),
-      );
 }
 
 class _PendingSuggestionCard extends StatelessWidget {
@@ -358,12 +361,11 @@ class _PendingSuggestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final orig = originalTrick;
-    final deltaRows = _buildDeltaRows(l10n, orig);
+    final deltaRows = _buildDeltaRows(l10n, originalTrick);
 
     return Card(
       child: ExpansionTile(
-        title: Text(orig?.givenName ?? '?',
+        title: Text(originalTrick?.givenName ?? '?',
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(l10n.submittedDate(formatShortDate(suggestion.dateSubmitted))),
         children: [
@@ -381,21 +383,13 @@ class _PendingSuggestionCard extends StatelessWidget {
                       onPressed: onApprove,
                       icon: const Icon(Icons.check, size: 18),
                       label: Text(l10n.approveButton),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: theme.brightness == Brightness.dark
-                            ? Colors.green.shade400
-                            : Colors.green.shade700,
-                        foregroundColor: theme.brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white,
-                      ),
+                      style: _approveButtonStyle(theme),
                     ),
                     FilledButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.close, size: 18),
                       label: Text(l10n.rejectButton),
-                      style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.error),
+                      style: _rejectButtonStyle(theme),
                     ),
                   ],
                 ),
@@ -512,8 +506,8 @@ class _PendingTipCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _row(l10n.tipHeaderLabel, tip.header),
-                _row(l10n.tipBodyLabel, tip.body),
+                _labelRow(l10n.tipHeaderLabel, tip.header),
+                _labelRow(l10n.tipBodyLabel, tip.body),
                 const SizedBox(height: 12),
                 OverflowBar(
                   spacing: 8,
@@ -527,21 +521,13 @@ class _PendingTipCard extends StatelessWidget {
                       onPressed: onApprove,
                       icon: const Icon(Icons.check, size: 18),
                       label: Text(l10n.approveButton),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: theme.brightness == Brightness.dark
-                            ? Colors.green.shade400
-                            : Colors.green.shade700,
-                        foregroundColor: theme.brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white,
-                      ),
+                      style: _approveButtonStyle(theme),
                     ),
                     FilledButton.icon(
                       onPressed: onDecline,
                       icon: const Icon(Icons.close, size: 18),
                       label: Text(l10n.declineButton),
-                      style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.error),
+                      style: _rejectButtonStyle(theme),
                     ),
                   ],
                 ),
@@ -553,17 +539,4 @@ class _PendingTipCard extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                  text: '$label: ',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              TextSpan(text: value),
-            ],
-          ),
-        ),
-      );
 }

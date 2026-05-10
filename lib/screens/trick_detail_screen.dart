@@ -13,6 +13,8 @@ import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../utils/date_formatters.dart';
 import '../utils/difficulty_tier.dart';
+import '../utils/youtube_utils.dart';
+import '../widgets/back_home_leading.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/youtube_loop_player.dart';
 import 'submit_trick_screen.dart';
@@ -143,13 +145,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   }
 
   Widget _buildVideoPlayer(String url, int? start, int? end) {
-    final id = _extractYouTubeId(url);
+    final id = extractYouTubeId(url);
     if (id != null && YoutubeLoopPlayer.supported) {
       return YoutubeLoopPlayer(
         videoId: id,
         startSeconds: start,
         endSeconds: end,
-        isPortrait: _isPortraitUrl(url),
+        isPortrait: isYouTubePortraitUrl(url),
       );
     }
     return FilledButton.icon(
@@ -162,35 +164,21 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final routeDepth = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .matches
+        .length;
     return FutureBuilder<TrickDetailData>(
       future: _future,
       builder: (context, snap) {
         final trick = snap.data?.trick;
         final canEditTricks = snap.data?.canEditTricks ?? false;
-        final routeDepth = GoRouter.of(context)
-            .routerDelegate
-            .currentConfiguration
-            .matches
-            .length;
         return Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false,
             leadingWidth: routeDepth > 2 ? 96 : 48,
-            leading: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: l10n.backTooltip,
-                  onPressed: () => context.pop(),
-                ),
-                if (routeDepth > 2)
-                  IconButton(
-                    icon: const Icon(Icons.home_outlined),
-                    tooltip: l10n.homeTooltip,
-                    onPressed: () => context.go('/'),
-                  ),
-              ],
-            ),
+            leading: BackHomeLeading(showHome: routeDepth > 2),
             title: Text(l10n.trickDetailTitle),
             actions: [
               IconButton(
@@ -256,7 +244,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name
           Text(trick.givenName,
               style: theme.textTheme.headlineSmall
                   ?.copyWith(fontWeight: FontWeight.bold)),
@@ -271,7 +258,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           const SizedBox(height: 12),
 
-          // Difficulty + positions row
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -299,7 +285,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
 
           const Divider(height: 28),
 
-          // Metadata
           if (trick.originalPerformer != null)
             _InfoRow(
                 label: l10n.originalPerformerLabel, value: trick.originalPerformer!),
@@ -311,7 +296,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               label: l10n.dateSubmittedLabel,
               value: formatDisplayDate(trick.dateSubmitted)),
 
-          // Description
           if (trick.description != null) ...[
             const SizedBox(height: 16),
             Text(l10n.descriptionLabel,
@@ -321,7 +305,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             Text(trick.description!),
           ],
 
-          // Tips
           if (trick.tips != null) ...[
             const SizedBox(height: 16),
             Text(l10n.tipsLabel,
@@ -331,7 +314,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             Text(trick.tips!),
           ],
 
-          // Prerequisites
           if (prereqs.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(l10n.prerequisitesLabel,
@@ -351,13 +333,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           ],
 
-          // Video
           if (trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildVideoPlayer(trick.videoLink!, trick.videoStart, trick.videoEnd),
           ],
 
-          // Community votes
           if (voteStats.hasAnyData) ...[
             const Divider(height: 28),
             Text(l10n.communityVotesLabel,
@@ -419,7 +399,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           ],
 
-          // Consistency tracker
           if (AuthService.isLoggedIn) ...[
             const Divider(height: 28),
             Text(l10n.myConsistencyLabel,
@@ -530,24 +509,36 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final link = _videoController.text.trim();
-    await UserTricksService.setLandedDetails(
-      widget.trickId,
-      difficultyVote: _difficultyVote,
-      leashPosition: _leashPosition,
-      videoLink: link.isEmpty ? null : link,
-      videoStart: int.tryParse(_videoStartController.text.trim()),
-      videoEnd: int.tryParse(_videoEndController.text.trim()),
-    );
-    setState(() => _saving = false);
-    widget.onSaved();
+    try {
+      final link = _videoController.text.trim();
+      await UserTricksService.setLandedDetails(
+        widget.trickId,
+        difficultyVote: _difficultyVote,
+        leashPosition: _leashPosition,
+        videoLink: link.isEmpty ? null : link,
+        videoStart: int.tryParse(_videoStartController.text.trim()),
+        videoEnd: int.tryParse(_videoEndController.text.trim()),
+      );
+      widget.onSaved();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final savedVideoId = _extractYouTubeId(widget.userTrick.videoLink);
+    final savedVideoId = extractYouTubeId(widget.userTrick.videoLink);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -662,7 +653,7 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
             videoId: savedVideoId,
             startSeconds: widget.userTrick.videoStart,
             endSeconds: widget.userTrick.videoEnd,
-            isPortrait: _isPortraitUrl(widget.userTrick.videoLink),
+            isPortrait: isYouTubePortraitUrl(widget.userTrick.videoLink),
           ),
         ],
       ],
@@ -790,22 +781,3 @@ class _PieChartPainter extends CustomPainter {
       entries != old.entries || total != old.total;
 }
 
-bool _isPortraitUrl(String? url) {
-  final uri = Uri.tryParse(url ?? '');
-  return uri?.pathSegments.contains('shorts') == true;
-}
-
-String? _extractYouTubeId(String? url) {
-  if (url == null || url.isEmpty) return null;
-  final uri = Uri.tryParse(url);
-  if (uri == null) return null;
-  if (uri.host == 'youtu.be') return uri.pathSegments.firstOrNull;
-  if (uri.host.endsWith('youtube.com')) {
-    if (uri.pathSegments.contains('shorts')) {
-      final i = uri.pathSegments.indexOf('shorts');
-      return i + 1 < uri.pathSegments.length ? uri.pathSegments[i + 1] : null;
-    }
-    return uri.queryParameters['v'];
-  }
-  return null;
-}
