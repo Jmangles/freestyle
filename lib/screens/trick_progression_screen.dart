@@ -192,9 +192,13 @@ class _GraphView extends StatefulWidget {
   State<_GraphView> createState() => _GraphViewState();
 }
 
-class _GraphViewState extends State<_GraphView> {
+class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMixin {
   late final TransformationController _transformController;
+  late final AnimationController _fadeController;
+  late final Animation<double> _dimAnim;
   bool _initialTransformSet = false;
+  int? _hoveredId;
+  int _hoverGeneration = 0;
 
   static const double _cardW = 150;
   static const double _cardH = 58;
@@ -206,12 +210,62 @@ class _GraphViewState extends State<_GraphView> {
   void initState() {
     super.initState();
     _transformController = TransformationController();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+    _dimAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
   }
 
   @override
   void dispose() {
     _transformController.dispose();
+    _fadeController.dispose();
     super.dispose();
+  }
+
+  void _onHoverStart(int id) {
+    _hoverGeneration++;
+    if (_hoveredId != id) setState(() => _hoveredId = id);
+    _fadeController.forward();
+  }
+
+  void _onHoverEnd() {
+    final gen = ++_hoverGeneration;
+    _fadeController.reverse().then((_) {
+      if (mounted && _hoverGeneration == gen) {
+        setState(() => _hoveredId = null);
+      }
+    });
+  }
+
+  Set<int>? _relevantIds() {
+    final id = _hoveredId;
+    if (id == null) return null;
+
+    final ids = <int>{id};
+
+    // BFS upward through all prerequisites
+    var frontier = <int>{id};
+    while (frontier.isNotEmpty) {
+      final next = <int>{};
+      for (final (pid, tid) in widget.data.edges) {
+        if (frontier.contains(tid) && ids.add(pid)) next.add(pid);
+      }
+      frontier = next;
+    }
+
+    // BFS downward through all unlocks
+    frontier = {id};
+    while (frontier.isNotEmpty) {
+      final next = <int>{};
+      for (final (pid, tid) in widget.data.edges) {
+        if (frontier.contains(pid) && ids.add(tid)) next.add(tid);
+      }
+      frontier = next;
+    }
+
+    return ids;
   }
 
   @override
@@ -310,14 +364,19 @@ class _GraphViewState extends State<_GraphView> {
                   height: canvasH,
                   child: Stack(
                     children: [
-                      CustomPaint(
-                        size: Size(canvasW, canvasH),
-                        painter: _EdgePainter(
-                          edges: data.edges,
-                          positions: positions,
-                          cardW: _cardW,
-                          cardH: _cardH,
-                          color: theme.colorScheme.outlineVariant,
+                      AnimatedBuilder(
+                        animation: _dimAnim,
+                        builder: (context, _) => CustomPaint(
+                          size: Size(canvasW, canvasH),
+                          painter: _EdgePainter(
+                            edges: data.edges,
+                            positions: positions,
+                            cardW: _cardW,
+                            cardH: _cardH,
+                            color: theme.colorScheme.outlineVariant,
+                            highlightedIds: _relevantIds(),
+                            dimFactor: _dimAnim.value,
+                          ),
                         ),
                       ),
                       for (final entry in positions.entries)
@@ -326,13 +385,29 @@ class _GraphViewState extends State<_GraphView> {
                           top: entry.value.dy,
                           width: _cardW,
                           height: _cardH,
-                          child: _TrickCard(
-                            trick: data.tricks[entry.key]!,
-                            isFocal: entry.key == data.focalId,
-                            userTrick: data.userProgress[entry.key],
-                            onTap: entry.key == data.focalId
-                                ? null
-                                : () => context.push('/trick/${entry.key}'),
+                          child: MouseRegion(
+                            onEnter: (_) => _onHoverStart(entry.key),
+                            onExit: (_) => _onHoverEnd(),
+                            child: AnimatedBuilder(
+                              animation: _dimAnim,
+                              builder: (context, child) {
+                                final relevant = _relevantIds();
+                                final isRelevant = relevant == null ||
+                                    relevant.contains(entry.key);
+                                final opacity = isRelevant
+                                    ? 1.0
+                                    : 1.0 - _dimAnim.value * 0.85;
+                                return Opacity(opacity: opacity, child: child);
+                              },
+                              child: _TrickCard(
+                                trick: data.tricks[entry.key]!,
+                                isFocal: entry.key == data.focalId,
+                                userTrick: data.userProgress[entry.key],
+                                onTap: entry.key == data.focalId
+                                    ? null
+                                    : () => context.push('/trick/${entry.key}'),
+                              ),
+                            ),
                           ),
                         ),
                     ],
@@ -356,6 +431,8 @@ class _EdgePainter extends CustomPainter {
   final double cardW;
   final double cardH;
   final Color color;
+  final Set<int>? highlightedIds;
+  final double dimFactor;
 
   const _EdgePainter({
     required this.edges,
@@ -363,22 +440,29 @@ class _EdgePainter extends CustomPainter {
     required this.cardW,
     required this.cardH,
     required this.color,
+    required this.highlightedIds,
+    required this.dimFactor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = color
-      ..strokeWidth = 1.8
-      ..style = PaintingStyle.stroke;
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
     for (final (pid, tid) in edges) {
       final from = positions[pid];
       final to = positions[tid];
       if (from == null || to == null) continue;
+
+      final isHighlighted = highlightedIds == null ||
+          (highlightedIds!.contains(pid) && highlightedIds!.contains(tid));
+      final opacity = isHighlighted ? 1.0 : 1.0 - dimFactor * 0.85;
+      final edgeColor = color.withValues(alpha: opacity);
+
+      final linePaint = Paint()
+        ..color = edgeColor
+        ..strokeWidth = 1.8
+        ..style = PaintingStyle.stroke;
+      final fillPaint = Paint()
+        ..color = edgeColor
+        ..style = PaintingStyle.fill;
 
       final start = Offset(from.dx + cardW / 2, from.dy + cardH);
       final end = Offset(to.dx + cardW / 2, to.dy);
@@ -417,7 +501,11 @@ class _EdgePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EdgePainter old) =>
-      old.edges != edges || old.positions != positions || old.color != color;
+      old.edges != edges ||
+      old.positions != positions ||
+      old.color != color ||
+      old.highlightedIds != highlightedIds ||
+      old.dimFactor != dimFactor;
 }
 
 // ─── Trick card ───────────────────────────────────────────────────────────────

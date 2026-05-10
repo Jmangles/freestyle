@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dart run *)"
+      "Bash(dart run *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\")",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\" | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\){\"Directory\"}else{\"File\"}}})"
     ]
   }
 }
