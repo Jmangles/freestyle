@@ -57,7 +57,13 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<AdminData> _load() async {
     final profile = await AuthService.getCurrentProfile(forceRefresh: true);
     if (profile?.canEditTricks != true) {
-      return AdminData(pendingTricks: [], pendingSuggestions: [], originalTricks: {}, pendingTips: [], profile: profile);
+      return AdminData(
+        pendingTricks: [],
+        pendingSuggestions: [],
+        originalTricks: {},
+        pendingTips: [],
+        profile: profile,
+      );
     }
     final tricksFuture = TricksService.getPendingTricks();
     final suggestionsFuture = TricksService.getPendingSuggestions();
@@ -68,7 +74,13 @@ class _AdminScreenState extends State<AdminScreen> {
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
-    return AdminData(pendingTricks: tricks, pendingSuggestions: suggestions, originalTricks: originalTricks, pendingTips: tips, profile: profile);
+    return AdminData(
+      pendingTricks: tricks,
+      pendingSuggestions: suggestions,
+      originalTricks: originalTricks,
+      pendingTips: tips,
+      profile: profile,
+    );
   }
 
   void _refresh() => setState(() { _future = _load(); });

@@ -92,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _recompute();
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('HomeScreen._load error: $e\n$st');
       if (mounted) {
         setState(() {
           _initialLoading = false;
@@ -233,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSortTap: _showSortSheet,
           onGridSizeChanged: (v) => setState(() => _gridSize = v),
           nameSearchController: _nameSearchController,
-          onNameChanged: (_) => setState(() => _recompute()),
+          onNameChanged: () => setState(() => _recompute()),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -299,7 +300,7 @@ class _ControlBar extends StatelessWidget {
   final VoidCallback onSortTap;
   final ValueChanged<int> onGridSizeChanged;
   final TextEditingController nameSearchController;
-  final ValueChanged<String> onNameChanged;
+  final VoidCallback onNameChanged;
 
   const _ControlBar({
     required this.sorter,
@@ -343,7 +344,7 @@ class _ControlBar extends StatelessWidget {
 
           final searchField = TextField(
             controller: nameSearchController,
-            onChanged: onNameChanged,
+            onChanged: (_) => onNameChanged(),
             decoration: InputDecoration(
               hintText: l10n.searchByNameHint,
               prefixIcon: const Icon(Icons.search, size: 18),

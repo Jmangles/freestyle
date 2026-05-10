@@ -187,6 +187,7 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
   bool _initialTransformSet = false;
   int? _hoveredId;
   int _hoverGeneration = 0;
+  Set<int>? _relevantIds;
 
   static const double _cardW = 150;
   static const double _cardH = 58;
@@ -214,7 +215,12 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
 
   void _onHoverStart(int id) {
     _hoverGeneration++;
-    if (_hoveredId != id) setState(() => _hoveredId = id);
+    if (_hoveredId != id) {
+      setState(() {
+        _hoveredId = id;
+        _relevantIds = _computeRelevantIds(id);
+      });
+    }
     _fadeController.forward();
   }
 
@@ -222,15 +228,15 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
     final gen = ++_hoverGeneration;
     _fadeController.reverse().then((_) {
       if (mounted && _hoverGeneration == gen) {
-        setState(() => _hoveredId = null);
+        setState(() {
+          _hoveredId = null;
+          _relevantIds = null;
+        });
       }
     });
   }
 
-  Set<int>? _relevantIds() {
-    final id = _hoveredId;
-    if (id == null) return null;
-
+  Set<int> _computeRelevantIds(int id) {
     final ids = <int>{id};
 
     // BFS upward through all prerequisites
@@ -362,7 +368,7 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
                             cardW: _cardW,
                             cardH: _cardH,
                             color: theme.colorScheme.outlineVariant,
-                            highlightedIds: _relevantIds(),
+                            highlightedIds: _relevantIds,
                             dimFactor: _dimAnim.value,
                           ),
                         ),
@@ -379,9 +385,8 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
                             child: AnimatedBuilder(
                               animation: _dimAnim,
                               builder: (context, child) {
-                                final relevant = _relevantIds();
-                                final isRelevant = relevant == null ||
-                                    relevant.contains(entry.key);
+                                final isRelevant = _relevantIds == null ||
+                                    _relevantIds!.contains(entry.key);
                                 final opacity = isRelevant
                                     ? 1.0
                                     : 1.0 - _dimAnim.value * 0.85;

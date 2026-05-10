@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/tip.dart';
@@ -59,7 +60,7 @@ class _SubmitTipScreenState extends State<SubmitTipScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(context.l10n.tipUpdated)),
           );
-          Navigator.pop(context);
+          context.pop();
         }
       } else {
         final profile = await AuthService.getCurrentProfile();
@@ -74,7 +75,7 @@ class _SubmitTipScreenState extends State<SubmitTipScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(context.l10n.tipSubmittedForReview)),
           );
-          Navigator.pop(context);
+          context.pop();
         }
       }
     } catch (e) {

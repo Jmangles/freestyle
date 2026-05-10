@@ -145,13 +145,13 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
   }
 
   Widget _buildVideoPlayer(String url, int? start, int? end) {
-    final id = extractYouTubeId(url);
+    final (:id, :isPortrait) = parseYouTubeVideo(url);
     if (id != null && YoutubeLoopPlayer.supported) {
       return YoutubeLoopPlayer(
         videoId: id,
         startSeconds: start,
         endSeconds: end,
-        isPortrait: isYouTubePortraitUrl(url),
+        isPortrait: isPortrait,
       );
     }
     return FilledButton.icon(
@@ -363,7 +363,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                                 ..sort((a, b) => a.key.compareTo(b.key)))
                               .map((e) {
                             final colors = DifficultyTier.badgeColors(e.key);
-                            return _BarEntry(
+                            return _VoteEntry(
                               label: DifficultyTier.label(e.key),
                               count: e.value,
                               color: colors?.$1,
@@ -386,7 +386,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                         _VotePieChart(
                           entries: (voteStats.leashPositions.entries.toList()
                                 ..sort((a, b) => a.key.compareTo(b.key)))
-                              .map((e) => _BarEntry(
+                              .map((e) => _VoteEntry(
                                     label: LeashPosition.values[e.key].localizedLabel(l10n),
                                     count: e.value,
                                   ))
@@ -538,7 +538,9 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final savedVideoId = extractYouTubeId(widget.userTrick.videoLink);
+    final savedVideo = parseYouTubeVideo(widget.userTrick.videoLink);
+    final savedVideoId = savedVideo.id;
+    final isPortrait = savedVideo.isPortrait;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -653,7 +655,7 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
             videoId: savedVideoId,
             startSeconds: widget.userTrick.videoStart,
             endSeconds: widget.userTrick.videoEnd,
-            isPortrait: isYouTubePortraitUrl(widget.userTrick.videoLink),
+            isPortrait: isPortrait,
           ),
         ],
       ],
@@ -661,16 +663,16 @@ class _LandedDetailsSectionState extends State<_LandedDetailsSection> {
   }
 }
 
-class _BarEntry {
+class _VoteEntry {
   final String label;
   final int count;
   final Color? color;
 
-  const _BarEntry({required this.label, required this.count, this.color});
+  const _VoteEntry({required this.label, required this.count, this.color});
 }
 
 class _VotePieChart extends StatelessWidget {
-  final List<_BarEntry> entries;
+  final List<_VoteEntry> entries;
 
   const _VotePieChart({required this.entries});
 
@@ -733,7 +735,7 @@ class _VotePieChart extends StatelessWidget {
 }
 
 class _PieChartPainter extends CustomPainter {
-  final List<_BarEntry> entries;
+  final List<_VoteEntry> entries;
   final List<Color> colors;
   final int total;
 

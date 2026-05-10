@@ -26,7 +26,6 @@ class _TipsScreenState extends State<TipsScreen> {
   bool _hasError = false;
   TipType? _typeFilter;
   late final TextEditingController _searchController;
-  String _searchQuery = '';
   late final StreamSubscription _authSub;
   late final RealtimeChannel _tipsChannel;
 
@@ -77,7 +76,8 @@ class _TipsScreenState extends State<TipsScreen> {
           _hasError = false;
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('TipsScreen._load error: $e\n$st');
       if (mounted) {
         setState(() {
           _initialLoading = false;
@@ -88,7 +88,7 @@ class _TipsScreenState extends State<TipsScreen> {
   }
 
   List<Tip> get _filtered {
-    final query = _searchQuery.toLowerCase();
+    final query = _searchController.text.toLowerCase();
     return _tips.where((t) {
       if (_typeFilter != null && t.type != _typeFilter) return false;
       if (query.isEmpty) return true;
@@ -158,7 +158,7 @@ class _TipsScreenState extends State<TipsScreen> {
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: TextField(
             controller: _searchController,
-            onChanged: (v) => setState(() => _searchQuery = v),
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: context.l10n.searchByNameHint,
               prefixIcon: const Icon(Icons.search, size: 18),
