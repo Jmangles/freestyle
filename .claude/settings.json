@@ -10,7 +10,9 @@
       "PowerShell(Get-ChildItem \"$env:LOCALAPPDATA\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\flutter_markdown_plus-1.0.7\\\\lib\")",
       "Bash(Select-Object -First 20)",
       "Bash(Format-Table FullName)",
-      "Bash(ls -la c:\\\\\\\\Websites\\\\\\\\highline)"
+      "Bash(ls -la c:\\\\\\\\Websites\\\\\\\\highline)",
+      "Bash(flutter build *)",
+      "Bash(flutter run *)"
     ]
   }
 }

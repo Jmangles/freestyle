@@ -22,6 +22,19 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<ProfileData> _future;
 
+  final _unlockedCtrl = ExpansibleController();
+  final _partiallyUnlockedCtrl = ExpansibleController();
+  final _highValueCtrl = ExpansibleController();
+  final _myTricksCtrl = ExpansibleController();
+
+  void _collapseOthers(ExpansibleController active) {
+    for (final ctrl in [_unlockedCtrl, _partiallyUnlockedCtrl, _highValueCtrl, _myTricksCtrl]) {
+      if (!identical(ctrl, active)) {
+        try { ctrl.collapse(); } catch (_) {}
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -161,57 +174,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    profile?.username ?? l10n.unknownUser,
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  if (user?.email != null)
-                    Text(user!.email!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  if (profile?.canEditTricks == true)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Chip(
-                        label: Text(l10n.adminLabel),
-                        backgroundColor:
-                            theme.colorScheme.tertiaryContainer,
-                        labelStyle: TextStyle(
-                            color:
-                                theme.colorScheme.onTertiaryContainer),
-                      ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile?.username ?? l10n.unknownUser,
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        if (user?.email != null)
+                          Text(user!.email!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        if (profile?.canEditTricks == true)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Chip(
+                              label: Text(l10n.adminLabel),
+                              backgroundColor:
+                                  theme.colorScheme.tertiaryContainer,
+                              labelStyle: TextStyle(
+                                  color:
+                                      theme.colorScheme.onTertiaryContainer),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: ThemeController.instance,
+                    builder: (context, mode, _) {
+                      final isDark = mode == ThemeMode.dark ||
+                          (mode == ThemeMode.system &&
+                              MediaQuery.platformBrightnessOf(context) ==
+                                  Brightness.dark);
+                      return IconButton(
+                        icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+                        tooltip: l10n.darkModeLabel,
+                        onPressed: () => ThemeController.instance
+                            .setMode(isDark ? ThemeMode.light : ThemeMode.dark),
+                      );
+                    },
+                  ),
                 ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ValueListenableBuilder<ThemeMode>(
-                valueListenable: ThemeController.instance,
-                builder: (context, mode, _) {
-                  final isDark = mode == ThemeMode.dark ||
-                      (mode == ThemeMode.system &&
-                          MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark);
-                  return SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: Icon(
-                        isDark ? Icons.dark_mode : Icons.light_mode),
-                    title: Text(l10n.darkModeLabel),
-                    value: isDark,
-                    onChanged: (on) => ThemeController.instance
-                        .setMode(on ? ThemeMode.dark : ThemeMode.light),
-                  );
-                },
               ),
             ),
           ),
@@ -229,20 +238,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 20),
 
-          Text(
-            l10n.myTricksCount(entries.length),
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
+          _buildMyTricksCard(entries),
+        ],
+      ),
+    );
+  }
 
-          if (entries.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Center(child: Text(l10n.noTricksTracked)),
-            )
-          else
-            _buildTricksTable(entries),
+  Widget _buildMyTricksCard(List<UserTrickEntry> entries) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return Card(
+      child: ExpansionTile(
+        controller: _myTricksCtrl,
+        onExpansionChanged: (expanded) {
+          if (expanded) _collapseOthers(_myTricksCtrl);
+        },
+        leading: Icon(Icons.list, color: theme.colorScheme.primary),
+        title: Text(
+          l10n.myTricksCount(entries.length),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        initiallyExpanded: false,
+        children: entries.isEmpty
+            ? [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: Text(l10n.noTricksTracked)),
+                ),
+              ]
+            : [
+                const Divider(height: 1),
+                _buildTierBarGraph(entries),
+                const Divider(height: 1),
+                _buildTricksTable(entries),
+              ],
+      ),
+    );
+  }
+
+  double _computeMedian(List<int> values) {
+    if (values.isEmpty) return 0;
+    final sorted = List<int>.from(values)..sort();
+    final n = sorted.length;
+    return n.isOdd
+        ? sorted[n ~/ 2].toDouble()
+        : (sorted[n ~/ 2 - 1] + sorted[n ~/ 2]) / 2.0;
+  }
+
+  Color _interpolateConsistencyColor(double value, Brightness brightness) {
+    final colors = Consistency.values.map((c) => c.borderColor(brightness)).toList();
+    final lower = value.floor().clamp(0, colors.length - 2);
+    final t = (value - lower).clamp(0.0, 1.0);
+    return Color.lerp(colors[lower], colors[lower + 1], t)!;
+  }
+
+  Widget _buildTierBarGraph(List<UserTrickEntry> entries) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+
+    final counts = <int, int>{};
+    final tierConsistencies = <int, List<int>>{};
+    for (final entry in entries) {
+      final tier = entry.trick?.difficultyLogicalTier ?? -1;
+      if (tier < 1) continue;
+      counts[tier] = (counts[tier] ?? 0) + 1;
+      tierConsistencies.putIfAbsent(tier, () => []).add(entry.userTrick.consistency.index);
+    }
+    if (counts.isEmpty) return const SizedBox.shrink();
+
+    final maxCount = counts.values.reduce((a, b) => a > b ? a : b);
+    final tiers = counts.keys.toList()..sort();
+    const barAreaHeight = 64.0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'TRICKS BY TIER',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '· Colored by Consistency',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: tiers.map((tier) {
+              final count = counts[tier]!;
+              final fraction = count / maxCount;
+              final median = _computeMedian(tierConsistencies[tier]!);
+              final barColor = _interpolateConsistencyColor(median, brightness);
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      SizedBox(
+                        height: barAreaHeight,
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: (barAreaHeight * fraction).clamp(3.0, barAreaHeight),
+                            decoration: BoxDecoration(
+                              color: barColor,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$tier',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
@@ -259,12 +402,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       letterSpacing: 0.5,
     );
 
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: Row(
               children: [
                 Expanded(child: Text('TRICK', style: labelStyle)),
@@ -322,7 +464,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
           const SizedBox(height: 4),
         ],
-      ),
     );
   }
 
@@ -365,21 +506,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (whatsNext.unlocked.isNotEmpty)
         _whatsNextCard(
           title: 'Ready to Start',
-          subtitle: 'All prerequisites met — start working on these',
+          subtitle: 'All prerequisites complete',
           icon: Icons.lock_open,
           color: theme.colorScheme.primary,
           tricks: whatsNext.unlocked,
+          controller: _unlockedCtrl,
         ),
       if (whatsNext.partiallyUnlocked.isNotEmpty)
         _whatsNextCard(
           title: 'Making Progress',
-          subtitle: 'You have at least one prerequisite for these',
+          subtitle: 'Landed at least one prerequisite',
           icon: Icons.trending_up,
           color: theme.colorScheme.secondary,
           tricks: whatsNext.partiallyUnlocked,
+          controller: _partiallyUnlockedCtrl,
         ),
       if (whatsNext.highValue.isNotEmpty)
-        _highValueCard(whatsNext.highValue, theme),
+        _highValueCard(whatsNext.highValue, theme, _highValueCtrl),
     ];
   }
 
@@ -389,6 +532,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required Color color,
     required List<Trick> tricks,
+    required ExpansibleController controller,
   }) {
     final theme = Theme.of(context);
     final labelStyle = TextStyle(
@@ -401,6 +545,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
+        controller: controller,
+        onExpansionChanged: (expanded) {
+          if (expanded) _collapseOthers(controller);
+        },
         leading: Icon(icon, color: color),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(subtitle),
@@ -447,7 +595,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _highValueCard(List<HighValueTarget> targets, ThemeData theme) {
+  Widget _highValueCard(List<HighValueTarget> targets, ThemeData theme, ExpansibleController controller) {
     final labelStyle = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w600,
@@ -458,9 +606,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
+        controller: controller,
+        onExpansionChanged: (expanded) {
+          if (expanded) _collapseOthers(controller);
+        },
         leading: Icon(Icons.star, color: theme.colorScheme.tertiary),
         title: const Text('High-Value Targets', style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Landing these unlocks the most new tricks'),
+        subtitle: const Text('Unlocks the most new tricks'),
         initiallyExpanded: false,
         children: [
           const Divider(height: 1),
