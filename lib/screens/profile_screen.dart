@@ -236,6 +236,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Color _levelColor(int level) => switch (level) {
+        0 => const Color(0xFF9E9E9E),
+        <= 3 => const Color(0xFF4CAF50),
+        <= 6 => const Color(0xFF8BC34A),
+        <= 10 => const Color(0xFFFFCA28),
+        <= 15 => const Color(0xFFFFA726),
+        <= 20 => const Color(0xFFFF7043),
+        <= 30 => const Color(0xFFEF5350),
+        _ => const Color(0xFF7B0000),
+      };
+
+  double _xpRequiredForLevel(int level) {
+    if (level <= 0) return 0;
+    return 12 * pow(level, 1.4).toDouble();
+  }
+
+  int _computeLevel(num totalPoints) {
+    int level = 0;
+    while (_xpRequiredForLevel(level + 1) <= totalPoints) {
+      level++;
+    }
+    return level;
+  }
+
   num _getPointScoreByDifficulty(int rawDifficulty) {
     if (rawDifficulty < 0) {
       return 0;
@@ -376,30 +400,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
           const Divider(height: 1),
           const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                totalPoints.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+          Builder(builder: (context) {
+            final level = _computeLevel(totalPoints);
+            final currentLevelXp = _xpRequiredForLevel(level);
+            final nextLevelXp = _xpRequiredForLevel(level + 1);
+            final progress = ((totalPoints - currentLevelXp) / (nextLevelXp - currentLevelXp)).clamp(0.0, 1.0);
+            final ptsToNext = (nextLevelXp - totalPoints).ceil();
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          totalPoints.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.pointScoreLabel,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.pointScoreLabel,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.5,
+                const Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      context.l10n.levelLabel(level),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _levelColor(level),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 120,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation(_levelColor(level)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      context.l10n.ptsToNextLevel(ptsToNext, level + 1),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
         ],
       ),
     );

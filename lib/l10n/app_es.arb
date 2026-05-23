@@ -245,5 +245,20 @@
   "coreTrickSubtitle": "Aparece en el filtro de trucos fundamentales",
   "coreOnlyFilter": "Solo trucos fundamentales",
 
-  "pointScoreLabel": "Puntos totales"
+  "pointScoreLabel": "Puntos totales",
+
+  "levelLabel": "Nivel {level}",
+  "@levelLabel": {
+    "placeholders": {
+      "level": { "type": "int" }
+    }
+  },
+
+  "ptsToNextLevel": "{pts} pts al Nv. {next}",
+  "@ptsToNextLevel": {
+    "placeholders": {
+      "pts": { "type": "int" },
+      "next": { "type": "int" }
+    }
+  }
 }

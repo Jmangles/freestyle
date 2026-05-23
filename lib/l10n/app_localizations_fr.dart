@@ -657,4 +657,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pointScoreLabel => 'Points totaux';
+
+  @override
+  String levelLabel(int level) {
+    return 'Niveau $level';
+  }
+
+  @override
+  String ptsToNextLevel(int pts, int next) {
+    return '$pts pts pour le Niv. $next';
+  }
 }

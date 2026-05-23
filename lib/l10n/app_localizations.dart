@@ -1323,6 +1323,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Points'**
   String get pointScoreLabel;
+
+  /// No description provided for @levelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String levelLabel(int level);
+
+  /// No description provided for @ptsToNextLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'{pts} pts to Lv. {next}'**
+  String ptsToNextLevel(int pts, int next);
 }
 
 class _AppLocalizationsDelegate
