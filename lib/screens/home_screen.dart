@@ -253,9 +253,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: translateGroupLabel(label, l10n),
                           totalCount: groupTricks.length,
                           landedCount: AuthService.isLoggedIn &&
-                                  !(_filter.statuses.length == 1 &&
-                                      _filter.statuses
-                                          .contains(TrickStatus.neverAttempted))
+                                  (_filter.statuses.isEmpty ||
+                                      (_filter.statuses
+                                              .contains(TrickStatus.landed) &&
+                                          _filter.statuses.any(
+                                              (s) => s != TrickStatus.landed)))
                               ? groupTricks
                                   .where((t) =>
                                       _consistencyMap[t.id]?.isLanded == true)
