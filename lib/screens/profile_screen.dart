@@ -314,7 +314,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Color.lerp(colors[lower], colors[lower + 1], t)!;
   }
 
-  Widget _buildLevelProgress(num totalPoints, {bool asColumn = false}) {
+  Widget _buildLevelProgress(num totalPoints,
+      {bool asColumn = false, bool asNarrowRow = false}) {
     final theme = Theme.of(context);
     final level = _computeLevel(totalPoints);
     final currentLevelXp = _xpRequiredForLevel(level);
@@ -413,6 +414,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+
+    if (asNarrowRow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [levelLabel, pointsLabel],
+          ),
+          const SizedBox(height: 8),
+          progressBar,
+        ],
+      );
+    }
 
     if (asColumn) {
       return Column(
@@ -573,7 +589,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 10),
-              _buildLevelProgress(totalPoints),
+              _buildLevelProgress(totalPoints, asNarrowRow: true),
             ],
           );
         },
@@ -736,28 +752,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       highValueTab: l10n.tabHighValueDesc,
     };
 
-    Widget tabBtn(String label, IconData icon, Color color, int index) {
+    Widget tabBtn(String label, IconData icon, Color color, int index,
+        {bool iconsOnly = false}) {
       final selected = tab == index;
-      return InkWell(
-        onTap: () => setState(() => _activeTab = index),
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon,
-                  size: 16,
-                  color: selected ? color : theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                    color:
-                        selected ? color : theme.colorScheme.onSurfaceVariant,
-                  )),
-            ],
+      final iconColor =
+          selected ? color : theme.colorScheme.onSurfaceVariant;
+      return Tooltip(
+        message: iconsOnly ? label : '',
+        child: InkWell(
+          onTap: () => setState(() => _activeTab = index),
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: iconsOnly ? 16 : 14, vertical: 14),
+            child: iconsOnly
+                ? Icon(icon, size: 22, color: iconColor)
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 16, color: iconColor),
+                      const SizedBox(width: 6),
+                      Text(label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: selected
+                                ? color
+                                : theme.colorScheme.onSurfaceVariant,
+                          )),
+                    ],
+                  ),
           ),
         ),
       );
@@ -768,24 +794,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Tab row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          LayoutBuilder(builder: (context, constraints) {
+            final iconsOnly = constraints.maxWidth < 500;
+            return Row(
               children: [
                 tabBtn(l10n.tabMyTricks, Icons.list, theme.colorScheme.primary,
-                    myTricksTab),
+                    myTricksTab, iconsOnly: iconsOnly),
                 if (unlockedTab >= 0)
                   tabBtn(l10n.tabReadyToStart, Icons.lock_open,
-                      theme.colorScheme.primary, unlockedTab),
+                      theme.colorScheme.primary, unlockedTab,
+                      iconsOnly: iconsOnly),
                 if (partialTab >= 0)
                   tabBtn(l10n.tabMakingProgress, Icons.trending_up,
-                      theme.colorScheme.primary, partialTab),
+                      theme.colorScheme.primary, partialTab,
+                      iconsOnly: iconsOnly),
                 if (highValueTab >= 0)
                   tabBtn(l10n.tabHighValue, Icons.star,
-                      theme.colorScheme.primary, highValueTab),
+                      theme.colorScheme.primary, highValueTab,
+                      iconsOnly: iconsOnly),
               ],
-            ),
-          ),
+            );
+          }),
           // Description
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
