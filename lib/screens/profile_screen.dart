@@ -22,18 +22,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<ProfileData> _future;
 
-  final _unlockedCtrl = ExpansibleController();
-  final _partiallyUnlockedCtrl = ExpansibleController();
-  final _highValueCtrl = ExpansibleController();
-  final _myTricksCtrl = ExpansibleController();
-
-  void _collapseOthers(ExpansibleController active) {
-    for (final ctrl in [_unlockedCtrl, _partiallyUnlockedCtrl, _highValueCtrl, _myTricksCtrl]) {
-      if (!identical(ctrl, active)) {
-        try { ctrl.collapse(); } catch (_) {}
-      }
-    }
-  }
+  int _activeTab = 0;
 
   @override
   void initState() {
@@ -118,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => setState(() { _future = _load(); _activeTab = 0; });
 
   Future<void> _updateConsistency(
       int trickId, Consistency consistency) async {
@@ -225,56 +214,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
-          if (!whatsNext.isEmpty) ...[
-            const SizedBox(height: 20),
-            Text(
-              "What's Next",
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ..._buildWhatsNextSections(whatsNext, theme),
-          ],
-
           const SizedBox(height: 20),
 
-          _buildMyTricksCard(entries),
+          if (entries.isNotEmpty) ...[
+            Card(child: _buildTierBarGraph(entries)),
+            const SizedBox(height: 12),
+          ],
+
+          _buildMainCard(entries, whatsNext, theme),
         ],
       ),
     );
   }
 
-  Widget _buildMyTricksCard(List<UserTrickEntry> entries) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    return Card(
-      child: ExpansionTile(
-        controller: _myTricksCtrl,
-        onExpansionChanged: (expanded) {
-          if (expanded) _collapseOthers(_myTricksCtrl);
-        },
-        leading: Icon(Icons.list, color: theme.colorScheme.primary),
-        title: Text(
-          l10n.myTricksCount(entries.length),
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        initiallyExpanded: false,
-        children: entries.isEmpty
-            ? [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: Text(l10n.noTricksTracked)),
-                ),
-              ]
-            : [
-                const Divider(height: 1),
-                _buildTierBarGraph(entries),
-                const Divider(height: 1),
-                _buildTricksTable(entries),
-              ],
-      ),
-    );
-  }
 
   double _computeMedian(List<int> values) {
     if (values.isEmpty) return 0;
@@ -501,40 +453,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  List<Widget> _buildWhatsNextSections(WhatsNextData whatsNext, ThemeData theme) {
-    return [
-      if (whatsNext.unlocked.isNotEmpty)
-        _whatsNextCard(
-          title: 'Ready to Start',
-          subtitle: 'All prerequisites complete',
-          icon: Icons.lock_open,
-          color: theme.colorScheme.primary,
-          tricks: whatsNext.unlocked,
-          controller: _unlockedCtrl,
-        ),
-      if (whatsNext.partiallyUnlocked.isNotEmpty)
-        _whatsNextCard(
-          title: 'Making Progress',
-          subtitle: 'Landed at least one prerequisite',
-          icon: Icons.trending_up,
-          color: theme.colorScheme.secondary,
-          tricks: whatsNext.partiallyUnlocked,
-          controller: _partiallyUnlockedCtrl,
-        ),
-      if (whatsNext.highValue.isNotEmpty)
-        _highValueCard(whatsNext.highValue, theme, _highValueCtrl),
-    ];
-  }
-
-  Widget _whatsNextCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required List<Trick> tricks,
-    required ExpansibleController controller,
-  }) {
-    final theme = Theme.of(context);
+  Widget _buildMainCard(List<UserTrickEntry> entries, WhatsNextData whatsNext, ThemeData theme) {
+    final l10n = context.l10n;
     final labelStyle = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w600,
@@ -542,126 +462,140 @@ class _ProfileScreenState extends State<ProfileScreen> {
       letterSpacing: 0.5,
     );
 
+    var idx = 0;
+    final myTricksTab  = idx++;
+    final unlockedTab  = whatsNext.unlocked.isNotEmpty         ? idx++ : -1;
+    final partialTab   = whatsNext.partiallyUnlocked.isNotEmpty ? idx++ : -1;
+    final highValueTab = whatsNext.highValue.isNotEmpty         ? idx++ : -1;
+    final tabCount = idx;
+    final tab = _activeTab.clamp(0, tabCount - 1);
+
+    final landedCount     = entries.where((e) => e.userTrick.consistency.isLanded).length;
+    final attemptingCount = entries.where((e) => !e.userTrick.consistency.isLanded).length;
+
+    final descriptions = {
+      myTricksTab:  entries.isEmpty ? l10n.noTricksTracked : '$landedCount tricks landed, $attemptingCount tricks in progress',
+      unlockedTab:  'All prerequisites met — start working on these',
+      partialTab:   'You have at least one prerequisite for these',
+      highValueTab: 'Landing these unlocks the most new tricks',
+    };
+
+    Widget tabBtn(String label, IconData icon, Color color, int index) {
+      final selected = tab == index;
+      return InkWell(
+        onTap: () => setState(() => _activeTab = index),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16,
+                  color: selected ? color : theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected ? color : theme.colorScheme.onSurfaceVariant,
+              )),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ExpansionTile(
-        controller: controller,
-        onExpansionChanged: (expanded) {
-          if (expanded) _collapseOthers(controller);
-        },
-        leading: Icon(icon, color: color),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
-        initiallyExpanded: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          // Tab row
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                Expanded(child: Text('TRICK', style: labelStyle)),
-                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.right, style: labelStyle)),
+                tabBtn('My Tricks',      Icons.list,        theme.colorScheme.primary, myTricksTab),
+                if (unlockedTab  >= 0) tabBtn('Ready to Start',  Icons.lock_open,  theme.colorScheme.primary, unlockedTab),
+                if (partialTab   >= 0) tabBtn('Making Progress', Icons.trending_up, theme.colorScheme.primary, partialTab),
+                if (highValueTab >= 0) tabBtn('High Value',      Icons.star,        theme.colorScheme.primary, highValueTab),
               ],
             ),
           ),
-          const Divider(height: 1),
-          for (int i = 0; i < tricks.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
-            InkWell(
-              onTap: () => context.push('/trick/${tricks[i].id}'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(tricks[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ),
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        tricks[i].difficultyLabel,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+            child: Text(
+              descriptions[tab] ?? '',
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
             ),
-          ],
+          ),
           const SizedBox(height: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _highValueCard(List<HighValueTarget> targets, ThemeData theme, ExpansibleController controller) {
-    final labelStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: theme.colorScheme.onSurfaceVariant,
-      letterSpacing: 0.5,
-    );
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ExpansionTile(
-        controller: controller,
-        onExpansionChanged: (expanded) {
-          if (expanded) _collapseOthers(controller);
-        },
-        leading: Icon(Icons.star, color: theme.colorScheme.tertiary),
-        title: const Text('High-Value Targets', style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Unlocks the most new tricks'),
-        initiallyExpanded: false,
-        children: [
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Expanded(child: Text('TRICK', style: labelStyle)),
-                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.center, style: labelStyle)),
-                SizedBox(width: 72, child: Text('UNLOCKS', textAlign: TextAlign.right, style: labelStyle)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          for (int i = 0; i < targets.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
-            InkWell(
-              onTap: () => context.push('/trick/${targets[i].trick.id}'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(targets[i].trick.givenName, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ),
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        targets[i].trick.difficultyLabel,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 72,
-                      child: Text(
-                        '${targets[i].unlockCount}',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.tertiary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+
+          // My Tricks tab
+          if (tab == myTricksTab) ...[
+            if (entries.isNotEmpty) _buildTricksTable(entries),
+          ],
+
+          // What's Next tabs: column headers then rows
+          if (tab != myTricksTab) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(child: Text('TRICK', style: labelStyle)),
+                  SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.right, style: labelStyle)),
+                  if (tab == highValueTab)
+                    SizedBox(width: 72, child: Text('UNLOCKS', textAlign: TextAlign.right, style: labelStyle)),
+                ],
               ),
             ),
+            const Divider(height: 1),
+            if (tab == unlockedTab) ...[
+              for (int i = 0; i < whatsNext.unlocked.length; i++) ...[
+                if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                InkWell(
+                  onTap: () => context.push('/trick/${whatsNext.unlocked[i].id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    child: Row(children: [
+                      Expanded(child: Text(whatsNext.unlocked[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
+                      SizedBox(width: 56, child: Text(whatsNext.unlocked[i].difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
+                    ]),
+                  ),
+                ),
+              ],
+            ],
+            if (tab == partialTab) ...[
+              for (int i = 0; i < whatsNext.partiallyUnlocked.length; i++) ...[
+                if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                InkWell(
+                  onTap: () => context.push('/trick/${whatsNext.partiallyUnlocked[i].id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    child: Row(children: [
+                      Expanded(child: Text(whatsNext.partiallyUnlocked[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
+                      SizedBox(width: 56, child: Text(whatsNext.partiallyUnlocked[i].difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
+                    ]),
+                  ),
+                ),
+              ],
+            ],
+            if (tab == highValueTab) ...[
+              for (int i = 0; i < whatsNext.highValue.length; i++) ...[
+                if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                InkWell(
+                  onTap: () => context.push('/trick/${whatsNext.highValue[i].trick.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    child: Row(children: [
+                      Expanded(child: Text(whatsNext.highValue[i].trick.givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
+                      SizedBox(width: 56, child: Text(whatsNext.highValue[i].trick.difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
+                      SizedBox(width: 72, child: Text('${whatsNext.highValue[i].unlockCount}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: theme.colorScheme.tertiary))),
+                    ]),
+                  ),
+                ),
+              ],
+            ],
           ],
           const SizedBox(height: 4),
         ],
