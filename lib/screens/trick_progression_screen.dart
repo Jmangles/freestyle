@@ -293,13 +293,6 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
     for (final entry in data.layers.entries) {
       byLayer.putIfAbsent(entry.value, () => []).add(entry.key);
     }
-    for (final ids in byLayer.values) {
-      ids.sort((a, b) {
-        if (a == data.focalId) return -1;
-        if (b == data.focalId) return 1;
-        return data.tricks[a]!.givenName.compareTo(data.tricks[b]!.givenName);
-      });
-    }
 
     final sortedLayers = byLayer.keys.toList()..sort();
     final minLayer = sortedLayers.first;
@@ -311,18 +304,53 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
     final canvasH =
         (maxLayer - minLayer + 1) * (_cardH + _vGap) - _vGap + _pad * 2;
 
-    // Position each card (each layer is centered in the canvas)
-    final positions = <int, Offset>{};
-    for (final layer in sortedLayers) {
-      final ids = byLayer[layer]!;
+    // Barycenter layout: sort each layer by the average x-position of its
+    // already-positioned neighbors, processing outward from the focal node.
+    // This minimises edge crossings compared to plain alphabetical ordering.
+    final xCenters = <int, double>{};
+
+    double barycenter(int id) {
+      final xs = <double>[];
+      for (final (pid, tid) in data.edges) {
+        if (pid == id) { final x = xCenters[tid]; if (x != null) xs.add(x); }
+        if (tid == id) { final x = xCenters[pid]; if (x != null) xs.add(x); }
+      }
+      return xs.isEmpty
+          ? double.infinity
+          : xs.reduce((a, b) => a + b) / xs.length;
+    }
+
+    void sortAndRecord(List<int> ids) {
+      ids.sort((a, b) {
+        if (a == data.focalId) return -1;
+        if (b == data.focalId) return 1;
+        final cmp = barycenter(a).compareTo(barycenter(b));
+        return cmp != 0
+            ? cmp
+            : data.tricks[a]!.givenName.compareTo(data.tricks[b]!.givenName);
+      });
       final rowW = ids.length * _cardW + (ids.length - 1) * _hGap;
       final startX = (canvasW - rowW) / 2;
       for (int i = 0; i < ids.length; i++) {
-        positions[ids[i]] = Offset(
-          startX + i * (_cardW + _hGap),
-          (layer - minLayer) * (_cardH + _vGap) + _pad,
-        );
+        xCenters[ids[i]] = startX + i * (_cardW + _hGap) + _cardW / 2;
       }
+    }
+
+    sortAndRecord(byLayer[0]!);
+    for (int L = 1; L <= maxLayer; L++) {
+      if (byLayer.containsKey(L)) sortAndRecord(byLayer[L]!);
+    }
+    for (int L = -1; L >= minLayer; L--) {
+      if (byLayer.containsKey(L)) sortAndRecord(byLayer[L]!);
+    }
+
+    final positions = <int, Offset>{};
+    for (final id in data.tricks.keys) {
+      final layer = data.layers[id]!;
+      positions[id] = Offset(
+        xCenters[id]! - _cardW / 2,
+        (layer - minLayer) * (_cardH + _vGap) + _pad,
+      );
     }
 
     final isMobile = switch (Theme.of(context).platform) {
