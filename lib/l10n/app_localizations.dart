@@ -1317,6 +1317,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Core tricks only'**
   String get coreOnlyFilter;
+
+  /// No description provided for @pointScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Points'**
+  String get pointScoreLabel;
 }
 
 class _AppLocalizationsDelegate

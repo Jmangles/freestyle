@@ -654,4 +654,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get coreOnlyFilter => 'Tricks fondamentaux uniquement';
+
+  @override
+  String get pointScoreLabel => 'Points totaux';
 }

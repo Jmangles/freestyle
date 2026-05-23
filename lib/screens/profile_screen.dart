@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
@@ -45,10 +47,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final whatsNext = _computeWhatsNext(userTricks, allTricks);
 
-    return ProfileData(profile: profile, entries: entries, whatsNext: whatsNext);
+    return ProfileData(
+        profile: profile, entries: entries, whatsNext: whatsNext);
   }
 
-  WhatsNextData _computeWhatsNext(List<UserTrick> userTricks, List<Trick> allTricks) {
+  WhatsNextData _computeWhatsNext(
+      List<UserTrick> userTricks, List<Trick> allTricks) {
     final landedIds = <int>{
       for (final ut in userTricks)
         if (ut.consistency.isLanded) ut.trickId,
@@ -73,8 +77,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             !t.prerequisiteTrickIds.every((id) => landedIds.contains(id)))
         .toList()
       ..sort((a, b) {
-        final aCount = a.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
-        final bCount = b.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
+        final aCount =
+            a.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
+        final bCount =
+            b.prerequisiteTrickIds.where((id) => landedIds.contains(id)).length;
         return bCount.compareTo(aCount);
       });
 
@@ -95,8 +101,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final highValue = allTricks
-        .where((t) => !landedIds.contains(t.id) && (unlockCountMap[t.id] ?? 0) > 0)
-        .map((t) => HighValueTarget(trick: t, unlockCount: unlockCountMap[t.id]!))
+        .where(
+            (t) => !landedIds.contains(t.id) && (unlockCountMap[t.id] ?? 0) > 0)
+        .map((t) =>
+            HighValueTarget(trick: t, unlockCount: unlockCountMap[t.id]!))
         .toList()
       ..sort((a, b) => b.unlockCount.compareTo(a.unlockCount));
 
@@ -107,10 +115,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _refresh() => setState(() { _future = _load(); _activeTab = 0; });
+  void _refresh() => setState(() {
+        _future = _load();
+        _activeTab = 0;
+      });
 
-  Future<void> _updateConsistency(
-      int trickId, Consistency consistency) async {
+  Future<void> _updateConsistency(int trickId, Consistency consistency) async {
     await UserTricksService.setConsistency(trickId, consistency);
     _refresh();
   }
@@ -141,7 +151,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text(context.l10n.errorWithDetail(snap.error.toString())));
+            return Center(
+                child:
+                    Text(context.l10n.errorWithDetail(snap.error.toString())));
           }
           final data = snap.data!;
           return _buildContent(data.profile, data.entries, data.whatsNext);
@@ -150,7 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildContent(Profile? profile, List<UserTrickEntry> entries, WhatsNextData whatsNext) {
+  Widget _buildContent(
+      Profile? profile, List<UserTrickEntry> entries, WhatsNextData whatsNext) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final user = AuthService.currentUser;
@@ -187,8 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               backgroundColor:
                                   theme.colorScheme.tertiaryContainer,
                               labelStyle: TextStyle(
-                                  color:
-                                      theme.colorScheme.onTertiaryContainer),
+                                  color: theme.colorScheme.onTertiaryContainer),
                             ),
                           ),
                       ],
@@ -213,20 +225,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           if (entries.isNotEmpty) ...[
             Card(child: _buildTierBarGraph(entries)),
             const SizedBox(height: 12),
           ],
-
           _buildMainCard(entries, whatsNext, theme),
         ],
       ),
     );
   }
 
+  num _getPointScoreByDifficulty(int rawDifficulty) {
+    if (rawDifficulty < 0) {
+      return 0;
+    }
+
+    const tierModifier = 0.1;
+    final modifier = rawDifficulty % 3;
+
+    final tier = rawDifficulty / 3 - tierModifier * (1 + modifier);
+
+    return pow(1.5, tier - 1);
+  }
+
+  num _computeTotalPoints(List<UserTrickEntry> entries) {
+    return entries.where((e) => e.userTrick.consistency.isLanded).fold(0,
+        (sum, e) => sum + _getPointScoreByDifficulty(e.trick!.difficultyTier));
+  }
 
   double _computeMedian(List<int> values) {
     if (values.isEmpty) return 0;
@@ -238,7 +264,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Color _interpolateConsistencyColor(double value, Brightness brightness) {
-    final colors = Consistency.values.map((c) => c.borderColor(brightness)).toList();
+    final colors =
+        Consistency.values.map((c) => c.borderColor(brightness)).toList();
     final lower = value.floor().clamp(0, colors.length - 2);
     final t = (value - lower).clamp(0.0, 1.0);
     return Color.lerp(colors[lower], colors[lower + 1], t)!;
@@ -247,6 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildTierBarGraph(List<UserTrickEntry> entries) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
+    final totalPoints = _computeTotalPoints(entries);
 
     final counts = <int, int>{};
     final tierConsistencies = <int, List<int>>{};
@@ -254,7 +282,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final tier = entry.trick?.difficultyLogicalTier ?? -1;
       if (tier < 1) continue;
       counts[tier] = (counts[tier] ?? 0) + 1;
-      tierConsistencies.putIfAbsent(tier, () => []).add(entry.userTrick.consistency.index);
+      tierConsistencies
+          .putIfAbsent(tier, () => [])
+          .add(entry.userTrick.consistency.index);
     }
     if (counts.isEmpty) return const SizedBox.shrink();
 
@@ -283,45 +313,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context.l10n.coloredByConsistency,
                 style: TextStyle(
                   fontSize: 11,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: tiers.map((tier) {
               final count = counts[tier]!;
               final fraction = count / maxCount;
               final median = _computeMedian(tierConsistencies[tier]!);
               final barColor = _interpolateConsistencyColor(median, brightness);
+              final barHeight = (barAreaHeight * fraction).clamp(3.0, barAreaHeight);
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '$count',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
                       SizedBox(
-                        height: barAreaHeight,
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            height: (barAreaHeight * fraction).clamp(3.0, barAreaHeight),
-                            decoration: BoxDecoration(
-                              color: barColor,
-                              borderRadius: BorderRadius.circular(3),
+                        height: barAreaHeight + 16,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            const Spacer(),
+                            Text(
+                              '$count',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 2),
+                            Container(
+                              height: barHeight,
+                              decoration: BoxDecoration(
+                                color: barColor,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -337,6 +372,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               );
             }).toList(),
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                totalPoints.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.pointScoreLabel,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -359,63 +421,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: Row(
-              children: [
-                Expanded(child: Text(l10n.columnTrick, style: labelStyle)),
-                SizedBox(width: 56, child: Text(l10n.columnTier, textAlign: TextAlign.center, style: labelStyle)),
-                SizedBox(width: 88, child: Text(l10n.columnConsistency, textAlign: TextAlign.right, style: labelStyle)),
-              ],
-            ),
+          child: Row(
+            children: [
+              Expanded(child: Text(l10n.columnTrick, style: labelStyle)),
+              SizedBox(
+                  width: 56,
+                  child: Text(l10n.columnTier,
+                      textAlign: TextAlign.center, style: labelStyle)),
+              SizedBox(
+                  width: 88,
+                  child: Text(l10n.columnConsistency,
+                      textAlign: TextAlign.right, style: labelStyle)),
+            ],
           ),
-          const Divider(height: 1),
-          for (int i = 0; i < entries.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
-            Builder(builder: (context) {
-              final entry = entries[i];
-              final trick = entry.trick;
-              if (trick == null) return const SizedBox.shrink();
-              final userTrick = entry.userTrick;
-              final consistencyColor = userTrick.consistency.borderColor(brightness);
-              return InkWell(
-                onTap: () => _showConsistencySheet(entry),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          trick.givenName,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
+        ),
+        const Divider(height: 1),
+        for (int i = 0; i < entries.length; i++) ...[
+          if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+          Builder(builder: (context) {
+            final entry = entries[i];
+            final trick = entry.trick;
+            if (trick == null) return const SizedBox.shrink();
+            final userTrick = entry.userTrick;
+            final consistencyColor =
+                userTrick.consistency.borderColor(brightness);
+            return InkWell(
+              onTap: () => _showConsistencySheet(entry),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        trick.givenName,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          trick.difficultyLabel,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 88,
-                        child: Text(
-                          userTrick.consistency.localizedLabel(l10n),
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        trick.difficultyLabel,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
                             fontSize: 12,
-                            color: consistencyColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 88,
+                      child: Text(
+                        userTrick.consistency.localizedLabel(l10n),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: consistencyColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            }),
-          ],
-          const SizedBox(height: 4),
+              ),
+            );
+          }),
         ],
+        const SizedBox(height: 4),
+      ],
     );
   }
 
@@ -431,13 +503,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Text(
               trick.givenName,
-              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(ctx)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
               trick.difficultyLabel,
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 16),
             ConsistencySelector(
@@ -453,7 +528,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMainCard(List<UserTrickEntry> entries, WhatsNextData whatsNext, ThemeData theme) {
+  Widget _buildMainCard(
+      List<UserTrickEntry> entries, WhatsNextData whatsNext, ThemeData theme) {
     final l10n = context.l10n;
     final labelStyle = TextStyle(
       fontSize: 11,
@@ -463,20 +539,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     var idx = 0;
-    final myTricksTab  = idx++;
-    final unlockedTab  = whatsNext.unlocked.isNotEmpty         ? idx++ : -1;
-    final partialTab   = whatsNext.partiallyUnlocked.isNotEmpty ? idx++ : -1;
-    final highValueTab = whatsNext.highValue.isNotEmpty         ? idx++ : -1;
+    final myTricksTab = idx++;
+    final unlockedTab = whatsNext.unlocked.isNotEmpty ? idx++ : -1;
+    final partialTab = whatsNext.partiallyUnlocked.isNotEmpty ? idx++ : -1;
+    final highValueTab = whatsNext.highValue.isNotEmpty ? idx++ : -1;
     final tabCount = idx;
     final tab = _activeTab.clamp(0, tabCount - 1);
 
-    final landedCount     = entries.where((e) => e.userTrick.consistency.isLanded).length;
-    final attemptingCount = entries.where((e) => !e.userTrick.consistency.isLanded).length;
+    final landedCount =
+        entries.where((e) => e.userTrick.consistency.isLanded).length;
+    final attemptingCount =
+        entries.where((e) => !e.userTrick.consistency.isLanded).length;
 
     final descriptions = {
-      myTricksTab:  entries.isEmpty ? l10n.noTricksTracked : l10n.tricksProgress(landedCount, attemptingCount),
-      unlockedTab:  l10n.tabReadyToStartDesc,
-      partialTab:   l10n.tabMakingProgressDesc,
+      myTricksTab: entries.isEmpty
+          ? l10n.noTricksTracked
+          : l10n.tricksProgress(landedCount, attemptingCount),
+      unlockedTab: l10n.tabReadyToStartDesc,
+      partialTab: l10n.tabMakingProgressDesc,
       highValueTab: l10n.tabHighValueDesc,
     };
 
@@ -490,14 +570,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16,
+              Icon(icon,
+                  size: 16,
                   color: selected ? color : theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                color: selected ? color : theme.colorScheme.onSurfaceVariant,
-              )),
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                    color:
+                        selected ? color : theme.colorScheme.onSurfaceVariant,
+                  )),
             ],
           ),
         ),
@@ -513,10 +596,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                tabBtn(l10n.tabMyTricks,      Icons.list,        theme.colorScheme.primary, myTricksTab),
-                if (unlockedTab  >= 0) tabBtn(l10n.tabReadyToStart,  Icons.lock_open,  theme.colorScheme.primary, unlockedTab),
-                if (partialTab   >= 0) tabBtn(l10n.tabMakingProgress, Icons.trending_up, theme.colorScheme.primary, partialTab),
-                if (highValueTab >= 0) tabBtn(l10n.tabHighValue,      Icons.star,        theme.colorScheme.primary, highValueTab),
+                tabBtn(l10n.tabMyTricks, Icons.list, theme.colorScheme.primary,
+                    myTricksTab),
+                if (unlockedTab >= 0)
+                  tabBtn(l10n.tabReadyToStart, Icons.lock_open,
+                      theme.colorScheme.primary, unlockedTab),
+                if (partialTab >= 0)
+                  tabBtn(l10n.tabMakingProgress, Icons.trending_up,
+                      theme.colorScheme.primary, partialTab),
+                if (highValueTab >= 0)
+                  tabBtn(l10n.tabHighValue, Icons.star,
+                      theme.colorScheme.primary, highValueTab),
               ],
             ),
           ),
@@ -525,7 +615,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
             child: Text(
               descriptions[tab] ?? '',
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                  fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
           const SizedBox(height: 4),
@@ -543,9 +634,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 children: [
                   Expanded(child: Text(l10n.columnTrick, style: labelStyle)),
-                  SizedBox(width: 56, child: Text(l10n.columnTier, textAlign: TextAlign.right, style: labelStyle)),
+                  SizedBox(
+                      width: 56,
+                      child: Text(l10n.columnTier,
+                          textAlign: TextAlign.right, style: labelStyle)),
                   if (tab == highValueTab)
-                    SizedBox(width: 72, child: Text(l10n.columnUnlocks, textAlign: TextAlign.right, style: labelStyle)),
+                    SizedBox(
+                        width: 72,
+                        child: Text(l10n.columnUnlocks,
+                            textAlign: TextAlign.right, style: labelStyle)),
                 ],
               ),
             ),
@@ -554,12 +651,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               for (int i = 0; i < whatsNext.unlocked.length; i++) ...[
                 if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
                 InkWell(
-                  onTap: () => context.push('/trick/${whatsNext.unlocked[i].id}'),
+                  onTap: () =>
+                      context.push('/trick/${whatsNext.unlocked[i].id}'),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 11),
                     child: Row(children: [
-                      Expanded(child: Text(whatsNext.unlocked[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                      SizedBox(width: 56, child: Text(whatsNext.unlocked[i].difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
+                      Expanded(
+                          child: Text(whatsNext.unlocked[i].givenName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500))),
+                      SizedBox(
+                          width: 56,
+                          child: Text(whatsNext.unlocked[i].difficultyLabel,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant))),
                     ]),
                   ),
                 ),
@@ -569,12 +677,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               for (int i = 0; i < whatsNext.partiallyUnlocked.length; i++) ...[
                 if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
                 InkWell(
-                  onTap: () => context.push('/trick/${whatsNext.partiallyUnlocked[i].id}'),
+                  onTap: () => context
+                      .push('/trick/${whatsNext.partiallyUnlocked[i].id}'),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 11),
                     child: Row(children: [
-                      Expanded(child: Text(whatsNext.partiallyUnlocked[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                      SizedBox(width: 56, child: Text(whatsNext.partiallyUnlocked[i].difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
+                      Expanded(
+                          child: Text(whatsNext.partiallyUnlocked[i].givenName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500))),
+                      SizedBox(
+                          width: 56,
+                          child: Text(
+                              whatsNext.partiallyUnlocked[i].difficultyLabel,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant))),
                     ]),
                   ),
                 ),
@@ -584,13 +704,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               for (int i = 0; i < whatsNext.highValue.length; i++) ...[
                 if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
                 InkWell(
-                  onTap: () => context.push('/trick/${whatsNext.highValue[i].trick.id}'),
+                  onTap: () =>
+                      context.push('/trick/${whatsNext.highValue[i].trick.id}'),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 11),
                     child: Row(children: [
-                      Expanded(child: Text(whatsNext.highValue[i].trick.givenName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                      SizedBox(width: 56, child: Text(whatsNext.highValue[i].trick.difficultyLabel, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant))),
-                      SizedBox(width: 72, child: Text('${whatsNext.highValue[i].unlockCount}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: theme.colorScheme.tertiary))),
+                      Expanded(
+                          child: Text(whatsNext.highValue[i].trick.givenName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500))),
+                      SizedBox(
+                          width: 56,
+                          child: Text(
+                              whatsNext.highValue[i].trick.difficultyLabel,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant))),
+                      SizedBox(
+                          width: 72,
+                          child: Text('${whatsNext.highValue[i].unlockCount}',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.tertiary))),
                     ]),
                   ),
                 ),

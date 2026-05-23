@@ -650,4 +650,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get coreOnlyFilter => 'Solo trucos fundamentales';
+
+  @override
+  String get pointScoreLabel => 'Puntos totales';
 }

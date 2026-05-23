@@ -243,5 +243,7 @@
 
   "coreTrickLabel": "Trick fondamental",
   "coreTrickSubtitle": "Affiché dans le filtre des tricks fondamentaux",
-  "coreOnlyFilter": "Tricks fondamentaux uniquement"
+  "coreOnlyFilter": "Tricks fondamentaux uniquement",
+
+  "pointScoreLabel": "Points totaux"
 }

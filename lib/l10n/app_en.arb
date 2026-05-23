@@ -288,5 +288,7 @@
 
   "coreTrickLabel": "Core trick",
   "coreTrickSubtitle": "Shown in the foundational tricks filter",
-  "coreOnlyFilter": "Core tricks only"
+  "coreOnlyFilter": "Core tricks only",
+
+  "pointScoreLabel": "Total Points"
 }
