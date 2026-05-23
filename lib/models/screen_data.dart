@@ -31,6 +31,7 @@ class WhatsNextData {
 class TrickDetailData {
   final Trick trick;
   final List<Trick> prerequisites;
+  final Map<int, UserTrick> prerequisiteUserTricks;
   final UserTrick? userTrick;
   final bool canEditTricks;
   final TrickVoteStats voteStats;
@@ -38,6 +39,7 @@ class TrickDetailData {
   const TrickDetailData({
     required this.trick,
     required this.prerequisites,
+    this.prerequisiteUserTricks = const {},
     this.userTrick,
     required this.canEditTricks,
     required this.voteStats,

@@ -1,11 +1,11 @@
 {
-    "name": "freestyle_highline",
-    "short_name": "freestyle_highline",
+    "name": "Freestyle Highline Trick Database",
+    "short_name": "Highline",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Freestyle Highline Trick Database",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

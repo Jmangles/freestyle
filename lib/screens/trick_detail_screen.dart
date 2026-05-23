@@ -50,9 +50,14 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     final userTrick = await userTrickFuture;
     final profile = await profileFuture;
     final voteStats = await voteStatsFuture;
+    final prereqUserTricks = AuthService.isLoggedIn
+        ? await UserTricksService.getUserTricksForTrickIds(
+            prereqs.map((p) => p.id).toList())
+        : <int, UserTrick>{};
     return TrickDetailData(
       trick: trick,
       prerequisites: prereqs,
+      prerequisiteUserTricks: prereqUserTricks,
       userTrick: userTrick,
       canEditTricks: profile?.canEditTricks == true,
       voteStats: voteStats,
@@ -122,6 +127,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
         _data = TrickDetailData(
           trick: _data!.trick,
           prerequisites: _data!.prerequisites,
+          prerequisiteUserTricks: _data!.prerequisiteUserTricks,
           userTrick: optimistic,
           canEditTricks: _data!.canEditTricks,
           voteStats: _data!.voteStats,
@@ -231,10 +237,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     }
 
     final data = _data!;
-    return _buildContent(data.trick, data.prerequisites, data.userTrick, data.voteStats);
+    return _buildContent(data.trick, data.prerequisites, data.prerequisiteUserTricks, data.userTrick, data.voteStats);
   }
 
-  Widget _buildContent(Trick trick, List<Trick> prereqs, UserTrick? userTrick,
+  Widget _buildContent(Trick trick, List<Trick> prereqs,
+      Map<int, UserTrick> prereqUserTricks, UserTrick? userTrick,
       TrickVoteStats voteStats) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
@@ -323,13 +330,26 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: prereqs
-                  .map((p) => ActionChip(
-                        label: Text(p.givenName),
-                        onPressed: () =>
-                            context.push('/trick/${p.id}'),
-                      ))
-                  .toList(),
+              children: prereqs.map((p) {
+                final consistency = prereqUserTricks[p.id]?.consistency;
+                final bg = consistency?.cardColor(theme.brightness);
+                final border = consistency != null
+                    ? BorderSide(
+                        color: consistency.borderColor(theme.brightness),
+                        width: consistency.borderWidth,
+                      )
+                    : null;
+                return ActionChip(
+                  label: Text(p.givenName),
+                  backgroundColor: bg,
+                  side: border,
+                  elevation: consistency?.hasGlow == true ? 6 : null,
+                  shadowColor: consistency?.hasGlow == true
+                      ? consistency!.borderColor(theme.brightness).withValues(alpha: 0.7)
+                      : null,
+                  onPressed: () => context.push('/trick/${p.id}'),
+                );
+              }).toList(),
             ),
           ],
 
