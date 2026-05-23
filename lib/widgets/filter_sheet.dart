@@ -29,6 +29,7 @@ class _FilterSheetState extends State<FilterSheet> {
   late String? _endPosition;
   late Set<TrickStatus> _statuses;
   late int? _yearLanded;
+  late bool _coreOnly;
   late TextEditingController _performerController;
 
   late int _dataMinTier;
@@ -58,6 +59,7 @@ class _FilterSheetState extends State<FilterSheet> {
     _endPosition = widget.current.endPosition;
     _statuses = Set.from(widget.current.statuses);
     _yearLanded = widget.current.yearLanded;
+    _coreOnly = widget.current.coreOnly;
     _performerController = TextEditingController(text: widget.current.performerQuery);
   }
 
@@ -85,6 +87,7 @@ class _FilterSheetState extends State<FilterSheet> {
         _endPosition = null;
         _statuses = {};
         _yearLanded = null;
+        _coreOnly = false;
         _performerController.clear();
         _dropdownResetKey++;
       });
@@ -97,6 +100,7 @@ class _FilterSheetState extends State<FilterSheet> {
         endPosition: _endPosition,
         statuses: Set.unmodifiable(_statuses),
         yearLanded: _yearLanded,
+        coreOnly: _coreOnly,
         performerQuery: _performerController.text.trim(),
       );
 
@@ -179,12 +183,22 @@ class _FilterSheetState extends State<FilterSheet> {
                         }),
                       ),
                     ],
-                    if (_hasTbd)
-                      FilterChip(
-                        label: Text(l10n.includeTbdChip),
-                        selected: _includeTbd,
-                        onSelected: (v) => setState(() => _includeTbd = v),
-                      ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        if (_hasTbd)
+                          FilterChip(
+                            label: Text(l10n.includeTbdChip),
+                            selected: _includeTbd,
+                            onSelected: (v) => setState(() => _includeTbd = v),
+                          ),
+                        FilterChip(
+                          label: const Text('Core tricks only'),
+                          selected: _coreOnly,
+                          onSelected: (v) => setState(() => _coreOnly = v),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 20),
                   ],
                   if (availableStartPositions.isNotEmpty ||

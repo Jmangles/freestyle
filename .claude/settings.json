@@ -7,7 +7,10 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\" | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\){\"Directory\"}else{\"File\"}}})",
       "Bash(dir lib *)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\" -Force | Select-Object Name, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"Directory\"}else{\"File\"}}} | Format-Table -AutoSize)",
-      "PowerShell(Get-ChildItem \"$env:LOCALAPPDATA\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\flutter_markdown_plus-1.0.7\\\\lib\")"
+      "PowerShell(Get-ChildItem \"$env:LOCALAPPDATA\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\flutter_markdown_plus-1.0.7\\\\lib\")",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(ls -la c:\\\\\\\\Websites\\\\\\\\highline)"
     ]
   }
 }

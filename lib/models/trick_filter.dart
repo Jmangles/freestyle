@@ -20,6 +20,7 @@ class TrickFilter {
   final int? yearLanded;
   final String performerQuery;
   final String nameQuery;
+  final bool coreOnly;
 
   const TrickFilter({
     this.tierMin,
@@ -31,6 +32,7 @@ class TrickFilter {
     this.yearLanded,
     this.performerQuery = '',
     this.nameQuery = '',
+    this.coreOnly = false,
   });
 
   bool get isActive =>
@@ -42,7 +44,8 @@ class TrickFilter {
       statuses.isNotEmpty ||
       yearLanded != null ||
       performerQuery.isNotEmpty ||
-      nameQuery.isNotEmpty;
+      nameQuery.isNotEmpty ||
+      coreOnly;
 
   int get activeCount =>
       ((tierMin != null || tierMax != null) ? 1 : 0) +
@@ -52,10 +55,12 @@ class TrickFilter {
       (statuses.isNotEmpty ? 1 : 0) +
       (yearLanded != null ? 1 : 0) +
       (performerQuery.isNotEmpty ? 1 : 0) +
-      (nameQuery.isNotEmpty ? 1 : 0);
+      (nameQuery.isNotEmpty ? 1 : 0) +
+      (coreOnly ? 1 : 0);
 
   List<Trick> apply(List<Trick> tricks, Map<int, Consistency> consistencyMap) {
     return tricks.where((t) {
+      if (coreOnly && !t.isCore) return false;
       if (t.difficultyTier == -1) {
         if (!includeTbd) return false;
       } else {

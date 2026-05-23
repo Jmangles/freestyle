@@ -19,10 +19,13 @@ class Trick {
   final int? endPositionId;
   final ApprovalStatus status;
   final int? submittedBy;
+  final int flags;
 
   // Joined via Supabase select
   final String? startPositionName;
   final String? endPositionName;
+
+  bool get isCore => flags & 1 != 0;
 
   static String tierLabel(int value) => DifficultyTier.label(value);
 
@@ -48,6 +51,7 @@ class Trick {
     this.endPositionId,
     required this.status,
     this.submittedBy,
+    this.flags = 0,
     this.startPositionName,
     this.endPositionName,
   });
@@ -79,6 +83,7 @@ class Trick {
       endPositionId: json['end_position_id'] as int?,
       status: ApprovalStatus.fromIndex(json['status'] as int),
       submittedBy: json['submitted_by'] as int?,
+      flags: json['flags'] as int? ?? 0,
       startPositionName: startPos?['name'] as String?,
       endPositionName: endPos?['name'] as String?,
     );
@@ -114,6 +119,7 @@ class Trick {
     int? videoEnd,
     int? startPositionId,
     int? endPositionId,
+    int? flags,
   }) =>
       Trick(
         id: id,
@@ -134,5 +140,6 @@ class Trick {
         endPositionId: endPositionId ?? this.endPositionId,
         status: status,
         submittedBy: submittedBy,
+        flags: flags ?? this.flags,
       );
 }

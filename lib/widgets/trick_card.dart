@@ -29,9 +29,15 @@ class TrickCard extends StatelessWidget {
     if (listMode) return _buildListTile(context);
     final theme = Theme.of(context);
 
-    return Card(
+    final card = Card(
       clipBehavior: Clip.antiAlias,
+      margin: consistency == Consistency.never ? EdgeInsets.zero : null,
       color: consistency?.cardColor(theme.brightness),
+      elevation: consistency?.hasGlow == true ? 8 : null,
+      shadowColor: consistency?.hasGlow == true
+          ? consistency!.borderColor(theme.brightness).withValues(alpha: 0.7)
+          : null,
+      shape: _cardShape(theme),
       child: InkWell(
         onTap: () async {
           await context.push('/trick/${trick.id}');
@@ -91,6 +97,28 @@ class TrickCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (consistency == Consistency.never) {
+      return Padding(
+        padding: const EdgeInsets.all(4),
+        child: Stack(
+          children: [
+            card,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _DashedBorderPainter(
+                    color: consistency!.borderColor(theme.brightness),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return card;
   }
 
   Widget _buildListTile(BuildContext context) {
@@ -98,25 +126,69 @@ class TrickCard extends StatelessWidget {
     final hasSubtitle = trick.technicalName != null &&
         trick.technicalName!.isNotEmpty &&
         trick.technicalName != trick.givenName;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+
+    final card = Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       color: consistency?.cardColor(theme.brightness),
+      elevation: consistency?.hasGlow == true ? 8 : null,
+      shadowColor: consistency?.hasGlow == true
+          ? consistency!.borderColor(theme.brightness).withValues(alpha: 0.7)
+          : null,
+      shape: _cardShape(theme),
       child: ListTile(
         dense: true,
         title: Text(
           trick.givenName,
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         subtitle: hasSubtitle
             ? Text(trick.technicalName!,
-                style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic))
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ))
             : null,
         trailing: _buildListTrailing(theme),
         onTap: () async {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
         },
+      ),
+    );
+
+    Widget result = card;
+    if (consistency == Consistency.never) {
+      result = Stack(
+        children: [
+          card,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _DashedBorderPainter(
+                  color: consistency!.borderColor(theme.brightness),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: result,
+    );
+  }
+
+  ShapeBorder? _cardShape(ThemeData theme) {
+    if (consistency == null || consistency == Consistency.never) return null;
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: BorderSide(
+        color: consistency!.borderColor(theme.brightness),
+        width: consistency!.borderWidth,
       ),
     );
   }
@@ -191,4 +263,50 @@ class _DifficultyBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+
+  const _DashedBorderPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 1.5;
+    const dashLength = 6.0;
+    const gapLength = 4.0;
+    const radius = 12.0;
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        strokeWidth / 2,
+        strokeWidth / 2,
+        size.width - strokeWidth,
+        size.height - strokeWidth,
+      ),
+      const Radius.circular(radius),
+    );
+
+    final path = Path()..addRRect(rrect);
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      bool drawing = true;
+      while (distance < metric.length) {
+        final segLen = drawing ? dashLength : gapLength;
+        final end = (distance + segLen).clamp(0.0, metric.length);
+        if (drawing) canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end;
+        drawing = !drawing;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
 }

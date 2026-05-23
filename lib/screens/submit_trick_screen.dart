@@ -40,6 +40,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   int? _startPositionId;
   int? _endPositionId;
   List<int> _prerequisiteIds = [];
+  bool _isCore = false;
 
   late Future<SubmitMeta> _metaFuture;
   late final VoidCallback _nameListener;
@@ -68,6 +69,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       _endPositionId = t.endPositionId;
       _prerequisiteIds = List.from(t.prerequisiteTrickIds);
     }
+    _isCore = widget.existingTrick?.isCore ?? false;
     _metaFuture = _loadMeta();
     _nameListener = () => setState(() {});
     _givenName.addListener(_nameListener);
@@ -109,6 +111,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         'video_end': int.tryParse(_videoEnd.text.trim()),
         'start_position_id': _startPositionId,
         'end_position_id': _endPositionId,
+        'flags': _isCore ? 1 : 0,
       };
 
   /// Compares form values against [original] and returns only changed,
@@ -374,6 +377,16 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 ),
               ],
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: 4),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Core trick'),
+                subtitle: const Text('Shown in the foundational tricks filter'),
+                value: _isCore,
+                onChanged: (v) => setState(() => _isCore = v),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _loading ? null : _submit,

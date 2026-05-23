@@ -242,33 +242,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Center(child: Text(l10n.noTricksTracked)),
             )
           else
-            ...entries.map((entry) {
-              final userTrick = entry.userTrick;
+            _buildTricksTable(entries),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTricksTable(List<UserTrickEntry> entries) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final brightness = theme.brightness;
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: theme.colorScheme.onSurfaceVariant,
+      letterSpacing: 0.5,
+    );
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            child: Row(
+              children: [
+                Expanded(child: Text('TRICK', style: labelStyle)),
+                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.center, style: labelStyle)),
+                SizedBox(width: 88, child: Text('CONSISTENCY', textAlign: TextAlign.right, style: labelStyle)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          for (int i = 0; i < entries.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            Builder(builder: (context) {
+              final entry = entries[i];
               final trick = entry.trick;
               if (trick == null) return const SizedBox.shrink();
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ExpansionTile(
-                  title: Text(trick.givenName,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(
-                    '${trick.difficultyLabel} · ${userTrick.consistency.localizedLabel(l10n)}',
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: ConsistencySelector(
-                        selected: userTrick.consistency,
-                        onChanged: (c) =>
-                            _updateConsistency(trick.id, c),
+              final userTrick = entry.userTrick;
+              final consistencyColor = userTrick.consistency.borderColor(brightness);
+              return InkWell(
+                onTap: () => _showConsistencySheet(entry),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          trick.givenName,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                          trick.difficultyLabel,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 88,
+                        child: Text(
+                          userTrick.consistency.localizedLabel(l10n),
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: consistencyColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),
+          ],
+          const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+
+  void _showConsistencySheet(UserTrickEntry entry) {
+    final trick = entry.trick!;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              trick.givenName,
+              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              trick.difficultyLabel,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ConsistencySelector(
+              selected: entry.userTrick.consistency,
+              onChanged: (c) {
+                Navigator.pop(ctx);
+                _updateConsistency(trick.id, c);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -303,6 +390,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color color,
     required List<Trick> tricks,
   }) {
+    final theme = Theme.of(context);
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: theme.colorScheme.onSurfaceVariant,
+      letterSpacing: 0.5,
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
@@ -310,17 +405,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(subtitle),
         initiallyExpanded: false,
-        children: tricks.map((t) => ListTile(
-          title: Text(t.givenName),
-          subtitle: Text(t.difficultyLabel),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/trick/${t.id}'),
-        )).toList(),
+        children: [
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Expanded(child: Text('TRICK', style: labelStyle)),
+                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.right, style: labelStyle)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          for (int i = 0; i < tricks.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            InkWell(
+              onTap: () => context.push('/trick/${tricks[i].id}'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(tricks[i].givenName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        tricks[i].difficultyLabel,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }
 
   Widget _highValueCard(List<HighValueTarget> targets, ThemeData theme) {
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: theme.colorScheme.onSurfaceVariant,
+      letterSpacing: 0.5,
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
@@ -328,20 +462,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('High-Value Targets', style: TextStyle(fontWeight: FontWeight.w600)),
         subtitle: const Text('Landing these unlocks the most new tricks'),
         initiallyExpanded: false,
-        children: targets.map((hv) => ListTile(
-          title: Text(hv.trick.givenName),
-          subtitle: Text(hv.trick.difficultyLabel),
-          trailing: Chip(
-            label: Text('unlocks ${hv.unlockCount}'),
-            backgroundColor: theme.colorScheme.tertiaryContainer,
-            labelStyle: TextStyle(
-              color: theme.colorScheme.onTertiaryContainer,
-              fontSize: 12,
+        children: [
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Expanded(child: Text('TRICK', style: labelStyle)),
+                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.center, style: labelStyle)),
+                SizedBox(width: 72, child: Text('UNLOCKS', textAlign: TextAlign.right, style: labelStyle)),
+              ],
             ),
-            visualDensity: VisualDensity.compact,
           ),
-          onTap: () => context.push('/trick/${hv.trick.id}'),
-        )).toList(),
+          const Divider(height: 1),
+          for (int i = 0; i < targets.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            InkWell(
+              onTap: () => context.push('/trick/${targets[i].trick.id}'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(targets[i].trick.givenName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        targets[i].trick.difficultyLabel,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 72,
+                      child: Text(
+                        '${targets[i].unlockCount}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }
