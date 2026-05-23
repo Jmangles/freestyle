@@ -75,6 +75,7 @@
 
   "profileTitle": "Profil",
   "signOutTooltip": "Se déconnecter",
+  "signOutConfirmMessage": "Êtes-vous sûr de vouloir vous déconnecter ?",
   "unknownUser": "Utilisateur inconnu",
   "darkModeLabel": "Mode sombre",
   "myTricksCount": "Mes tricks ({count})",

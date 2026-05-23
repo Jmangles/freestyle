@@ -220,6 +220,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signOutTooltip => 'Cerrar sesión';
 
   @override
+  String get signOutConfirmMessage =>
+      '¿Estás seguro de que quieres cerrar sesión?';
+
+  @override
   String get unknownUser => 'Usuario desconocido';
 
   @override

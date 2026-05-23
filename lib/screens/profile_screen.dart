@@ -126,6 +126,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.signOutTooltip),
+        content: Text(l10n.signOutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.signOutTooltip),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     await AuthService.signOut();
     if (mounted) context.go('/');
   }
@@ -295,6 +314,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Color.lerp(colors[lower], colors[lower + 1], t)!;
   }
 
+  Widget _buildLevelProgress(num totalPoints, {bool asColumn = false}) {
+    final theme = Theme.of(context);
+    final level = _computeLevel(totalPoints);
+    final currentLevelXp = _xpRequiredForLevel(level);
+    final nextLevelXp = _xpRequiredForLevel(level + 1);
+    final progress =
+        ((totalPoints - currentLevelXp) / (nextLevelXp - currentLevelXp))
+            .clamp(0.0, 1.0);
+    final ptsToNext = (nextLevelXp - totalPoints).ceil();
+
+    final levelLabel = Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Level',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurfaceVariant,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$level',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: _levelColor(level),
+          ),
+        ),
+      ],
+    );
+
+    final pointsLabel = Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          totalPoints.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          context.l10n.pointScoreLabel,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurfaceVariant,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+
+    final progressBar = Stack(
+      alignment: Alignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 24,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation(_levelColor(level)),
+          ),
+        ),
+        Stack(
+          children: [
+            Text(
+              context.l10n.ptsToNextLevel(ptsToNext, level + 1),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                foreground: Paint()
+                  ..style = PaintingStyle.stroke
+                  ..strokeWidth = 3
+                  ..color = theme.colorScheme.surface,
+              ),
+            ),
+            Text(
+              context.l10n.ptsToNextLevel(ptsToNext, level + 1),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: theme.colorScheme.inverseSurface,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    if (asColumn) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          levelLabel,
+          const SizedBox(height: 8),
+          progressBar,
+          const SizedBox(height: 8),
+          pointsLabel,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        levelLabel,
+        const SizedBox(width: 24),
+        Expanded(child: progressBar),
+        const SizedBox(width: 24),
+        pointsLabel,
+      ],
+    );
+  }
+
   Widget _buildTierBarGraph(List<UserTrickEntry> entries) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
@@ -316,167 +461,122 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final tiers = counts.keys.toList()..sort();
     const barAreaHeight = 64.0;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                context.l10n.tricksByTierTitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                context.l10n.coloredByConsistency,
-                style: TextStyle(
-                  fontSize: 11,
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: tiers.map((tier) {
-              final count = counts[tier]!;
-              final fraction = count / maxCount;
-              final median = _computeMedian(tierConsistencies[tier]!);
-              final barColor = _interpolateConsistencyColor(median, brightness);
-              final barHeight = (barAreaHeight * fraction).clamp(3.0, barAreaHeight);
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        height: barAreaHeight + 16,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            const Spacer(),
-                            Text(
-                              '$count',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Container(
-                              height: barHeight,
-                              decoration: BoxDecoration(
-                                color: barColor,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$tier',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+    Widget barChart() => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  context.l10n.tricksByTierTitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 10),
-          Builder(builder: (context) {
-            final level = _computeLevel(totalPoints);
-            final currentLevelXp = _xpRequiredForLevel(level);
-            final nextLevelXp = _xpRequiredForLevel(level + 1);
-            final progress = ((totalPoints - currentLevelXp) / (nextLevelXp - currentLevelXp)).clamp(0.0, 1.0);
-            final ptsToNext = (nextLevelXp - totalPoints).ceil();
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                const SizedBox(width: 6),
+                Text(
+                  context.l10n.coloredByConsistency,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: tiers.map((tier) {
+                final count = counts[tier]!;
+                final fraction = count / maxCount;
+                final median = _computeMedian(tierConsistencies[tier]!);
+                final barColor =
+                    _interpolateConsistencyColor(median, brightness);
+                final barHeight =
+                    (barAreaHeight * fraction).clamp(3.0, barAreaHeight);
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          totalPoints.toStringAsFixed(1),
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
+                        SizedBox(
+                          height: barAreaHeight + 16,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              const Spacer(),
+                              Text(
+                                '$count',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Container(
+                                height: barHeight,
+                                decoration: BoxDecoration(
+                                  color: barColor,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(height: 4),
                         Text(
-                          context.l10n.pointScoreLabel,
+                          '$tier',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
                             color: theme.colorScheme.onSurfaceVariant,
-                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 800;
+          if (isWide) {
+            final levelWidth = (constraints.maxWidth * 0.45).clamp(350.0, 650.0);
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: levelWidth,
+                  child: _buildLevelProgress(totalPoints, asColumn: true),
                 ),
-                const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      context.l10n.levelLabel(level),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _levelColor(level),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      width: 120,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation(_levelColor(level)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      context.l10n.ptsToNextLevel(ptsToNext, level + 1),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(width: 16),
+                Container(width: 1, height: 80, color: Theme.of(context).dividerColor),
+                const SizedBox(width: 16),
+                Expanded(child: barChart()),
               ],
             );
-          }),
-        ],
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              barChart(),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 10),
+              _buildLevelProgress(totalPoints),
+            ],
+          );
+        },
       ),
     );
   }

@@ -75,6 +75,7 @@
 
   "profileTitle": "Perfil",
   "signOutTooltip": "Cerrar sesión",
+  "signOutConfirmMessage": "¿Estás seguro de que quieres cerrar sesión?",
   "unknownUser": "Usuario desconocido",
   "darkModeLabel": "Modo oscuro",
   "myTricksCount": "Mis trucos ({count})",

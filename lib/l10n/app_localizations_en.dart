@@ -219,6 +219,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOutTooltip => 'Sign Out';
 
   @override
+  String get signOutConfirmMessage => 'Are you sure you want to sign out?';
+
+  @override
   String get unknownUser => 'Unknown User';
 
   @override

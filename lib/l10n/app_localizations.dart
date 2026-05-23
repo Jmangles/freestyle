@@ -508,6 +508,12 @@ abstract class AppLocalizations {
   /// **'Sign Out'**
   String get signOutTooltip;
 
+  /// No description provided for @signOutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirmMessage;
+
   /// No description provided for @unknownUser.
   ///
   /// In en, this message translates to:

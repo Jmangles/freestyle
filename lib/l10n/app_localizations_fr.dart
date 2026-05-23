@@ -221,6 +221,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signOutTooltip => 'Se déconnecter';
 
   @override
+  String get signOutConfirmMessage =>
+      'Êtes-vous sûr de vouloir vous déconnecter ?';
+
+  @override
   String get unknownUser => 'Utilisateur inconnu';
 
   @override
