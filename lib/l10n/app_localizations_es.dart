@@ -590,4 +590,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String submittedOnLabel(String date) {
     return 'Enviado el $date';
   }
+
+  @override
+  String get closeButton => 'Cerrar';
+
+  @override
+  String get tricksByTierTitle => 'TRUCOS POR NIVEL';
+
+  @override
+  String get coloredByConsistency => '· Coloreado por consistencia';
+
+  @override
+  String get columnTrick => 'TRUCO';
+
+  @override
+  String get columnTier => 'NIVEL';
+
+  @override
+  String get columnConsistency => 'CONSISTENCIA';
+
+  @override
+  String get columnUnlocks => 'DESBLOQUEOS';
+
+  @override
+  String get tabMyTricks => 'Mis trucos';
+
+  @override
+  String get tabReadyToStart => 'Listo para empezar';
+
+  @override
+  String get tabMakingProgress => 'Progresando';
+
+  @override
+  String get tabHighValue => 'Alto valor';
+
+  @override
+  String get tabReadyToStartDesc =>
+      'Todos los prerrequisitos cumplidos — empieza a trabajar en estos';
+
+  @override
+  String get tabMakingProgressDesc =>
+      'Tienes al menos un prerrequisito para estos';
+
+  @override
+  String get tabHighValueDesc =>
+      'Aterrizar estos desbloquea la mayor cantidad de trucos nuevos';
+
+  @override
+  String tricksProgress(int landedCount, int attemptingCount) {
+    return '$landedCount trucos aterrizados, $attemptingCount trucos en progreso';
+  }
+
+  @override
+  String get coreTrickLabel => 'Truco fundamental';
+
+  @override
+  String get coreTrickSubtitle =>
+      'Aparece en el filtro de trucos fundamentales';
+
+  @override
+  String get coreOnlyFilter => 'Solo trucos fundamentales';
 }

@@ -1209,6 +1209,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submitted on {date}'**
   String submittedOnLabel(String date);
+
+  /// No description provided for @closeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
+  /// No description provided for @tricksByTierTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TRICKS BY TIER'**
+  String get tricksByTierTitle;
+
+  /// No description provided for @coloredByConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'· Colored by Consistency'**
+  String get coloredByConsistency;
+
+  /// No description provided for @columnTrick.
+  ///
+  /// In en, this message translates to:
+  /// **'TRICK'**
+  String get columnTrick;
+
+  /// No description provided for @columnTier.
+  ///
+  /// In en, this message translates to:
+  /// **'TIER'**
+  String get columnTier;
+
+  /// No description provided for @columnConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'CONSISTENCY'**
+  String get columnConsistency;
+
+  /// No description provided for @columnUnlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'UNLOCKS'**
+  String get columnUnlocks;
+
+  /// No description provided for @tabMyTricks.
+  ///
+  /// In en, this message translates to:
+  /// **'My Tricks'**
+  String get tabMyTricks;
+
+  /// No description provided for @tabReadyToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to Start'**
+  String get tabReadyToStart;
+
+  /// No description provided for @tabMakingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Making Progress'**
+  String get tabMakingProgress;
+
+  /// No description provided for @tabHighValue.
+  ///
+  /// In en, this message translates to:
+  /// **'High Value'**
+  String get tabHighValue;
+
+  /// No description provided for @tabReadyToStartDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All prerequisites met — start working on these'**
+  String get tabReadyToStartDesc;
+
+  /// No description provided for @tabMakingProgressDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You have at least one prerequisite for these'**
+  String get tabMakingProgressDesc;
+
+  /// No description provided for @tabHighValueDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing these unlocks the most new tricks'**
+  String get tabHighValueDesc;
+
+  /// No description provided for @tricksProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{landedCount} tricks landed, {attemptingCount} tricks in progress'**
+  String tricksProgress(int landedCount, int attemptingCount);
+
+  /// No description provided for @coreTrickLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Core trick'**
+  String get coreTrickLabel;
+
+  /// No description provided for @coreTrickSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in the foundational tricks filter'**
+  String get coreTrickSubtitle;
+
+  /// No description provided for @coreOnlyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Core tricks only'**
+  String get coreOnlyFilter;
 }
 
 class _AppLocalizationsDelegate

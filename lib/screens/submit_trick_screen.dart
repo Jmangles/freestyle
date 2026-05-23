@@ -381,8 +381,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               const SizedBox(height: 4),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Core trick'),
-                subtitle: const Text('Shown in the foundational tricks filter'),
+                title: Text(l10n.coreTrickLabel),
+                subtitle: Text(l10n.coreTrickSubtitle),
                 value: _isCore,
                 onChanged: (v) => setState(() => _isCore = v),
               ),

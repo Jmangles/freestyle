@@ -214,5 +214,34 @@
     "placeholders": {
       "date": { "type": "String" }
     }
-  }
+  },
+
+  "closeButton": "Fermer",
+
+  "tricksByTierTitle": "TRICKS PAR NIVEAU",
+  "coloredByConsistency": "· Coloré par constance",
+  "columnTrick": "TRICK",
+  "columnTier": "NIVEAU",
+  "columnConsistency": "CONSTANCE",
+  "columnUnlocks": "DÉVERROUILLAGES",
+
+  "tabMyTricks": "Mes tricks",
+  "tabReadyToStart": "Prêt à commencer",
+  "tabMakingProgress": "En progression",
+  "tabHighValue": "Haute valeur",
+
+  "tabReadyToStartDesc": "Tous les prérequis sont remplis — commencez à travailler dessus",
+  "tabMakingProgressDesc": "Vous avez au moins un prérequis pour ces tricks",
+  "tabHighValueDesc": "Réussir ces tricks débloque le plus grand nombre de nouveaux tricks",
+  "tricksProgress": "{landedCount} tricks réussis, {attemptingCount} tricks en cours",
+  "@tricksProgress": {
+    "placeholders": {
+      "landedCount": { "type": "int" },
+      "attemptingCount": { "type": "int" }
+    }
+  },
+
+  "coreTrickLabel": "Trick fondamental",
+  "coreTrickSubtitle": "Affiché dans le filtre des tricks fondamentaux",
+  "coreOnlyFilter": "Tricks fondamentaux uniquement"
 }

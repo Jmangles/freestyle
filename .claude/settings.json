@@ -12,7 +12,9 @@
       "Bash(Format-Table FullName)",
       "Bash(ls -la c:\\\\\\\\Websites\\\\\\\\highline)",
       "Bash(flutter build *)",
-      "Bash(flutter run *)"
+      "Bash(flutter run *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\" -Recurse -Include \"*.arb\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

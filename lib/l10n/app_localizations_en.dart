@@ -588,4 +588,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String submittedOnLabel(String date) {
     return 'Submitted on $date';
   }
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get tricksByTierTitle => 'TRICKS BY TIER';
+
+  @override
+  String get coloredByConsistency => '· Colored by Consistency';
+
+  @override
+  String get columnTrick => 'TRICK';
+
+  @override
+  String get columnTier => 'TIER';
+
+  @override
+  String get columnConsistency => 'CONSISTENCY';
+
+  @override
+  String get columnUnlocks => 'UNLOCKS';
+
+  @override
+  String get tabMyTricks => 'My Tricks';
+
+  @override
+  String get tabReadyToStart => 'Ready to Start';
+
+  @override
+  String get tabMakingProgress => 'Making Progress';
+
+  @override
+  String get tabHighValue => 'High Value';
+
+  @override
+  String get tabReadyToStartDesc =>
+      'All prerequisites met — start working on these';
+
+  @override
+  String get tabMakingProgressDesc =>
+      'You have at least one prerequisite for these';
+
+  @override
+  String get tabHighValueDesc => 'Landing these unlocks the most new tricks';
+
+  @override
+  String tricksProgress(int landedCount, int attemptingCount) {
+    return '$landedCount tricks landed, $attemptingCount tricks in progress';
+  }
+
+  @override
+  String get coreTrickLabel => 'Core trick';
+
+  @override
+  String get coreTrickSubtitle => 'Shown in the foundational tricks filter';
+
+  @override
+  String get coreOnlyFilter => 'Core tricks only';
 }

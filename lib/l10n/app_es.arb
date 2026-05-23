@@ -214,5 +214,34 @@
     "placeholders": {
       "date": { "type": "String" }
     }
-  }
+  },
+
+  "closeButton": "Cerrar",
+
+  "tricksByTierTitle": "TRUCOS POR NIVEL",
+  "coloredByConsistency": "· Coloreado por consistencia",
+  "columnTrick": "TRUCO",
+  "columnTier": "NIVEL",
+  "columnConsistency": "CONSISTENCIA",
+  "columnUnlocks": "DESBLOQUEOS",
+
+  "tabMyTricks": "Mis trucos",
+  "tabReadyToStart": "Listo para empezar",
+  "tabMakingProgress": "Progresando",
+  "tabHighValue": "Alto valor",
+
+  "tabReadyToStartDesc": "Todos los prerrequisitos cumplidos — empieza a trabajar en estos",
+  "tabMakingProgressDesc": "Tienes al menos un prerrequisito para estos",
+  "tabHighValueDesc": "Aterrizar estos desbloquea la mayor cantidad de trucos nuevos",
+  "tricksProgress": "{landedCount} trucos aterrizados, {attemptingCount} trucos en progreso",
+  "@tricksProgress": {
+    "placeholders": {
+      "landedCount": { "type": "int" },
+      "attemptingCount": { "type": "int" }
+    }
+  },
+
+  "coreTrickLabel": "Truco fundamental",
+  "coreTrickSubtitle": "Aparece en el filtro de trucos fundamentales",
+  "coreOnlyFilter": "Solo trucos fundamentales"
 }

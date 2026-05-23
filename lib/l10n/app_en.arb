@@ -259,5 +259,34 @@
     "placeholders": {
       "date": { "type": "String" }
     }
-  }
+  },
+
+  "closeButton": "Close",
+
+  "tricksByTierTitle": "TRICKS BY TIER",
+  "coloredByConsistency": "· Colored by Consistency",
+  "columnTrick": "TRICK",
+  "columnTier": "TIER",
+  "columnConsistency": "CONSISTENCY",
+  "columnUnlocks": "UNLOCKS",
+
+  "tabMyTricks": "My Tricks",
+  "tabReadyToStart": "Ready to Start",
+  "tabMakingProgress": "Making Progress",
+  "tabHighValue": "High Value",
+
+  "tabReadyToStartDesc": "All prerequisites met — start working on these",
+  "tabMakingProgressDesc": "You have at least one prerequisite for these",
+  "tabHighValueDesc": "Landing these unlocks the most new tricks",
+  "tricksProgress": "{landedCount} tricks landed, {attemptingCount} tricks in progress",
+  "@tricksProgress": {
+    "placeholders": {
+      "landedCount": { "type": "int" },
+      "attemptingCount": { "type": "int" }
+    }
+  },
+
+  "coreTrickLabel": "Core trick",
+  "coreTrickSubtitle": "Shown in the foundational tricks filter",
+  "coreOnlyFilter": "Core tricks only"
 }

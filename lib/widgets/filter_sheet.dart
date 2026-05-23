@@ -193,7 +193,7 @@ class _FilterSheetState extends State<FilterSheet> {
                             onSelected: (v) => setState(() => _includeTbd = v),
                           ),
                         FilterChip(
-                          label: const Text('Core tricks only'),
+                          label: Text(context.l10n.coreOnlyFilter),
                           selected: _coreOnly,
                           onSelected: (v) => setState(() => _coreOnly = v),
                         ),

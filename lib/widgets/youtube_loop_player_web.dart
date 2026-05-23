@@ -2,6 +2,7 @@
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
+import 'package:freestyle_highline/l10n/app_localizations_extension.dart';
 
 class YoutubeLoopPlayer extends StatefulWidget {
   final String videoId;
@@ -75,7 +76,7 @@ class _YoutubeLoopPlayerWebState extends State<YoutubeLoopPlayer> {
     if (!_open) {
       return FilledButton.icon(
         icon: const Icon(Icons.play_circle_outline),
-        label: const Text('Watch Video'),
+        label: Text(context.l10n.watchVideoButton),
         onPressed: () {
           _initPlayer();
           setState(() => _open = true);
@@ -96,7 +97,7 @@ class _YoutubeLoopPlayerWebState extends State<YoutubeLoopPlayer> {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: const Icon(Icons.close, size: 16),
-              label: const Text('Close'),
+              label: Text(context.l10n.closeButton),
               onPressed: () => setState(() => _open = false),
             ),
           ),

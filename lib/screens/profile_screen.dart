@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Text(
-                'TRICKS BY TIER',
+                context.l10n.tricksByTierTitle,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -280,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 6),
               Text(
-                '· Colored by Consistency',
+                context.l10n.coloredByConsistency,
                 style: TextStyle(
                   fontSize: 11,
                   color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -361,9 +361,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: Row(
               children: [
-                Expanded(child: Text('TRICK', style: labelStyle)),
-                SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.center, style: labelStyle)),
-                SizedBox(width: 88, child: Text('CONSISTENCY', textAlign: TextAlign.right, style: labelStyle)),
+                Expanded(child: Text(l10n.columnTrick, style: labelStyle)),
+                SizedBox(width: 56, child: Text(l10n.columnTier, textAlign: TextAlign.center, style: labelStyle)),
+                SizedBox(width: 88, child: Text(l10n.columnConsistency, textAlign: TextAlign.right, style: labelStyle)),
               ],
             ),
           ),
@@ -474,10 +474,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final attemptingCount = entries.where((e) => !e.userTrick.consistency.isLanded).length;
 
     final descriptions = {
-      myTricksTab:  entries.isEmpty ? l10n.noTricksTracked : '$landedCount tricks landed, $attemptingCount tricks in progress',
-      unlockedTab:  'All prerequisites met — start working on these',
-      partialTab:   'You have at least one prerequisite for these',
-      highValueTab: 'Landing these unlocks the most new tricks',
+      myTricksTab:  entries.isEmpty ? l10n.noTricksTracked : l10n.tricksProgress(landedCount, attemptingCount),
+      unlockedTab:  l10n.tabReadyToStartDesc,
+      partialTab:   l10n.tabMakingProgressDesc,
+      highValueTab: l10n.tabHighValueDesc,
     };
 
     Widget tabBtn(String label, IconData icon, Color color, int index) {
@@ -513,10 +513,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                tabBtn('My Tricks',      Icons.list,        theme.colorScheme.primary, myTricksTab),
-                if (unlockedTab  >= 0) tabBtn('Ready to Start',  Icons.lock_open,  theme.colorScheme.primary, unlockedTab),
-                if (partialTab   >= 0) tabBtn('Making Progress', Icons.trending_up, theme.colorScheme.primary, partialTab),
-                if (highValueTab >= 0) tabBtn('High Value',      Icons.star,        theme.colorScheme.primary, highValueTab),
+                tabBtn(l10n.tabMyTricks,      Icons.list,        theme.colorScheme.primary, myTricksTab),
+                if (unlockedTab  >= 0) tabBtn(l10n.tabReadyToStart,  Icons.lock_open,  theme.colorScheme.primary, unlockedTab),
+                if (partialTab   >= 0) tabBtn(l10n.tabMakingProgress, Icons.trending_up, theme.colorScheme.primary, partialTab),
+                if (highValueTab >= 0) tabBtn(l10n.tabHighValue,      Icons.star,        theme.colorScheme.primary, highValueTab),
               ],
             ),
           ),
@@ -542,10 +542,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Row(
                 children: [
-                  Expanded(child: Text('TRICK', style: labelStyle)),
-                  SizedBox(width: 56, child: Text('TIER', textAlign: TextAlign.right, style: labelStyle)),
+                  Expanded(child: Text(l10n.columnTrick, style: labelStyle)),
+                  SizedBox(width: 56, child: Text(l10n.columnTier, textAlign: TextAlign.right, style: labelStyle)),
                   if (tab == highValueTab)
-                    SizedBox(width: 72, child: Text('UNLOCKS', textAlign: TextAlign.right, style: labelStyle)),
+                    SizedBox(width: 72, child: Text(l10n.columnUnlocks, textAlign: TextAlign.right, style: labelStyle)),
                 ],
               ),
             ),
