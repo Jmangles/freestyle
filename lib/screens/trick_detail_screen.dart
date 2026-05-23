@@ -181,16 +181,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             leading: BackHomeLeading(showHome: routeDepth > 2),
             title: Text(l10n.trickDetailTitle),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.account_tree_outlined),
-                tooltip: l10n.viewProgressionTooltip,
-                onPressed: () => Navigator.push<void>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TrickProgressionScreen(trickId: widget.trickId),
-                  ),
-                ),
-              ),
               if (canEditTricks && trick != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -209,6 +199,16 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                   tooltip: l10n.suggestEditTooltip,
                   onPressed: () => _openSuggestEdit(trick),
                 ),
+              IconButton(
+                icon: const Icon(Icons.account_tree_outlined),
+                tooltip: l10n.viewProgressionTooltip,
+                onPressed: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TrickProgressionScreen(trickId: widget.trickId),
+                  ),
+                ),
+              ),
             ],
           ),
           body: _buildBody(snap),
