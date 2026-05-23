@@ -49,11 +49,11 @@ enum Consistency {
     if (brightness == Brightness.dark) {
       return switch (this) {
         Consistency.never =>   const Color(0xFF1C1C1C),   // dark gray
-        Consistency.once =>    const Color(0xFF221508),   // dark orange tint
-        Consistency.sometimes => const Color(0xFF22200A), // dark yellow tint
-        Consistency.often =>   const Color(0xFF131E08),   // dark green tint
-        Consistency.generally => const Color(0xFF08201E), // dark teal tint
-        Consistency.always =>  const Color(0xFF081626),   // dark blue tint
+        Consistency.once =>    const Color(0xFF1E1A16),   // subtle orange tint
+        Consistency.sometimes => const Color(0xFF1E1D17), // subtle yellow tint
+        Consistency.often =>   const Color(0xFF191D16),   // subtle green tint
+        Consistency.generally => const Color(0xFF161D1D), // subtle teal tint
+        Consistency.always =>  const Color(0xFF161A1F),   // subtle blue tint
       };
     }
     return switch (this) {
