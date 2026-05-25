@@ -53,12 +53,14 @@ Both are uploaded to Bunny.net and the trick's `flags` field is updated to set b
 
 Encoding commands run client-side (using `-preset medium` rather than `-preset slow` to keep encode time reasonable on device):
 ```bash
-# Forward
-ffmpeg -i input.mp4 -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_forward.mp4
+# Forward (replace 8 and 15 with trim start/end in seconds)
+ffmpeg -i input.mp4 -vf "trim=start=8:end=15,setpts=PTS-STARTPTS" -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_forward.mp4
 
 # Reversed
-ffmpeg -i input.mp4 -vf reverse -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_reversed.mp4
+ffmpeg -i input.mp4 -vf "trim=start=8:end=15,setpts=PTS-STARTPTS,reverse" -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_reversed.mp4
 ```
+
+Do not use `-ss`/`-to` as input options alongside `-vf reverse`. Those flags preserve original timestamps, which causes `reverse` to reorder frames incorrectly. The `trim` filter combined with `setpts=PTS-STARTPTS` resets timestamps to zero before reversing.
 
 ## Implementation Phases
 1. **Video player backend and local provider** — `VideoProvider` interface, `LocalVideoProvider`, player state logic, unit tests

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'l10n/app_localizations_extension.dart';
 import 'router.dart';
@@ -7,6 +8,7 @@ import 'theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   await Supabase.initialize(
     url: SupabaseConfig.url,

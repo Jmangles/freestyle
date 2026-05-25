@@ -353,6 +353,15 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           ],
 
+          if (trick.hasTrainingVideo) ...[
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => context.push('/trick/${trick.id}/training-studio'),
+              icon: const Icon(Icons.play_circle_outline),
+              label: const Text('Training Studio'),
+            ),
+          ],
+
           if (trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildVideoPlayer(trick.videoLink!, trick.videoStart, trick.videoEnd),

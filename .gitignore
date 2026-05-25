@@ -30,6 +30,7 @@
 .pub-cache/
 .pub/
 /build/
+/test/fixtures/videos/*
 
 # Web related
 

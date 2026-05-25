@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -179,6 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.videocam_outlined),
+              tooltip: 'Training Studio (Dev)',
+              onPressed: () => context.push('/dev/training-studio'),
+            ),
           if (_profile?.canEditTricks == true)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined),

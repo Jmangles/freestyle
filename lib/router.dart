@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'screens/tips_screen.dart';
 import 'screens/trick_detail_screen.dart';
+import 'screens/training_studio_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
@@ -13,6 +14,8 @@ import 'screens/submit_trick_screen.dart';
 import 'screens/submit_tip_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
+import 'video/bunny_video_provider.dart';
+import 'video/local_video_provider.dart';
 import 'widgets/main_shell.dart';
 
 class AppRouter {
@@ -45,6 +48,22 @@ class AppRouter {
             TrickDetailScreen(trickId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(path: '/submit', builder: (_, __) => const SubmitTrickScreen()),
+      GoRoute(
+        path: '/trick/:id/training-studio',
+        builder: (_, state) => TrainingStudioScreen(
+          trickId: int.parse(state.pathParameters['id']!),
+          provider: const BunnyVideoProvider(baseUrl: ''),
+        ),
+      ),
+      if (kDebugMode)
+        GoRoute(
+          path: '/dev/training-studio',
+          builder: (_, __) => TrainingStudioScreen(
+            trickId: 0,
+            provider: LocalVideoProvider.defaultForPlatform(),
+            title: 'Training Studio (Dev)',
+          ),
+        ),
       GoRoute(path: '/tips/submit', builder: (_, __) => const SubmitTipScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
