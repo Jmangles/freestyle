@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<int, Consistency> _consistencyMap = {};
   bool _initialLoading = true;
   bool _hasError = false;
+  bool _editorMode = false;
   int _gridSize = 2;
   TrickFilter _filter = const TrickFilter();
   TrickSorter _sorter = const TrickSorter();
@@ -129,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showDifficulty: true,
         difficultyModifierOnly: _sorter.primary == PrimarySort.difficulty,
         compact: compact,
+        editorMode: _editorMode,
       ),
     );
   }
@@ -141,16 +143,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showFilterSheet() async {
-    final result = await showModalBottomSheet<TrickFilter>(
+    final result = await showModalBottomSheet<(TrickFilter, bool)>(
       context: context,
       isScrollControlled: true,
       builder: (context) => FilterSheet(
         tricks: _tricks,
         consistencyMap: _consistencyMap,
         current: _filter,
+        isEditor: _profile?.canEditTricks == true,
+        editorMode: _editorMode,
       ),
     );
-    if (result != null) setState(() { _filter = result; _recompute(); });
+    if (result != null) {
+      setState(() {
+        _filter = result.$1;
+        _editorMode = result.$2;
+        _recompute();
+      });
+    }
   }
 
   void _showSortSheet() async {

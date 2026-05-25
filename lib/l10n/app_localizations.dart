@@ -1341,6 +1341,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{pts} pts to Lv. {next}'**
   String ptsToNextLevel(int pts, int next);
+
+  /// No description provided for @editorToolsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor Tools'**
+  String get editorToolsSection;
+
+  /// No description provided for @editorModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Review Mode'**
+  String get editorModeLabel;
+
+  /// No description provided for @editorModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight missing content on trick cards'**
+  String get editorModeSubtitle;
+
+  /// No description provided for @editorMissingPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing:'**
+  String get editorMissingPrefix;
+
+  /// No description provided for @editorAllPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields present'**
+  String get editorAllPresent;
+
+  /// No description provided for @editorShowOnlyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Show only tricks missing:'**
+  String get editorShowOnlyMissing;
 }
 
 class _AppLocalizationsDelegate

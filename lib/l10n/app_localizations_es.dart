@@ -667,4 +667,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String ptsToNextLevel(int pts, int next) {
     return '$pts pts al Nv. $next';
   }
+
+  @override
+  String get editorToolsSection => 'Herramientas de Editor';
+
+  @override
+  String get editorModeLabel => 'Modo de Revisión de Contenido';
+
+  @override
+  String get editorModeSubtitle =>
+      'Resaltar contenido faltante en las tarjetas de trucos';
+
+  @override
+  String get editorMissingPrefix => 'Faltante:';
+
+  @override
+  String get editorAllPresent => 'Todos los campos presentes';
+
+  @override
+  String get editorShowOnlyMissing => 'Mostrar solo trucos con falta de:';
 }

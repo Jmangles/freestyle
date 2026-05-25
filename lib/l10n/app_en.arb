@@ -306,5 +306,12 @@
       "pts": { "type": "int" },
       "next": { "type": "int" }
     }
-  }
+  },
+
+  "editorToolsSection": "Editor Tools",
+  "editorModeLabel": "Content Review Mode",
+  "editorModeSubtitle": "Highlight missing content on trick cards",
+  "editorMissingPrefix": "Missing:",
+  "editorAllPresent": "All fields present",
+  "editorShowOnlyMissing": "Show only tricks missing:"
 }

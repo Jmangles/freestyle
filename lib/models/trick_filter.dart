@@ -1,6 +1,8 @@
 import 'trick.dart';
 import 'user_trick.dart';
 
+enum MissingField { description, video, prerequisites, tips }
+
 enum TrickStatus {
   neverAttempted('Never Attempted'),
   attempting('Attempting'),
@@ -21,6 +23,7 @@ class TrickFilter {
   final String performerQuery;
   final String nameQuery;
   final bool coreOnly;
+  final Set<MissingField> missingFields;
 
   const TrickFilter({
     this.tierMin,
@@ -33,6 +36,7 @@ class TrickFilter {
     this.performerQuery = '',
     this.nameQuery = '',
     this.coreOnly = false,
+    this.missingFields = const {},
   });
 
   bool get isActive =>
@@ -45,7 +49,8 @@ class TrickFilter {
       yearLanded != null ||
       performerQuery.isNotEmpty ||
       nameQuery.isNotEmpty ||
-      coreOnly;
+      coreOnly ||
+      missingFields.isNotEmpty;
 
   int get activeCount =>
       ((tierMin != null || tierMax != null) ? 1 : 0) +
@@ -56,7 +61,8 @@ class TrickFilter {
       (yearLanded != null ? 1 : 0) +
       (performerQuery.isNotEmpty ? 1 : 0) +
       (nameQuery.isNotEmpty ? 1 : 0) +
-      (coreOnly ? 1 : 0);
+      (coreOnly ? 1 : 0) +
+      (missingFields.isNotEmpty ? 1 : 0);
 
   List<Trick> apply(List<Trick> tricks, Map<int, Consistency> consistencyMap) {
     return tricks.where((t) {
@@ -80,6 +86,16 @@ class TrickFilter {
         final matchesGiven = t.givenName.toLowerCase().contains(q);
         final matchesTechnical = t.technicalName?.toLowerCase().contains(q) ?? false;
         if (!matchesGiven && !matchesTechnical) return false;
+      }
+      if (missingFields.isNotEmpty) {
+        final isMissing = missingFields.any((field) => switch (field) {
+              MissingField.description =>
+                t.description == null || t.description!.trim().isEmpty,
+              MissingField.video => t.videoLink == null,
+              MissingField.prerequisites => t.prerequisiteTrickIds.isEmpty,
+              MissingField.tips => t.tips == null || t.tips!.trim().isEmpty,
+            });
+        if (!isMissing) return false;
       }
       return true;
     }).toList();

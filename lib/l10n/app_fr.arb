@@ -261,5 +261,12 @@
       "pts": { "type": "int" },
       "next": { "type": "int" }
     }
-  }
+  },
+
+  "editorToolsSection": "Outils Éditeur",
+  "editorModeLabel": "Mode Révision de Contenu",
+  "editorModeSubtitle": "Mettre en évidence le contenu manquant sur les fiches de tricks",
+  "editorMissingPrefix": "Manquant :",
+  "editorAllPresent": "Tous les champs présents",
+  "editorShowOnlyMissing": "Afficher uniquement les tricks manquant :"
 }

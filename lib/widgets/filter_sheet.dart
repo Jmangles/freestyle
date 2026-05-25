@@ -9,12 +9,16 @@ class FilterSheet extends StatefulWidget {
   final List<Trick> tricks;
   final Map<int, Consistency> consistencyMap;
   final TrickFilter current;
+  final bool isEditor;
+  final bool editorMode;
 
   const FilterSheet({
     super.key,
     required this.tricks,
     required this.consistencyMap,
     required this.current,
+    this.isEditor = false,
+    this.editorMode = false,
   });
 
   @override
@@ -30,6 +34,8 @@ class _FilterSheetState extends State<FilterSheet> {
   late Set<TrickStatus> _statuses;
   late int? _yearLanded;
   late bool _coreOnly;
+  late bool _editorMode;
+  late Set<MissingField> _missingFields;
   late TextEditingController _performerController;
 
   late int _dataMinTier;
@@ -60,6 +66,8 @@ class _FilterSheetState extends State<FilterSheet> {
     _statuses = Set.from(widget.current.statuses);
     _yearLanded = widget.current.yearLanded;
     _coreOnly = widget.current.coreOnly;
+    _editorMode = widget.editorMode;
+    _missingFields = Set.from(widget.current.missingFields);
     _performerController = TextEditingController(text: widget.current.performerQuery);
   }
 
@@ -88,6 +96,7 @@ class _FilterSheetState extends State<FilterSheet> {
         _statuses = {};
         _yearLanded = null;
         _coreOnly = false;
+        _missingFields = {};
         _performerController.clear();
         _dropdownResetKey++;
       });
@@ -102,7 +111,15 @@ class _FilterSheetState extends State<FilterSheet> {
         yearLanded: _yearLanded,
         coreOnly: _coreOnly,
         performerQuery: _performerController.text.trim(),
+        missingFields: Set.unmodifiable(_missingFields),
       );
+
+  String _missingFieldLabel(MissingField field, dynamic l10n) => switch (field) {
+        MissingField.description => l10n.descriptionLabel as String,
+        MissingField.video => l10n.videoLabel as String,
+        MissingField.prerequisites => l10n.prerequisitesLabel as String,
+        MissingField.tips => l10n.tipsLabel as String,
+      };
 
   Widget _sectionLabel(String label) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -156,6 +173,49 @@ class _FilterSheetState extends State<FilterSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
                 children: [
+                  if (widget.isEditor) ...[
+                    _sectionLabel(l10n.editorToolsSection),
+                    SwitchListTile(
+                      title: Text(l10n.editorModeLabel),
+                      subtitle: Text(l10n.editorModeSubtitle),
+                      value: _editorMode,
+                      onChanged: (v) => setState(() {
+                        _editorMode = v;
+                        if (!v) _missingFields.clear();
+                      }),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                    if (_editorMode) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.editorShowOnlyMissing,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          for (final field in MissingField.values)
+                            FilterChip(
+                              label: Text(_missingFieldLabel(field, l10n)),
+                              selected: _missingFields.contains(field),
+                              onSelected: (v) => setState(() {
+                                if (v) {
+                                  _missingFields.add(field);
+                                } else {
+                                  _missingFields.remove(field);
+                                }
+                              }),
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                  ],
                   if (_hasMultipleNumericTiers || _hasTbd) ...[
                     _sectionLabel(l10n.difficultyTierSection),
                     if (_hasMultipleNumericTiers) ...[
@@ -306,7 +366,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(_buildResult()),
+                    onPressed: () => Navigator.of(context).pop((_buildResult(), _editorMode)),
                     child: Text(l10n.applyButton),
                   ),
                 ),

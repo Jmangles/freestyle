@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../utils/difficulty_tier.dart';
@@ -12,6 +13,7 @@ class TrickCard extends StatelessWidget {
   final bool showDifficulty;
   final bool compact;
   final bool difficultyModifierOnly;
+  final bool editorMode;
 
   const TrickCard({
     super.key,
@@ -22,6 +24,7 @@ class TrickCard extends StatelessWidget {
     this.showDifficulty = false,
     this.compact = false,
     this.difficultyModifierOnly = false,
+    this.editorMode = false,
   });
 
   @override
@@ -92,6 +95,10 @@ class TrickCard extends StatelessWidget {
                     _DifficultyBadge(trick: trick, modifierOnly: difficultyModifierOnly),
                 ],
               ),
+              if (editorMode) ...[
+                const SizedBox(height: 2),
+                _EditorFieldsRow(trick: trick),
+              ],
             ],
           ),
         ),
@@ -195,10 +202,14 @@ class TrickCard extends StatelessWidget {
 
   Widget? _buildListTrailing(ThemeData theme) {
     final hasPosition = trick.startPositionName != null || trick.endPositionName != null;
-    if (!hasPosition && !showDifficulty) return null;
+    if (!hasPosition && !showDifficulty && !editorMode) return null;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (editorMode) ...[
+          _EditorFieldsRow(trick: trick),
+          const SizedBox(width: 6),
+        ],
         if (hasPosition)
           Text(
             _positionText(),
@@ -261,6 +272,64 @@ class _DifficultyBadge extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w600),
       ),
+    );
+  }
+}
+
+class _EditorFieldsRow extends StatelessWidget {
+  final Trick trick;
+  const _EditorFieldsRow({required this.trick});
+
+  List<(IconData, String)> _missingFields(AppLocalizations l10n) => [
+        if (trick.description == null || trick.description!.trim().isEmpty)
+          (Icons.description_outlined, l10n.descriptionLabel),
+        if (trick.videoLink == null)
+          (Icons.videocam_outlined, l10n.videoLabel),
+        if (trick.prerequisiteTrickIds.isEmpty)
+          (Icons.account_tree_outlined, l10n.prerequisitesLabel),
+        if (trick.tips == null || trick.tips!.trim().isEmpty)
+          (Icons.tips_and_updates_outlined, l10n.tipsLabel),
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final missing = _missingFields(l10n);
+
+    final String tooltipMessage;
+    if (missing.isEmpty) {
+      tooltipMessage = l10n.editorAllPresent;
+    } else {
+      final bullets = missing.map((f) => '  • ${f.$2}').join('\n');
+      tooltipMessage = '${l10n.editorMissingPrefix}\n$bullets';
+    }
+
+    final indicator = missing.isEmpty
+        ? Icon(Icons.check_circle_outline, size: 11, color: Colors.green.shade600)
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (icon, _) in missing)
+                Padding(
+                  padding: const EdgeInsets.only(right: 2),
+                  child: Icon(icon, size: 11, color: Colors.amber.shade700),
+                ),
+            ],
+          );
+
+    return Tooltip(
+      message: tooltipMessage,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      textStyle: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurface,
+      ),
+      preferBelow: false,
+      child: indicator,
     );
   }
 }

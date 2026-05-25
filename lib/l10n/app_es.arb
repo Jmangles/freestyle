@@ -261,5 +261,12 @@
       "pts": { "type": "int" },
       "next": { "type": "int" }
     }
-  }
+  },
+
+  "editorToolsSection": "Herramientas de Editor",
+  "editorModeLabel": "Modo de Revisión de Contenido",
+  "editorModeSubtitle": "Resaltar contenido faltante en las tarjetas de trucos",
+  "editorMissingPrefix": "Faltante:",
+  "editorAllPresent": "Todos los campos presentes",
+  "editorShowOnlyMissing": "Mostrar solo trucos con falta de:"
 }
