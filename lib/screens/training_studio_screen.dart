@@ -502,8 +502,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 top: 16,
                 right: 0,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                  child: _AnnotationSidebar(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight - 32),
+                  child: _MobileAnnotationOverlay(
                     annotations: _annotations,
                     position: position,
                     onTap: onAnnotationTap,
@@ -639,12 +639,19 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                   tooltip: 'Manage annotations',
                   onPressed: canAct ? _showAnnotationsSheet : null,
                 ),
-              ...[0.25, 0.5, 0.75, 1.0].map(
-                (speed) => _SpeedButton(
-                  speed: speed,
-                  selected: state.speed == speed,
-                  onTap: canAct ? () => _setSpeed(speed) : null,
-                ),
+              DropdownButton<double>(
+                value: state.speed,
+                dropdownColor: Colors.black87,
+                underline: const SizedBox.shrink(),
+                iconEnabledColor: Colors.white54,
+                alignment: Alignment.center,
+                items: const [
+                  DropdownMenuItem(value: 0.25, alignment: Alignment.center, child: Text('0.25x', style: TextStyle(color: Colors.white, fontSize: 13))),
+                  DropdownMenuItem(value: 0.5,  alignment: Alignment.center, child: Text('0.5x',  style: TextStyle(color: Colors.white, fontSize: 13))),
+                  DropdownMenuItem(value: 0.75, alignment: Alignment.center, child: Text('0.75x', style: TextStyle(color: Colors.white, fontSize: 13))),
+                  DropdownMenuItem(value: 1.0,  alignment: Alignment.center, child: Text('1x',    style: TextStyle(color: Colors.white, fontSize: 13))),
+                ],
+                onChanged: canAct ? (v) { if (v != null) _setSpeed(v); } : null,
               ),
               const SizedBox(width: 4),
             ],
@@ -729,12 +736,18 @@ class _AnnotationSidebarState extends State<_AnnotationSidebar> {
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.hardEdge,
-      child: _expanded ? _buildExpanded(sorted) : _buildCollapsed(),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _expanded ? _buildExpanded(sorted) : _buildCollapsed(),
+      ),
     );
   }
 
   Widget _buildCollapsed() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 10),
         IconButton(
@@ -854,42 +867,137 @@ class _AnnotationSidebarState extends State<_AnnotationSidebar> {
   }
 }
 
-class _SpeedButton extends StatelessWidget {
-  final double speed;
-  final bool selected;
-  final VoidCallback? onTap;
+class _MobileAnnotationOverlay extends StatefulWidget {
+  final List<TrickAnnotation> annotations;
+  final Duration position;
+  final void Function(TrickAnnotation) onTap;
 
-  const _SpeedButton({
-    required this.speed,
-    required this.selected,
+  const _MobileAnnotationOverlay({
+    required this.annotations,
+    required this.position,
     required this.onTap,
   });
 
-  String get _label {
-    if (speed == 0.25) return '¼×';
-    if (speed == 0.5) return '½×';
-    if (speed == 0.75) return '¾×';
-    return '1×';
+  @override
+  State<_MobileAnnotationOverlay> createState() => _MobileAnnotationOverlayState();
+}
+
+class _MobileAnnotationOverlayState extends State<_MobileAnnotationOverlay> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...widget.annotations]..sort((a, b) => a.startMs.compareTo(b.startMs));
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8, bottom: 4),
+          child: GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _expanded ? Icons.chevron_right : Icons.chevron_left,
+                color: Colors.white54,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          clipBehavior: Clip.hardEdge,
+          child: _expanded
+              ? SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (final a in sorted)
+                        _MobileAnnotationChip(
+                          annotation: a,
+                          isActive: a.isActiveAt(widget.position),
+                          onTap: () => widget.onTap(a),
+                        ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileAnnotationChip extends StatelessWidget {
+  final TrickAnnotation annotation;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _MobileAnnotationChip({
+    required this.annotation,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  static String _fmtMs(int ms) {
+    final d = Duration(milliseconds: ms);
+    final m = d.inMinutes;
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: selected
-            ? BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              )
-            : null,
-        child: Text(
-          _label,
-          style: TextStyle(
-            color: selected ? Colors.black : Colors.white54,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 12,
+    final textColor = isActive ? Colors.black : Colors.white;
+    final timeColor = isActive ? Colors.black54 : Colors.white38;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          width: 180,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.92)
+                : Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  annotation.text,
+                  maxLines: isActive ? null : 2,
+                  overflow: isActive ? TextOverflow.visible : TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${_fmtMs(annotation.startMs)} – ${_fmtMs(annotation.endMs)}',
+                  style: TextStyle(color: timeColor, fontSize: 11),
+                ),
+              ],
+            ),
           ),
         ),
       ),
