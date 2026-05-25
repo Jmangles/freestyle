@@ -362,7 +362,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           ],
 
-          if (trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
+          if (!trick.hasTrainingVideo && trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildVideoPlayer(trick.videoLink!, trick.videoStart, trick.videoEnd),
           ],

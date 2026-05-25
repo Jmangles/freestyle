@@ -15,7 +15,6 @@ import 'screens/submit_tip_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
 import 'video/bunny_video_provider.dart';
-import 'video/local_video_provider.dart';
 import 'widgets/main_shell.dart';
 
 class AppRouter {
@@ -52,18 +51,9 @@ class AppRouter {
         path: '/trick/:id/training-studio',
         builder: (_, state) => TrainingStudioScreen(
           trickId: int.parse(state.pathParameters['id']!),
-          provider: const BunnyVideoProvider(baseUrl: ''),
+          provider: const BunnyVideoProvider(baseUrl: 'https://freestyledb.b-cdn.net'),
         ),
       ),
-      if (kDebugMode)
-        GoRoute(
-          path: '/dev/training-studio',
-          builder: (_, __) => TrainingStudioScreen(
-            trickId: 0,
-            provider: LocalVideoProvider.defaultForPlatform(),
-            title: 'Training Studio (Dev)',
-          ),
-        ),
       GoRoute(path: '/tips/submit', builder: (_, __) => const SubmitTipScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),

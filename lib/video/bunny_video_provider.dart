@@ -6,8 +6,8 @@ class BunnyVideoProvider implements VideoProvider {
   const BunnyVideoProvider({required this.baseUrl});
 
   @override
-  Uri forwardUrl(int trickId) => Uri.parse('$baseUrl/$trickId/forward.mp4');
+  Uri forwardUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/forward.mp4');
 
   @override
-  Uri reversedUrl(int trickId) => Uri.parse('$baseUrl/$trickId/reversed.mp4');
+  Uri reversedUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/reversed.mp4');
 }

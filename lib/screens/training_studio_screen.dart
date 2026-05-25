@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import '../models/trick_annotation.dart';
+import '../services/annotations_service.dart';
+import '../services/auth_service.dart';
 import '../video/playback_direction.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
@@ -36,12 +39,14 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   late final StreamSubscription<bool> _reversedCompletedSub;
 
   bool _loading = true;
+  List<TrickAnnotation> _annotations = [];
+  bool _isEditor = false;
 
   Player get _activePlayer => _controller.state.direction == PlaybackDirection.forward
       ? _forwardPlayer
       : _reversedPlayer;
 
-@override
+  @override
   void initState() {
     super.initState();
     _forwardPlayer = Player();
@@ -110,6 +115,24 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       Media(widget.provider.reversedUrl(widget.trickId).toString()),
       play: false,
     );
+
+    _loadAnnotationsAndProfile();
+  }
+
+  Future<void> _loadAnnotationsAndProfile() async {
+    final language = WidgetsBinding
+        .instance.platformDispatcher.locale.languageCode;
+    final annotationsFuture =
+        AnnotationsService.getForTrick(widget.trickId, language);
+    final profileFuture = AuthService.getCurrentProfile();
+    final annotations = await annotationsFuture;
+    final profile = await profileFuture;
+    if (mounted) {
+      setState(() {
+        _annotations = annotations;
+        _isEditor = profile?.canEditTricks == true;
+      });
+    }
   }
 
   @override
@@ -180,13 +203,244 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _activePlayer.seek(_controller.state.fileSeekPosition);
   }
 
+  void _showAnnotationsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        expand: false,
+        builder: (ctx, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Text('Annotations',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const Spacer(),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: Text('Add at ${_fmt(_controller.state.position)}'),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showAddAnnotationDialog();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            if (_annotations.isEmpty)
+              const Expanded(child: Center(child: Text('No annotations yet')))
+            else
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  itemCount: _annotations.length,
+                  separatorBuilder: (ctx, i) => const Divider(height: 1),
+                  itemBuilder: (ctx, i) {
+                    final a = _annotations[i];
+                    return ListTile(
+                      title: Text(a.text),
+                      subtitle: Text(
+                          '${_fmt(Duration(milliseconds: a.startMs))} – ${_fmt(Duration(milliseconds: a.endMs))}'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _setSpeed(0.25);
+                        final pos = Duration(milliseconds: a.startMs);
+                        _controller.updatePosition(pos);
+                        _activePlayer.seek(_controller.state.fileSeekPosition);
+                        _play();
+                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showEditAnnotationDialog(a);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            color: Theme.of(context).colorScheme.error,
+                            onPressed: () async {
+                              await AnnotationsService.delete(a.id);
+                              if (mounted) {
+                                setState(() => _annotations
+                                    .removeWhere((x) => x.id == a.id));
+                              }
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const _kLanguages = [
+    ('en', 'English'),
+    ('es', 'Spanish'),
+    ('fr', 'French'),
+    ('de', 'German'),
+    ('pt', 'Portuguese'),
+    ('it', 'Italian'),
+    ('ja', 'Japanese'),
+    ('zh', 'Chinese'),
+  ];
+
+  Future<void> _showAddAnnotationDialog() async {
+    final totalMs = _controller.state.totalDuration.inMilliseconds;
+    final startMs = _controller.state.position.inMilliseconds;
+    final endMs = (startMs + 2000).clamp(0, totalMs);
+    final result = await _showAnnotationDialog(
+        startMs: startMs, endMs: endMs, text: '', language: 'en');
+    if (result == null || !mounted) return;
+    final annotation = await AnnotationsService.create(
+      trickId: widget.trickId,
+      startMs: result.$1,
+      endMs: result.$2,
+      text: result.$3,
+      language: result.$4,
+    );
+    if (mounted) {
+      setState(() {
+        _annotations = [..._annotations, annotation]
+          ..sort((a, b) => a.startMs.compareTo(b.startMs));
+      });
+    }
+  }
+
+  Future<void> _showEditAnnotationDialog(TrickAnnotation annotation) async {
+    final result = await _showAnnotationDialog(
+      startMs: annotation.startMs,
+      endMs: annotation.endMs,
+      text: annotation.text,
+      language: annotation.language,
+    );
+    if (result == null || !mounted) return;
+    final updated = await AnnotationsService.update(
+      annotation.id,
+      startMs: result.$1,
+      endMs: result.$2,
+      text: result.$3,
+      language: result.$4,
+    );
+    if (mounted) {
+      setState(() {
+        _annotations =
+            _annotations.map((a) => a.id == annotation.id ? updated : a).toList();
+      });
+    }
+  }
+
+  Future<(int, int, String, String)?> _showAnnotationDialog({
+    required int startMs,
+    required int endMs,
+    required String text,
+    required String language,
+  }) {
+    final textCtrl = TextEditingController(text: text);
+    final startCtrl =
+        TextEditingController(text: (startMs / 1000).toStringAsFixed(2));
+    final endCtrl =
+        TextEditingController(text: (endMs / 1000).toStringAsFixed(2));
+    String selectedLanguage = _kLanguages.any((l) => l.$1 == language)
+        ? language
+        : 'en';
+
+    return showDialog<(int, int, String, String)>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(text.isEmpty ? 'Add Annotation' : 'Edit Annotation'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: textCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Text', border: OutlineInputBorder()),
+                autofocus: true,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: startCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Start (s)',
+                          border: OutlineInputBorder()),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: endCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'End (s)', border: OutlineInputBorder()),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: selectedLanguage,
+                decoration: const InputDecoration(
+                    labelText: 'Language', border: OutlineInputBorder()),
+                items: _kLanguages
+                    .map((l) => DropdownMenuItem(
+                          value: l.$1,
+                          child: Text(l.$2),
+                        ))
+                    .toList(),
+                onChanged: (v) =>
+                    setDialogState(() => selectedLanguage = v ?? 'en'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final t = textCtrl.text.trim();
+                if (t.isEmpty) return;
+                final s =
+                    ((double.tryParse(startCtrl.text) ?? 0) * 1000).round();
+                final e =
+                    ((double.tryParse(endCtrl.text) ?? 0) * 1000).round();
+                Navigator.pop(ctx, (s, e, t, selectedLanguage));
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
         title: Text(widget.title ?? 'Training Studio'),
       ),
       body: SafeArea(
@@ -210,25 +464,77 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   Widget _buildVideoArea() {
-    // Both VideoControllers stay in the tree so their players remain active.
-    // Offstage hides the inactive one without destroying it.
     final isForward = _controller.state.direction == PlaybackDirection.forward;
-    return Stack(
+    final position = _controller.state.position;
+
+    final videoStack = Stack(
       children: [
         Offstage(
           offstage: !isForward,
-          child: Video(controller: _forwardVideoController, controls: null),
+          child: Video(controller: _forwardVideoController, controls: null, fit: BoxFit.fitHeight),
         ),
         Offstage(
           offstage: isForward,
-          child: Video(controller: _reversedVideoController, controls: null),
+          child: Video(controller: _reversedVideoController, controls: null, fit: BoxFit.fitHeight),
         ),
       ],
+    );
+
+    if (_annotations.isEmpty) return videoStack;
+
+    void onAnnotationTap(TrickAnnotation a) {
+      _setSpeed(0.25);
+      _controller.updatePosition(Duration(milliseconds: a.startMs));
+      _activePlayer.seek(_controller.state.fileSeekPosition);
+      _play();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 360 (sidebar) + a minimum usable video width — overlay on narrow screens.
+        const kBreakpoint = 1280.0;
+
+        if (constraints.maxWidth < kBreakpoint) {
+          return Stack(
+            children: [
+              Positioned.fill(child: videoStack),
+              Positioned(
+                top: 16,
+                right: 0,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: _AnnotationSidebar(
+                    annotations: _annotations,
+                    position: position,
+                    onTap: onAnnotationTap,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: videoStack),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: _AnnotationSidebar(
+                annotations: _annotations,
+                position: position,
+                onTap: onAnnotationTap,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildControls() {
     final state = _controller.state;
+    final totalMs = state.totalDuration.inMilliseconds;
     final totalMicros = state.totalDuration.inMicroseconds;
     final progress = totalMicros > 0
         ? (state.position.inMicroseconds / totalMicros).clamp(0.0, 1.0)
@@ -244,19 +550,37 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
           Row(
             children: [
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: Colors.white24,
-                    thumbColor: Colors.white,
-                    overlayColor: Colors.white24,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  ),
-                  child: Slider(
-                    value: progress,
-                    onChanged: canAct ? _onScrub : null,
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: Colors.white,
+                        overlayColor: Colors.white24,
+                        trackHeight: 2,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      ),
+                      child: Slider(
+                        value: progress,
+                        onChanged: canAct ? _onScrub : null,
+                      ),
+                    ),
+                    if (_annotations.isNotEmpty && totalMs > 0)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            painter: _AnnotationDotPainter(
+                              annotations: _annotations,
+                              totalMs: totalMs,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               Padding(
@@ -309,6 +633,12 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 onPressed: canAct ? _toggleDirection : null,
               ),
               const Spacer(),
+              if (_isEditor)
+                IconButton(
+                  icon: const Icon(Icons.comment_outlined, color: Colors.white),
+                  tooltip: 'Manage annotations',
+                  onPressed: canAct ? _showAnnotationsSheet : null,
+                ),
               ...[0.25, 0.5, 0.75, 1.0].map(
                 (speed) => _SpeedButton(
                   speed: speed,
@@ -325,6 +655,199 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   static String _fmt(Duration d) {
+    final m = d.inMinutes;
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+}
+
+class _AnnotationDotPainter extends CustomPainter {
+  final List<TrickAnnotation> annotations;
+  final int totalMs;
+  final Color color;
+
+  // Flutter's default RoundSliderOverlayShape has overlayRadius 12, which
+  // becomes the horizontal inset of the track inside the Slider widget.
+  static const double _trackPadding = 12.0;
+  static const double _dotRadius = 4.0;
+
+  const _AnnotationDotPainter({
+    required this.annotations,
+    required this.totalMs,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (totalMs == 0) return;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final trackWidth = size.width - _trackPadding * 2;
+    final centerY = size.height / 2;
+    for (final a in annotations) {
+      final x = (_trackPadding + a.startMs / totalMs * trackWidth)
+          .clamp(_trackPadding, size.width - _trackPadding);
+      canvas.drawCircle(Offset(x, centerY), _dotRadius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AnnotationDotPainter old) =>
+      annotations != old.annotations || totalMs != old.totalMs;
+}
+
+class _AnnotationSidebar extends StatefulWidget {
+  final List<TrickAnnotation> annotations;
+  final Duration position;
+  final void Function(TrickAnnotation) onTap;
+
+  const _AnnotationSidebar({
+    required this.annotations,
+    required this.position,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnnotationSidebar> createState() => _AnnotationSidebarState();
+}
+
+class _AnnotationSidebarState extends State<_AnnotationSidebar> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...widget.annotations]
+      ..sort((a, b) => a.startMs.compareTo(b.startMs));
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: _expanded ? 288 : 43,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: _expanded ? _buildExpanded(sorted) : _buildCollapsed(),
+    );
+  }
+
+  Widget _buildCollapsed() {
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        IconButton(
+          icon: const Icon(Icons.chevron_left, color: Colors.white54),
+          iconSize: 24,
+          padding: EdgeInsets.zero,
+          tooltip: 'Show annotations',
+          onPressed: () => setState(() => _expanded = true),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpanded(List<TrickAnnotation> sorted) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 5, 5),
+          child: Row(
+            children: [
+              const Text(
+                'ANNOTATIONS',
+                style: TextStyle(
+                    color: Colors.white38, fontSize: 12, letterSpacing: 1.2),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.white38),
+                iconSize: 22,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Hide annotations',
+                onPressed: () => setState(() => _expanded = false),
+              ),
+            ],
+          ),
+        ),
+        Builder(builder: (context) {
+            final activeId = sorted
+                .where((a) => a.isActiveAt(widget.position))
+                .fold<TrickAnnotation?>(
+                  null,
+                  (best, a) =>
+                      best == null || a.startMs >= best.startMs ? a : best,
+                )
+                ?.id;
+            return ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.only(bottom: 16),
+            itemCount: sorted.length,
+            separatorBuilder: (context, i) => Divider(
+              height: 1,
+              thickness: 1,
+              color: Colors.white.withValues(alpha: 0.1),
+            ),
+            itemBuilder: (context, i) {
+              final a = sorted[i];
+              final isActive = a.id == activeId;
+              return GestureDetector(
+                onTap: () => widget.onTap(a),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.85)
+                        : Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        a.text,
+                        style: TextStyle(
+                          color: isActive ? Colors.black : Colors.white,
+                          fontSize: 14,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_fmtMs(a.startMs)} – ${_fmtMs(a.endMs)}',
+                        style: TextStyle(
+                          color: isActive
+                              ? Colors.black.withValues(alpha: 0.7)
+                              : Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+          }),
+      ],
+    );
+  }
+
+  static String _fmtMs(int ms) {
+    final d = Duration(milliseconds: ms);
     final m = d.inMinutes;
     final s = (d.inSeconds % 60).toString().padLeft(2, '0');
     return '$m:$s';

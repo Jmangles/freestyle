@@ -40,7 +40,19 @@ The training studio is a full screen with the video occupying the main area and 
 
 **Right side controls:** Playback speed, Annotations *(stretch goal)*
 
-## Video Upload
+## Video Upload Frontend
+Show a screen where users can upload a video from their device and then trim and crop it if necessary.
+All videos must be cropped to 9:16 for mobile users.
+The video must be trimmed to a maximum of 10 seconds.
+
+We will need to show a preview to users while they are in the process of uploading, reusing our existing video player as much as possible would be ideal.
+
+When the user is happy with the result they can trigger an upload which will go to the CDN.
+The name of the video should be in the format {trick_id}/forward.mp4 for the forward direction and {trick_id}/reversed.mp4 for the reverse.
+
+If this trick is being uploaded as part of a user landing a trick, the format should be {trick_id}/{user_id}_forward.mp4 and {trick_id}/{user_id}_reverse.mp4
+
+## Video Upload Backend
 Editors (users where `canEditTricks` is true on their `Profile`) will see an upload icon on the trick details screen. Tapping it opens a file picker to select a source video.
 
 Encoding takes place client-side using `ffmpeg_kit_flutter` to avoid server costs. The package bundles FFmpeg natively for iOS and Android. Two files are produced:
@@ -65,10 +77,11 @@ Do not use `-ss`/`-to` as input options alongside `-vf reverse`. Those flags pre
 ## Implementation Phases
 1. **Video player backend and local provider** — `VideoProvider` interface, `LocalVideoProvider`, player state logic, unit tests
 2. **Training studio UI** — wire UI to backend, dev build entry point for easy access without a real trick
-3. **Bunny CDN** — swap to `BunnyVideoProvider`, verify streaming and seeking behaviour with real hosted videos
-4. **Upload backend** — client-side FFmpeg encoding, Bunny upload via Supabase Edge Function proxy, flag update
-5. **Upload UI/UX** — editor upload icon on trick details screen, progress feedback
-6. **Annotations** *(stretch goal)* — data model, editor tooling, playback overlay
+3. **Upload Studio UI** - create UI/UX for uploading videos to the CDN with optional trimming and cropping.
+4. **Bunny CDN** — swap to `BunnyVideoProvider`, verify streaming and seeking behaviour with real hosted videos
+5. **Upload backend** — client-side FFmpeg encoding, Bunny upload via Supabase Edge Function proxy, flag update
+6. **Upload UI/UX** — editor upload icon on trick details screen, progress feedback
+7. **Annotations** *(stretch goal)* — data model, editor tooling, playback overlay
 
 ## Legacy Videos
 This should not affect the existing video system.
