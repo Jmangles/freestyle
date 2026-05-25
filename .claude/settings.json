@@ -15,7 +15,11 @@
       "Bash(flutter run *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\" -Recurse -Include \"*.arb\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(grep -v \"//\\\\|^$\")"
+      "Bash(grep -v \"//\\\\|^$\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Jordan\\\\Documents\\\\isa-users\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Read(//c/Users/Jordan/Documents/**)",
+      "Bash(flutter test *)"
     ]
   }
 }

@@ -26,6 +26,7 @@ class Trick {
   final String? endPositionName;
 
   bool get isCore => flags & 1 != 0;
+  bool get hasTrainingVideo => flags & 2 != 0;
 
   static String tierLabel(int value) => DifficultyTier.label(value);
 
