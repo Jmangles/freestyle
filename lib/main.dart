@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'l10n/app_localizations_extension.dart';
@@ -7,6 +8,7 @@ import 'supabase_config.dart';
 import 'theme_controller.dart';
 
 Future<void> main() async {
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
 

@@ -37,6 +37,8 @@
   "searchByNameHint": "Buscar por nombre...",
 
   "trickDetailTitle": "Detalle del truco",
+  "copyLinkTooltip": "Copiar enlace",
+  "linkCopiedMessage": "Enlace copiado",
   "viewProgressionTooltip": "Ver progresión",
   "editTrickTooltip": "Editar truco",
   "deleteTrickTooltip": "Eliminar truco",

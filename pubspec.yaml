@@ -12,6 +12,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   supabase_flutter: ^2.5.0
+  flutter_web_plugins:
+    sdk: flutter
   go_router: ^14.0.0
   url_launcher: ^6.3.0
   intl: ^0.20.2

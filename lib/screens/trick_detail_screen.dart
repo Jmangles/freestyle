@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations_extension.dart';
@@ -138,6 +139,16 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
     setState(() { _future = _load(); });
   }
 
+  Future<void> _copyLink() async {
+    final url = Uri.base.resolve('/trick/${widget.trickId}').toString();
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.linkCopiedMessage)),
+      );
+    }
+  }
+
   Future<void> _openVideo(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
@@ -180,10 +191,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
       builder: (context, snap) {
         final trick = snap.data?.trick;
         final canEditTricks = snap.data?.canEditTricks ?? false;
+        final canPop = context.canPop();
         return Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            leadingWidth: routeDepth > 2 ? 96 : 48,
+            leadingWidth: (canPop && routeDepth > 2) ? 96 : 48,
             leading: BackHomeLeading(showHome: routeDepth > 2),
             title: Text(l10n.trickDetailTitle),
             actions: [
@@ -205,6 +217,11 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                   tooltip: l10n.suggestEditTooltip,
                   onPressed: () => _openSuggestEdit(trick),
                 ),
+              IconButton(
+                icon: const Icon(Icons.link),
+                tooltip: l10n.copyLinkTooltip,
+                onPressed: _copyLink,
+              ),
               IconButton(
                 icon: const Icon(Icons.account_tree_outlined),
                 tooltip: l10n.viewProgressionTooltip,

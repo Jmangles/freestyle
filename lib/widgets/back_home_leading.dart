@@ -11,14 +11,16 @@ class BackHomeLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = context.canPop();
     return Row(
       children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: context.l10n.backTooltip,
-          onPressed: () => context.pop(),
-        ),
-        if (showHome)
+        if (canPop)
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: context.l10n.backTooltip,
+            onPressed: () => context.pop(),
+          ),
+        if (!canPop || showHome)
           IconButton(
             icon: const Icon(Icons.home_outlined),
             tooltip: context.l10n.homeTooltip,

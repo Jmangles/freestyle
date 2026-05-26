@@ -107,6 +107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trickDetailTitle => 'Trick Detail';
 
   @override
+  String get copyLinkTooltip => 'Copy link';
+
+  @override
+  String get linkCopiedMessage => 'Link copied';
+
+  @override
   String get viewProgressionTooltip => 'View Progression';
 
   @override

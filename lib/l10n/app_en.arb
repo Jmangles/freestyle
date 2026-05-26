@@ -42,6 +42,8 @@
   "searchByNameHint": "Search by name...",
 
   "trickDetailTitle": "Trick Detail",
+  "copyLinkTooltip": "Copy link",
+  "linkCopiedMessage": "Link copied",
   "viewProgressionTooltip": "View Progression",
   "editTrickTooltip": "Edit Trick",
   "deleteTrickTooltip": "Delete Trick",

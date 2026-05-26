@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import '../models/trick_annotation.dart';
@@ -8,6 +9,7 @@ import '../services/auth_service.dart';
 import '../video/playback_direction.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
+import '../widgets/back_home_leading.dart';
 
 class TrainingStudioScreen extends StatefulWidget {
   final int trickId;
@@ -441,6 +443,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: context.canPop() ? 96 : 48,
+        leading: const BackHomeLeading(showHome: true),
         title: Text(widget.title ?? 'Training Studio'),
       ),
       body: SafeArea(
