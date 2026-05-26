@@ -178,6 +178,7 @@
             <Grid Grid.Column="1">
                 <Slider x:Name="TimelineSlider"
                         Minimum="0" Maximum="1"
+                        LargeChange="0.00001" SmallChange="0.00001"
                         VerticalAlignment="Center"
                         ValueChanged="TimelineSlider_ValueChanged"
                         PreviewMouseDown="TimelineSlider_PreviewMouseDown"
@@ -214,9 +215,11 @@
                 <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="90"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="30"/>
                 <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -226,12 +229,18 @@
                         TextChanged="TrimBox_TextChanged"/>
             <Button     Grid.Column="2" Content="Set Start" Style="{StaticResource DarkButton}"
                         Margin="6,0,0,0" Foreground="#44ff88" Click="SetStart_Click"/>
+            <Button     Grid.Column="3" Content="▶" Style="{StaticResource DarkButton}"
+                        Margin="4,0,0,0" Width="28" ToolTip="Play from trim start"
+                        Click="PlayFromStart_Click"/>
 
-            <TextBlock  Grid.Column="4" Text="Trim End:"/>
-            <TextBox    Grid.Column="5" x:Name="TrimEndBox" Text="0.000"
+            <TextBlock  Grid.Column="5" Text="Trim End:"/>
+            <TextBox    Grid.Column="6" x:Name="TrimEndBox" Text="0.000"
                         TextChanged="TrimBox_TextChanged"/>
-            <Button     Grid.Column="6" Content="Set End" Style="{StaticResource DarkButton}"
+            <Button     Grid.Column="7" Content="Set End" Style="{StaticResource DarkButton}"
                         Margin="6,0,0,0" Foreground="#ff8855" Click="SetEnd_Click"/>
+            <Button     Grid.Column="8" Content="▶" Style="{StaticResource DarkButton}"
+                        Margin="4,0,0,0" Width="28" ToolTip="Play from trim end"
+                        Click="PlayFromEnd_Click"/>
         </Grid>
 
         <!-- Trick ID + output directory -->
@@ -263,6 +272,8 @@
         <Grid Grid.Row="7">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Button Grid.Row="0" x:Name="GenerateBtn"
@@ -270,7 +281,18 @@
                     Style="{StaticResource AccentButton}"
                     Height="44" FontSize="14" FontWeight="SemiBold"
                     Click="Generate_Click"/>
-            <TextBlock Grid.Row="1" x:Name="StatusLabel"
+            <StackPanel Grid.Row="2" Orientation="Horizontal">
+                <Button x:Name="RegenerateBtn"
+                        Content="Regenerate from Manifest…"
+                        Style="{StaticResource DarkButton}" Height="32"
+                        Click="RegenerateAll_Click"/>
+                <Button x:Name="StopBtn" Content="Stop"
+                        Style="{StaticResource DarkButton}" Height="32"
+                        Foreground="#ff6644" IsEnabled="False"
+                        Margin="8,0,0,0" Width="60"
+                        Click="Stop_Click"/>
+            </StackPanel>
+            <TextBlock Grid.Row="3" x:Name="StatusLabel"
                        Text="Ready — open a video to begin"
                        Margin="0,8,0,0" Foreground="#666" FontSize="11"/>
         </Grid>

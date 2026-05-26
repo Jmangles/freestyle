@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
@@ -39,8 +40,15 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   late final StreamSubscription<Duration> _durationSub;
   late final StreamSubscription<bool> _forwardCompletedSub;
   late final StreamSubscription<bool> _reversedCompletedSub;
+  late final StreamSubscription<bool> _forwardPlayingSub;
+  late final StreamSubscription<bool> _reversedPlayingSub;
+  late final StreamSubscription<bool> _forwardBufferingSub;
+  late final StreamSubscription<bool> _reversedBufferingSub;
 
   bool _loading = true;
+  bool _buffering = false;
+  bool _reversedLoaded = false;
+  bool _useMobileQuality = false;
   List<TrickAnnotation> _annotations = [];
   bool _isEditor = false;
 
@@ -105,20 +113,51 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       if (mounted) setState(() {});
     });
 
-    // Start forward video playing immediately.
-    _forwardPlayer.open(
-      Media(widget.provider.forwardUrl(widget.trickId).toString()),
-      play: true,
-    );
-    _controller.play();
+    // Sync controller play/pause state from the actual player so that browser
+    // autoplay blocks (fresh page loads) are reflected in the UI correctly.
+    _forwardPlayingSub = _forwardPlayer.stream.playing.listen((playing) {
+      if (_controller.state.direction != PlaybackDirection.forward) return;
+      if (playing) {
+        _controller.play();
+      } else {
+        _controller.pause();
+      }
+    });
+    _reversedPlayingSub = _reversedPlayer.stream.playing.listen((playing) {
+      if (_controller.state.direction != PlaybackDirection.reversed) return;
+      if (playing) {
+        _controller.play();
+      } else {
+        _controller.pause();
+      }
+    });
 
-    // Pre-load reversed in the background so it's ready when the user toggles.
-    _reversedPlayer.open(
-      Media(widget.provider.reversedUrl(widget.trickId).toString()),
-      play: false,
-    );
+    _forwardBufferingSub = _forwardPlayer.stream.buffering.listen((buffering) {
+      if (_controller.state.direction != PlaybackDirection.forward) return;
+      if (mounted) setState(() => _buffering = buffering);
+    });
+    _reversedBufferingSub = _reversedPlayer.stream.buffering.listen((buffering) {
+      if (_controller.state.direction != PlaybackDirection.reversed) return;
+      if (mounted) setState(() => _buffering = buffering);
+    });
 
+    _initPlayers();
     _loadAnnotationsAndProfile();
+  }
+
+  Future<void> _initPlayers() async {
+    final result = await Connectivity().checkConnectivity();
+    _useMobileQuality = !result.contains(ConnectivityResult.wifi) &&
+        !result.contains(ConnectivityResult.ethernet);
+
+    if (!mounted) return;
+    final forwardUrl = _useMobileQuality
+        ? widget.provider.forwardMobileUrl(widget.trickId)
+        : widget.provider.forwardUrl(widget.trickId);
+
+    _forwardPlayer.open(Media(forwardUrl.toString()), play: true);
+    _controller.play();
+    // Reversed video is opened lazily on first direction toggle to save mobile bandwidth.
   }
 
   Future<void> _loadAnnotationsAndProfile() async {
@@ -144,6 +183,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _durationSub.cancel();
     _forwardCompletedSub.cancel();
     _reversedCompletedSub.cancel();
+    _forwardPlayingSub.cancel();
+    _reversedPlayingSub.cancel();
+    _forwardBufferingSub.cancel();
+    _reversedBufferingSub.cancel();
     _controller.dispose();
     _forwardPlayer.dispose();
     _reversedPlayer.dispose();
@@ -178,6 +221,14 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     await _activePlayer.seek(_controller.state.fileSeekPosition);
   }
 
+  Future<void> _togglePlayPause() async {
+    if (_controller.state.isPlaying) {
+      await _pause();
+    } else {
+      await _play();
+    }
+  }
+
   Future<void> _setSpeed(double speed) async {
     _controller.setSpeed(speed);
     await _forwardPlayer.setRate(speed);
@@ -185,13 +236,17 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   Future<void> _toggleDirection() async {
-    // Pause the outgoing player before switching.
     await _activePlayer.pause();
-
     _controller.toggleDirection();
 
-    // The incoming player is already loaded — just seek to the mirrored
-    // position and play. No open() call means no buffering race.
+    if (_controller.state.direction == PlaybackDirection.reversed && !_reversedLoaded) {
+      _reversedLoaded = true;
+      final reversedUrl = _useMobileQuality
+          ? widget.provider.reversedMobileUrl(widget.trickId)
+          : widget.provider.reversedUrl(widget.trickId);
+      await _reversedPlayer.open(Media(reversedUrl.toString()), play: false);
+    }
+
     await _activePlayer.seek(_controller.state.fileSeekPosition);
     await _activePlayer.setRate(_controller.state.speed);
     await _activePlayer.play();
@@ -456,6 +511,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : _buildVideoArea(),
             ),
+            if (!_loading && _buffering)
+              const Positioned.fill(
+                child: Center(child: CircularProgressIndicator()),
+              ),
             Positioned(
               left: 0,
               right: 0,
@@ -472,17 +531,20 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     final isForward = _controller.state.direction == PlaybackDirection.forward;
     final position = _controller.state.position;
 
-    final videoStack = Stack(
-      children: [
-        Offstage(
-          offstage: !isForward,
-          child: Video(controller: _forwardVideoController, controls: null, fit: BoxFit.fitHeight),
-        ),
-        Offstage(
-          offstage: isForward,
-          child: Video(controller: _reversedVideoController, controls: null, fit: BoxFit.fitHeight),
-        ),
-      ],
+    final videoStack = GestureDetector(
+      onTap: _togglePlayPause,
+      child: Stack(
+        children: [
+          Offstage(
+            offstage: !isForward,
+            child: Video(controller: _forwardVideoController, controls: null, fit: BoxFit.fitHeight),
+          ),
+          Offstage(
+            offstage: isForward,
+            child: Video(controller: _reversedVideoController, controls: null, fit: BoxFit.fitHeight),
+          ),
+        ],
+      ),
     );
 
     if (_annotations.isEmpty) return videoStack;

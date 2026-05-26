@@ -10,4 +10,10 @@ class BunnyVideoProvider implements VideoProvider {
 
   @override
   Uri reversedUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/reversed.mp4');
+
+  @override
+  Uri forwardMobileUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/forward_mobile.mp4');
+
+  @override
+  Uri reversedMobileUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/reversed_mobile.mp4');
 }
