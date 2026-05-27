@@ -50,6 +50,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   late final StreamSubscription<bool> _reversedBufferingSub;
 
   bool _loading = true;
+  double? _downloadProgress; // null = indeterminate, 0.0–1.0 = known
   bool _buffering = false;
   bool _reversedLoaded = false;
   bool _useMobileQuality = false;
@@ -59,10 +60,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   DateTime? _lastReversedCompletedAt;
   List<TrickAnnotation> _annotations = [];
   bool _isEditor = false;
-
-  // Local temp-file paths for the pre-downloaded videos (Android/desktop only).
-  String? _forwardLocalPath;
-  String? _reversedLocalPath;
 
   // Debug counters — only populated in debug mode.
   int _dbgFwdFired = 0;
@@ -313,29 +310,40 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     // the spinner.  Falls back to the remote URL if the download fails.
     final forwardPath = kIsWeb
         ? forwardUrl.toString()
-        : await _downloadToTemp(forwardUrl.toString());
+        : await _downloadToTemp(
+            forwardUrl.toString(),
+            onProgress: (p) { if (mounted) setState(() => _downloadProgress = p); },
+          );
     if (!mounted) return;
-    _forwardLocalPath = kIsWeb ? null : (forwardPath != forwardUrl.toString() ? forwardPath : null);
-
     await _configureMpvForStreaming(_forwardPlayer);
     _forwardPlayer.open(Media(forwardPath), play: true);
     _controller.play();
     // Reversed video is opened lazily on first direction toggle to save mobile bandwidth.
   }
 
-  /// Downloads [url] to the system temp directory and returns the local path.
+  /// Returns a local path for [url], downloading only if not already cached.
+  /// Uses the app cache directory so files survive across sessions.
   /// Returns [url] unchanged on any error so streaming acts as a fallback.
-  Future<String> _downloadToTemp(String url) async {
+  Future<String> _downloadToTemp(String url, {void Function(double)? onProgress}) async {
     try {
-      final dir = await getTemporaryDirectory();
+      final dir = await getApplicationCacheDirectory();
       final path = '${dir.path}/ts_${url.hashCode.abs()}.mp4';
+      final file = File(path);
+      if (await file.exists() && await file.length() > 0) return path;
       final client = HttpClient();
       try {
         final request = await client.getUrl(Uri.parse(url));
         final response = await request.close();
         if (response.statusCode != 200) return url;
-        final sink = File(path).openWrite();
-        await response.pipe(sink);
+        final total = response.contentLength; // -1 if server omits Content-Length
+        final sink = file.openWrite();
+        int received = 0;
+        await for (final chunk in response) {
+          sink.add(chunk);
+          received += chunk.length;
+          if (total > 0 && onProgress != null) onProgress(received / total);
+        }
+        await sink.close();
         return path;
       } finally {
         client.close();
@@ -375,8 +383,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _controller.dispose();
     _forwardPlayer.dispose();
     _reversedPlayer.dispose();
-    if (_forwardLocalPath != null) File(_forwardLocalPath!).delete().ignore();
-    if (_reversedLocalPath != null) File(_reversedLocalPath!).delete().ignore();
     super.dispose();
   }
 
@@ -434,7 +440,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final reversedPath = kIsWeb
           ? reversedUrl.toString()
           : await _downloadToTemp(reversedUrl.toString());
-      _reversedLocalPath = kIsWeb ? null : (reversedPath != reversedUrl.toString() ? reversedPath : null);
       await _configureMpvForStreaming(_reversedPlayer);
       await _reversedPlayer.open(Media(reversedPath), play: false);
     }
@@ -700,7 +705,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
           children: [
             Positioned.fill(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(value: _downloadProgress))
                   : _buildVideoArea(),
             ),
             if (!_loading && _buffering)
