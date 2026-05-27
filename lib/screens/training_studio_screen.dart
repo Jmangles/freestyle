@@ -153,8 +153,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       // static type error. The try-catch handles platforms without the method.
       final dynamic native = player.platform;
       await native.setProperty('cache', 'yes');
-      await native.setProperty('cache-secs', '15');
-      await native.setProperty('demuxer-max-bytes', '15728640'); // 15 MB
+      await native.setProperty('demuxer-max-bytes', '67108864');      // 64 MB forward
+      await native.setProperty('demuxer-max-back-bytes', '67108864'); // 64 MB backward — keeps the whole file in memory so playlist loops don't re-download
       await native.setProperty('network-timeout', '20');
     } catch (_) {}
   }
