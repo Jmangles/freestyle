@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import '../utils/web_connection.dart';
@@ -40,6 +42,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   late final StreamSubscription<Duration> _forwardPositionSub;
   late final StreamSubscription<Duration> _reversedPositionSub;
   late final StreamSubscription<Duration> _durationSub;
+  late final StreamSubscription<bool> _forwardCompletedSub;
+  late final StreamSubscription<bool> _reversedCompletedSub;
   late final StreamSubscription<bool> _forwardPlayingSub;
   late final StreamSubscription<bool> _reversedPlayingSub;
   late final StreamSubscription<bool> _forwardBufferingSub;
@@ -49,10 +53,23 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   bool _buffering = false;
   bool _reversedLoaded = false;
   bool _useMobileQuality = false;
-  Duration _lastForwardPos = Duration.zero;
-  Duration _lastReversedPos = Duration.zero;
+  bool _forwardLooping = false;
+  bool _reversedLooping = false;
+  DateTime? _lastForwardCompletedAt;
+  DateTime? _lastReversedCompletedAt;
   List<TrickAnnotation> _annotations = [];
   bool _isEditor = false;
+
+  // Local temp-file paths for the pre-downloaded videos (Android/desktop only).
+  String? _forwardLocalPath;
+  String? _reversedLocalPath;
+
+  // Debug counters — only populated in debug mode.
+  int _dbgFwdFired = 0;
+  int _dbgFwdFalseEof = 0;
+  int _dbgFwdRealEof = 0;
+  int _dbgFwdDebounced = 0;
+  final List<String> _dbgLog = [];
 
   Player get _activePlayer => _controller.state.direction == PlaybackDirection.forward
       ? _forwardPlayer
@@ -71,6 +88,93 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       trickId: widget.trickId,
     );
 
+    // Manual looping so the playback rate is preserved on each cycle.
+    // PlaylistMode.loop is not used because libmpv loops the demuxer (when it
+    // finishes reading the network stream) rather than the renderer (when the
+    // last frame is displayed), causing early loops on Android.
+    // keep-open=yes makes libmpv pause instead of stop at EOF, so buffered
+    // frames past the network EOF can still be displayed before we loop.
+    //
+    // False-EOF detection: if completed fires while position is still far from
+    // the end, the demuxer finished downloading before the renderer caught up —
+    // call play() to drain the buffer.  1-second threshold (instead of a
+    // shorter value) covers Android's position-stream staleness: the stream can
+    // lag ~500 ms behind the renderer, so a 300 ms window was insufficient and
+    // the renderer's true EOF was mis-classified as false EOF.
+    //
+    // Debounce: calling play() at a keep-open EOF causes an immediate
+    // re-completion event.  We collapse any bursts within 300 ms so the first
+    // event drives the decision and subsequent ones are ignored.
+    _forwardCompletedSub = _forwardPlayer.stream.completed.listen((done) {
+      if (!done || _forwardLooping) return;
+      final total = _controller.state.totalDuration;
+      if (total < const Duration(seconds: 1)) return;
+      final now = DateTime.now();
+      // ctrlPos  = last value our stream subscription recorded (may be stale).
+      // playerPos = value held directly in the Player object (updated first).
+      // Logging both reveals whether position-stream staleness is the culprit.
+      final ctrlPos   = _controller.state.position;
+      final playerPos = _forwardPlayer.state.position;
+      if (_lastForwardCompletedAt != null &&
+          now.difference(_lastForwardCompletedAt!) < const Duration(milliseconds: 300)) {
+        if (kDebugMode) {
+          _dbgFwdDebounced++;
+          _dbgEvent('FWD debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}');
+        }
+        return;
+      }
+      _lastForwardCompletedAt = now;
+      if (kDebugMode) _dbgFwdFired++;
+      if (ctrlPos < total - const Duration(seconds: 1)) {
+        if (kDebugMode) {
+          _dbgFwdFalseEof++;
+          _dbgEvent('FWD false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
+        }
+        // False EOF — demuxer hit network EOF but buffered frames remain.
+        _forwardPlayer.play();
+        return;
+      }
+      if (kDebugMode) {
+        _dbgFwdRealEof++;
+        _dbgEvent('FWD real-EOF→loop ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
+      }
+      _forwardLooping = true;
+      _forwardPlayer.seek(Duration.zero).then((_) {
+        if (!mounted) return;
+        _forwardPlayer.setRate(_controller.state.speed);
+        _forwardPlayer.play();
+      });
+    });
+    _reversedCompletedSub = _reversedPlayer.stream.completed.listen((done) {
+      if (!done || _reversedLooping) return;
+      final total = _controller.state.totalDuration;
+      if (total < const Duration(seconds: 1)) return;
+      final now = DateTime.now();
+      final ctrlPos   = _controller.state.position;
+      final playerPos = _reversedPlayer.state.position;
+      if (_lastReversedCompletedAt != null &&
+          now.difference(_lastReversedCompletedAt!) < const Duration(milliseconds: 300)) {
+        if (kDebugMode) _dbgEvent('REV debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}');
+        return;
+      }
+      _lastReversedCompletedAt = now;
+      // For the reversed file, filePos = total − trickTime, so real EOF is
+      // trickTime ≈ 0.  False EOF is trickTime > 1 s (file still far from end).
+      if (ctrlPos > const Duration(seconds: 1)) {
+        if (kDebugMode) _dbgEvent('REV false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
+        // False EOF — demuxer hit network EOF but buffered frames remain.
+        _reversedPlayer.play();
+        return;
+      }
+      if (kDebugMode) _dbgEvent('REV real-EOF→loop ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
+      _reversedLooping = true;
+      _reversedPlayer.seek(Duration.zero).then((_) {
+        if (!mounted) return;
+        _reversedPlayer.setRate(_controller.state.speed);
+        _reversedPlayer.play();
+      });
+    });
+
     // Duration only needs to come from one file — both are the same length.
     _durationSub = _forwardPlayer.stream.duration.listen((duration) {
       if (duration > Duration.zero) {
@@ -80,16 +184,30 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     });
 
     // Forward position is trick time directly.
-    // Detect a playlist loop by watching for the file position to jump
-    // backward past a large gap — libmpv looped natively, so re-apply the
-    // playback rate (PlaylistMode.loop resets it to 1.0 on every cycle).
     _forwardPositionSub = _forwardPlayer.stream.position.listen((pos) {
       if (_controller.state.direction != PlaybackDirection.forward) return;
-      if (_lastForwardPos > const Duration(milliseconds: 500) &&
-          pos < const Duration(milliseconds: 100)) {
-        _forwardPlayer.setRate(_controller.state.speed);
+      final prev = _controller.state.position;
+      if (!_forwardLooping &&
+          prev > const Duration(milliseconds: 500) &&
+          pos < prev - const Duration(milliseconds: 300)) {
+        final total = _controller.state.totalDuration;
+        final isEofLoop = total > Duration.zero &&
+            prev >= total - const Duration(seconds: 1) &&
+            pos < const Duration(milliseconds: 100);
+        if (isEofLoop) {
+          // keep-open reset position before our completed handler ran; claim
+          // the loop now so the pending completed event exits early.
+          _forwardLooping = true;
+        }
+        if (kDebugMode) {
+          _dbgEvent('POS↩ ${prev.inMilliseconds}→${pos.inMilliseconds}ms'
+              ' player=${_forwardPlayer.state.position.inMilliseconds}ms'
+              ' loop=$_forwardLooping eofLoop=$isEofLoop');
+        }
       }
-      _lastForwardPos = pos;
+      if (_forwardLooping && pos > const Duration(milliseconds: 200)) {
+        _forwardLooping = false;
+      }
       _controller.updatePosition(pos);
       if (mounted) setState(() {});
     });
@@ -98,11 +216,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _reversedPositionSub = _reversedPlayer.stream.position.listen((pos) {
       if (_controller.state.direction != PlaybackDirection.reversed) return;
       if (_controller.state.totalDuration == Duration.zero) return;
-      if (_lastReversedPos > const Duration(milliseconds: 500) &&
-          pos < const Duration(milliseconds: 100)) {
-        _reversedPlayer.setRate(_controller.state.speed);
+      if (_reversedLooping && pos > const Duration(milliseconds: 200)) {
+        _reversedLooping = false;
       }
-      _lastReversedPos = pos;
       _controller.updatePosition(_controller.state.totalDuration - pos);
       if (mounted) setState(() {});
     });
@@ -114,6 +230,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     // Sync controller play/pause state from the actual player so that browser
     // autoplay blocks (fresh page loads) are reflected in the UI correctly.
     _forwardPlayingSub = _forwardPlayer.stream.playing.listen((playing) {
+      if (kDebugMode) {
+        _dbgEvent('FWD playing=$playing pos=${_controller.state.position.inMilliseconds}ms'
+            ' fwdLoop=$_forwardLooping');
+      }
       if (_controller.state.direction != PlaybackDirection.forward) return;
       if (playing) {
         _controller.play();
@@ -154,7 +274,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final dynamic native = player.platform;
       await native.setProperty('cache', 'yes');
       await native.setProperty('demuxer-max-bytes', '67108864');      // 64 MB forward
-      await native.setProperty('demuxer-max-back-bytes', '67108864'); // 64 MB backward — keeps the whole file in memory so playlist loops don't re-download
+      await native.setProperty('demuxer-max-back-bytes', '67108864'); // 64 MB backward — seek(0) on loop served from memory, no re-download
+      await native.setProperty('cache-pause', 'yes');   // stall instead of false-EOF when buffer runs dry mid-stream
+      await native.setProperty('keep-open', 'yes');     // pause at EOF instead of stopping — safe because we play from local files, not HTTP streams
       await native.setProperty('network-timeout', '20');
     } catch (_) {}
   }
@@ -182,11 +304,45 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         ? widget.provider.forwardMobileUrl(widget.trickId)
         : widget.provider.forwardUrl(widget.trickId);
 
+    // On Android/desktop: download the video to a local temp file before
+    // opening the player.  Playing from a local file eliminates a class of
+    // libmpv-on-Android bugs where the player silently resets position to 0
+    // whenever the HTTP demuxer reaches network EOF (i.e. once the file finishes
+    // downloading), causing early loops that don't fire the `completed` event.
+    // The loading indicator is already showing, so the download happens behind
+    // the spinner.  Falls back to the remote URL if the download fails.
+    final forwardPath = kIsWeb
+        ? forwardUrl.toString()
+        : await _downloadToTemp(forwardUrl.toString());
+    if (!mounted) return;
+    _forwardLocalPath = kIsWeb ? null : (forwardPath != forwardUrl.toString() ? forwardPath : null);
+
     await _configureMpvForStreaming(_forwardPlayer);
-    _forwardPlayer.open(Media(forwardUrl.toString()), play: true);
-    _forwardPlayer.setPlaylistMode(PlaylistMode.loop);
+    _forwardPlayer.open(Media(forwardPath), play: true);
     _controller.play();
     // Reversed video is opened lazily on first direction toggle to save mobile bandwidth.
+  }
+
+  /// Downloads [url] to the system temp directory and returns the local path.
+  /// Returns [url] unchanged on any error so streaming acts as a fallback.
+  Future<String> _downloadToTemp(String url) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/ts_${url.hashCode.abs()}.mp4';
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(Uri.parse(url));
+        final response = await request.close();
+        if (response.statusCode != 200) return url;
+        final sink = File(path).openWrite();
+        await response.pipe(sink);
+        return path;
+      } finally {
+        client.close();
+      }
+    } catch (_) {
+      return url;
+    }
   }
 
   Future<void> _loadAnnotationsAndProfile() async {
@@ -210,6 +366,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _forwardPositionSub.cancel();
     _reversedPositionSub.cancel();
     _durationSub.cancel();
+    _forwardCompletedSub.cancel();
+    _reversedCompletedSub.cancel();
     _forwardPlayingSub.cancel();
     _reversedPlayingSub.cancel();
     _forwardBufferingSub.cancel();
@@ -217,6 +375,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _controller.dispose();
     _forwardPlayer.dispose();
     _reversedPlayer.dispose();
+    if (_forwardLocalPath != null) File(_forwardLocalPath!).delete().ignore();
+    if (_reversedLocalPath != null) File(_reversedLocalPath!).delete().ignore();
     super.dispose();
   }
 
@@ -271,9 +431,12 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final reversedUrl = _useMobileQuality
           ? widget.provider.reversedMobileUrl(widget.trickId)
           : widget.provider.reversedUrl(widget.trickId);
+      final reversedPath = kIsWeb
+          ? reversedUrl.toString()
+          : await _downloadToTemp(reversedUrl.toString());
+      _reversedLocalPath = kIsWeb ? null : (reversedPath != reversedUrl.toString() ? reversedPath : null);
       await _configureMpvForStreaming(_reversedPlayer);
-      await _reversedPlayer.open(Media(reversedUrl.toString()), play: false);
-      await _reversedPlayer.setPlaylistMode(PlaylistMode.loop);
+      await _reversedPlayer.open(Media(reversedPath), play: false);
     }
 
     await _activePlayer.seek(_controller.state.fileSeekPosition);
@@ -549,18 +712,55 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(maxWidth: 420),
                   decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.black.withValues(alpha: 0.80),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
-                    _useMobileQuality ? 'mobile' : 'full',
-                    style: TextStyle(
-                      color: _useMobileQuality ? Colors.orange : Colors.greenAccent,
+                  child: DefaultTextStyle(
+                    style: const TextStyle(
+                      color: Colors.white70,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
                       fontFamily: 'monospace',
+                      height: 1.5,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Row 1 — quality + live position from both sources
+                        Text(
+                          '${_useMobileQuality ? 'MOBILE' : 'FULL'}'
+                          '  ctrl=${_controller.state.position.inMilliseconds}ms'
+                          '  player=${_forwardPlayer.state.position.inMilliseconds}ms'
+                          '  total=${_controller.state.totalDuration.inMilliseconds}ms',
+                          style: TextStyle(
+                            color: _useMobileQuality ? Colors.orange : Colors.greenAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        // Row 2 — playback state flags
+                        Text(
+                          '${_controller.state.isPlaying ? 'PLAYING' : 'paused'}'
+                          '  ${_buffering ? 'BUFFERING' : 'buf-ok'}'
+                          '  fwdLoop=$_forwardLooping'
+                          '  revLoop=$_reversedLooping',
+                        ),
+                        // Row 3 — completed-event counters
+                        Text(
+                          'completed: fired=$_dbgFwdFired'
+                          '  falseEOF=$_dbgFwdFalseEof'
+                          '  realEOF=$_dbgFwdRealEof'
+                          '  debounced=$_dbgFwdDebounced',
+                        ),
+                        // Rolling event log (newest at top)
+                        if (_dbgLog.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          for (final line in _dbgLog.reversed)
+                            Text(line, style: const TextStyle(color: Colors.white54)),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -776,6 +976,15 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         ],
       ),
     );
+  }
+
+  void _dbgEvent(String msg) {
+    final ts = DateTime.now();
+    final entry = '${ts.second.toString().padLeft(2,'0')}.${ts.millisecond.toString().padLeft(3,'0')} $msg';
+    _dbgLog.add(entry);
+    if (_dbgLog.length > 12) _dbgLog.removeAt(0);
+    debugPrint('[TS] $msg');
+    if (mounted) setState(() {});
   }
 
   static String _fmt(Duration d) {
