@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import '../utils/web_connection.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -38,8 +40,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   late final StreamSubscription<Duration> _forwardPositionSub;
   late final StreamSubscription<Duration> _reversedPositionSub;
   late final StreamSubscription<Duration> _durationSub;
-  late final StreamSubscription<bool> _forwardCompletedSub;
-  late final StreamSubscription<bool> _reversedCompletedSub;
   late final StreamSubscription<bool> _forwardPlayingSub;
   late final StreamSubscription<bool> _reversedPlayingSub;
   late final StreamSubscription<bool> _forwardBufferingSub;
@@ -49,6 +49,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   bool _buffering = false;
   bool _reversedLoaded = false;
   bool _useMobileQuality = false;
+  Duration _lastForwardPos = Duration.zero;
+  Duration _lastReversedPos = Duration.zero;
   List<TrickAnnotation> _annotations = [];
   bool _isEditor = false;
 
@@ -69,23 +71,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       trickId: widget.trickId,
     );
 
-    // Manual looping so the playback rate is re-applied on each cycle.
-    // PlaylistMode.loop causes libmpv to reset the rate to 1.0 on loop.
-    _forwardCompletedSub = _forwardPlayer.stream.completed.listen((done) {
-      if (!done) return;
-      _forwardPlayer.seek(Duration.zero).then((_) {
-        _forwardPlayer.setRate(_controller.state.speed);
-        _forwardPlayer.play();
-      });
-    });
-    _reversedCompletedSub = _reversedPlayer.stream.completed.listen((done) {
-      if (!done) return;
-      _reversedPlayer.seek(Duration.zero).then((_) {
-        _reversedPlayer.setRate(_controller.state.speed);
-        _reversedPlayer.play();
-      });
-    });
-
     // Duration only needs to come from one file — both are the same length.
     _durationSub = _forwardPlayer.stream.duration.listen((duration) {
       if (duration > Duration.zero) {
@@ -95,8 +80,16 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     });
 
     // Forward position is trick time directly.
+    // Detect a playlist loop by watching for the file position to jump
+    // backward past a large gap — libmpv looped natively, so re-apply the
+    // playback rate (PlaylistMode.loop resets it to 1.0 on every cycle).
     _forwardPositionSub = _forwardPlayer.stream.position.listen((pos) {
       if (_controller.state.direction != PlaybackDirection.forward) return;
+      if (_lastForwardPos > const Duration(milliseconds: 500) &&
+          pos < const Duration(milliseconds: 100)) {
+        _forwardPlayer.setRate(_controller.state.speed);
+      }
+      _lastForwardPos = pos;
       _controller.updatePosition(pos);
       if (mounted) setState(() {});
     });
@@ -105,6 +98,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _reversedPositionSub = _reversedPlayer.stream.position.listen((pos) {
       if (_controller.state.direction != PlaybackDirection.reversed) return;
       if (_controller.state.totalDuration == Duration.zero) return;
+      if (_lastReversedPos > const Duration(milliseconds: 500) &&
+          pos < const Duration(milliseconds: 100)) {
+        _reversedPlayer.setRate(_controller.state.speed);
+      }
+      _lastReversedPos = pos;
       _controller.updatePosition(_controller.state.totalDuration - pos);
       if (mounted) setState(() {});
     });
@@ -145,17 +143,48 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _loadAnnotationsAndProfile();
   }
 
+  // Configure MPV to buffer aggressively so temporary network stalls are
+  // absorbed by the cache rather than reported as EOF mid-playback.
+  Future<void> _configureMpvForStreaming(Player player) async {
+    if (kIsWeb) return;
+    try {
+      // NativePlayer.setProperty exists at runtime on Android/desktop but the
+      // pub stub doesn't declare it, so we use dynamic dispatch to avoid the
+      // static type error. The try-catch handles platforms without the method.
+      final dynamic native = player.platform;
+      await native.setProperty('cache', 'yes');
+      await native.setProperty('cache-secs', '15');
+      await native.setProperty('demuxer-max-bytes', '15728640'); // 15 MB
+      await native.setProperty('network-timeout', '20');
+    } catch (_) {}
+  }
+
   Future<void> _initPlayers() async {
-    final result = await Connectivity().checkConnectivity();
-    _useMobileQuality = !result.contains(ConnectivityResult.wifi) &&
-        !result.contains(ConnectivityResult.ethernet);
+    if (kIsWeb) {
+      final type = getWebConnectionType();
+      if (type != null) {
+        // Network Information API available (Chrome/Edge) — trust it directly.
+        _useMobileQuality = type == 'cellular';
+      } else {
+        // API absent (Firefox/Safari) — fall back to screen width as a proxy.
+        final view = WidgetsBinding.instance.platformDispatcher.implicitView!;
+        final logicalWidth = view.physicalSize.width / view.devicePixelRatio;
+        _useMobileQuality = logicalWidth < 600;
+      }
+    } else {
+      final result = await Connectivity().checkConnectivity();
+      _useMobileQuality = !result.contains(ConnectivityResult.wifi) &&
+          !result.contains(ConnectivityResult.ethernet);
+    }
 
     if (!mounted) return;
     final forwardUrl = _useMobileQuality
         ? widget.provider.forwardMobileUrl(widget.trickId)
         : widget.provider.forwardUrl(widget.trickId);
 
+    await _configureMpvForStreaming(_forwardPlayer);
     _forwardPlayer.open(Media(forwardUrl.toString()), play: true);
+    _forwardPlayer.setPlaylistMode(PlaylistMode.loop);
     _controller.play();
     // Reversed video is opened lazily on first direction toggle to save mobile bandwidth.
   }
@@ -181,8 +210,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _forwardPositionSub.cancel();
     _reversedPositionSub.cancel();
     _durationSub.cancel();
-    _forwardCompletedSub.cancel();
-    _reversedCompletedSub.cancel();
     _forwardPlayingSub.cancel();
     _reversedPlayingSub.cancel();
     _forwardBufferingSub.cancel();
@@ -244,7 +271,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final reversedUrl = _useMobileQuality
           ? widget.provider.reversedMobileUrl(widget.trickId)
           : widget.provider.reversedUrl(widget.trickId);
+      await _configureMpvForStreaming(_reversedPlayer);
       await _reversedPlayer.open(Media(reversedUrl.toString()), play: false);
+      await _reversedPlayer.setPlaylistMode(PlaylistMode.loop);
     }
 
     await _activePlayer.seek(_controller.state.fileSeekPosition);
@@ -514,6 +543,27 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
             if (!_loading && _buffering)
               const Positioned.fill(
                 child: Center(child: CircularProgressIndicator()),
+              ),
+            if (kDebugMode && !_loading)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _useMobileQuality ? 'mobile' : 'full',
+                    style: TextStyle(
+                      color: _useMobileQuality ? Colors.orange : Colors.greenAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
               ),
             Positioned(
               left: 0,

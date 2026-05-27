@@ -430,16 +430,31 @@ public partial class MainWindow : Window
     }
 
     private static string BuildArgs(string input, double start, double end, string output, bool reverse, bool mobile = false)
+{
+    string codec, crf, preset, codecParams;
+
+    if (mobile)
     {
-        var scale = mobile ? ",scale=720:1280" : "";
-        var crf   = mobile ? 26 : 18;
-
-        var vf = reverse
-            ? $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale},reverse"
-            : $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale}";
-
-        return $"-y -i \"{input}\" -vf \"{vf}\" -c:v libx264 -crf {crf} -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an \"{output}\"";
+        codec       = "libx264";
+        crf         = "26";
+        preset      = "veryslow";
+        codecParams = "-profile:v high -level:v 4.1 -g 30 -keyint_min 30 -sc_threshold 0";
     }
+    else
+    {
+        codec       = "libx264";
+        crf         = "18";
+        preset      = "veryslow";
+        codecParams = "-g 30 -keyint_min 30 -sc_threshold 0";
+    }
+
+    var scale = mobile ? ",scale=720:1280" : "";
+    var vf = reverse
+        ? $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale},reverse"
+        : $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale}";
+
+    return $"-y -i \"{input}\" -vf \"{vf}\" -c:v {codec} -crf {crf} -preset {preset} {codecParams} -r 60 -an \"{output}\"";
+}
 
     private static async Task RunFfmpegAsync(string args, CancellationToken ct = default)
     {
