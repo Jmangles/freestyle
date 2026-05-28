@@ -4,6 +4,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import '../constants/layout_constants.dart';
+import '../constants/playback_constants.dart';
+import '../utils/date_formatters.dart';
 import '../utils/web_connection.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
@@ -14,6 +17,7 @@ import '../services/auth_service.dart';
 import '../video/playback_direction.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
+import '../widgets/annotation_widgets.dart';
 import '../widgets/back_home_leading.dart';
 
 class TrainingStudioScreen extends StatefulWidget {
@@ -100,12 +104,12 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     // the renderer's true EOF was mis-classified as false EOF.
     //
     // Debounce: calling play() at a keep-open EOF causes an immediate
-    // re-completion event.  We collapse any bursts within 300 ms so the first
-    // event drives the decision and subsequent ones are ignored.
+    // re-completion event.  We collapse any bursts within kEofDebounce so the
+    // first event drives the decision and subsequent ones are ignored.
     _forwardCompletedSub = _forwardPlayer.stream.completed.listen((done) {
       if (!done || _forwardLooping) return;
       final total = _controller.state.totalDuration;
-      if (total < const Duration(seconds: 1)) return;
+      if (total < kEofTolerance) return;
       final now = DateTime.now();
       // ctrlPos  = last value our stream subscription recorded (may be stale).
       // playerPos = value held directly in the Player object (updated first).
@@ -113,7 +117,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final ctrlPos   = _controller.state.position;
       final playerPos = _forwardPlayer.state.position;
       if (_lastForwardCompletedAt != null &&
-          now.difference(_lastForwardCompletedAt!) < const Duration(milliseconds: 300)) {
+          now.difference(_lastForwardCompletedAt!) < kEofDebounce) {
         if (kDebugMode) {
           _dbgFwdDebounced++;
           _dbgEvent('FWD debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}');
@@ -122,7 +126,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       }
       _lastForwardCompletedAt = now;
       if (kDebugMode) _dbgFwdFired++;
-      if (ctrlPos < total - const Duration(seconds: 1)) {
+      if (ctrlPos < total - kEofTolerance) {
         if (kDebugMode) {
           _dbgFwdFalseEof++;
           _dbgEvent('FWD false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
@@ -145,19 +149,19 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _reversedCompletedSub = _reversedPlayer.stream.completed.listen((done) {
       if (!done || _reversedLooping) return;
       final total = _controller.state.totalDuration;
-      if (total < const Duration(seconds: 1)) return;
+      if (total < kEofTolerance) return;
       final now = DateTime.now();
       final ctrlPos   = _controller.state.position;
       final playerPos = _reversedPlayer.state.position;
       if (_lastReversedCompletedAt != null &&
-          now.difference(_lastReversedCompletedAt!) < const Duration(milliseconds: 300)) {
+          now.difference(_lastReversedCompletedAt!) < kEofDebounce) {
         if (kDebugMode) _dbgEvent('REV debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}');
         return;
       }
       _lastReversedCompletedAt = now;
       // For the reversed file, filePos = total − trickTime, so real EOF is
-      // trickTime ≈ 0.  False EOF is trickTime > 1 s (file still far from end).
-      if (ctrlPos > const Duration(seconds: 1)) {
+      // trickTime ≈ 0.  False EOF is trickTime > kEofTolerance (file still far from end).
+      if (ctrlPos > kEofTolerance) {
         if (kDebugMode) _dbgEvent('REV false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
         // False EOF — demuxer hit network EOF but buffered frames remain.
         _reversedPlayer.play();
@@ -185,12 +189,12 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       if (_controller.state.direction != PlaybackDirection.forward) return;
       final prev = _controller.state.position;
       if (!_forwardLooping &&
-          prev > const Duration(milliseconds: 500) &&
-          pos < prev - const Duration(milliseconds: 300)) {
+          prev > kJumpMinPrev &&
+          pos < prev - kEofDebounce) {
         final total = _controller.state.totalDuration;
         final isEofLoop = total > Duration.zero &&
-            prev >= total - const Duration(seconds: 1) &&
-            pos < const Duration(milliseconds: 100);
+            prev >= total - kEofTolerance &&
+            pos < kNearStartThreshold;
         if (isEofLoop) {
           // keep-open reset position before our completed handler ran; claim
           // the loop now so the pending completed event exits early.
@@ -202,7 +206,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
               ' loop=$_forwardLooping eofLoop=$isEofLoop');
         }
       }
-      if (_forwardLooping && pos > const Duration(milliseconds: 200)) {
+      if (_forwardLooping && pos > kLoopClearThreshold) {
         _forwardLooping = false;
       }
       _controller.updatePosition(pos);
@@ -213,7 +217,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _reversedPositionSub = _reversedPlayer.stream.position.listen((pos) {
       if (_controller.state.direction != PlaybackDirection.reversed) return;
       if (_controller.state.totalDuration == Duration.zero) return;
-      if (_reversedLooping && pos > const Duration(milliseconds: 200)) {
+      if (_reversedLooping && pos > kLoopClearThreshold) {
         _reversedLooping = false;
       }
       _controller.updatePosition(_controller.state.totalDuration - pos);
@@ -270,11 +274,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       // static type error. The try-catch handles platforms without the method.
       final dynamic native = player.platform;
       await native.setProperty('cache', 'yes');
-      await native.setProperty('demuxer-max-bytes', '67108864');      // 64 MB forward
-      await native.setProperty('demuxer-max-back-bytes', '67108864'); // 64 MB backward — seek(0) on loop served from memory, no re-download
+      await native.setProperty('demuxer-max-bytes', kMpvCacheBytes);
+      await native.setProperty('demuxer-max-back-bytes', kMpvCacheBytes); // seek(0) on loop served from memory
       await native.setProperty('cache-pause', 'yes');   // stall instead of false-EOF when buffer runs dry mid-stream
-      await native.setProperty('keep-open', 'yes');     // pause at EOF instead of stopping — safe because we play from local files, not HTTP streams
-      await native.setProperty('network-timeout', '20');
+      await native.setProperty('keep-open', 'yes');     // pause at EOF instead of stopping
+      await native.setProperty('network-timeout', kMpvNetworkTimeout);
     } catch (_) {}
   }
 
@@ -288,7 +292,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         // API absent (Firefox/Safari) — fall back to screen width as a proxy.
         final view = WidgetsBinding.instance.platformDispatcher.implicitView!;
         final logicalWidth = view.physicalSize.width / view.devicePixelRatio;
-        _useMobileQuality = logicalWidth < 600;
+        _useMobileQuality = logicalWidth < kMobileWidthBreakpoint;
       }
     } else {
       final result = await Connectivity().checkConnectivity();
@@ -348,24 +352,30 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       } finally {
         client.close();
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('TrainingStudio._downloadToTemp failed, falling back to stream: $e\n$st');
       return url;
     }
   }
 
   Future<void> _loadAnnotationsAndProfile() async {
-    final language = WidgetsBinding
-        .instance.platformDispatcher.locale.languageCode;
-    final annotationsFuture =
-        AnnotationsService.getForTrick(widget.trickId, language);
-    final profileFuture = AuthService.getCurrentProfile();
-    final annotations = await annotationsFuture;
-    final profile = await profileFuture;
-    if (mounted) {
-      setState(() {
-        _annotations = annotations;
-        _isEditor = profile?.canEditTricks == true;
-      });
+    try {
+      final language = WidgetsBinding
+          .instance.platformDispatcher.locale.languageCode;
+      final annotationsFuture =
+          AnnotationsService.getForTrick(widget.trickId, language);
+      final profileFuture = AuthService.getCurrentProfile();
+      final annotations = await annotationsFuture;
+      final profile = await profileFuture;
+      if (mounted) {
+        setState(() {
+          _annotations = annotations;
+          _isEditor = profile?.canEditTricks == true;
+        });
+      }
+    } catch (e, st) {
+      debugPrint('TrainingStudio._loadAnnotationsAndProfile: $e\n$st');
+      // Annotations are non-critical — the player continues working without them.
     }
   }
 
@@ -475,7 +485,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                   const Spacer(),
                   FilledButton.icon(
                     icon: const Icon(Icons.add),
-                    label: Text('Add at ${_fmt(_controller.state.position)}'),
+                    label: Text('Add at ${formatDuration(_controller.state.position)}'),
                     onPressed: () {
                       Navigator.pop(ctx);
                       _showAddAnnotationDialog();
@@ -498,7 +508,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                     return ListTile(
                       title: Text(a.text),
                       subtitle: Text(
-                          '${_fmt(Duration(milliseconds: a.startMs))} – ${_fmt(Duration(milliseconds: a.endMs))}'),
+                          '${formatDuration(Duration(milliseconds: a.startMs))} – ${formatDuration(Duration(milliseconds: a.endMs))}'),
                       onTap: () {
                         Navigator.pop(ctx);
                         _setSpeed(0.25);
@@ -555,7 +565,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   Future<void> _showAddAnnotationDialog() async {
     final totalMs = _controller.state.totalDuration.inMilliseconds;
     final startMs = _controller.state.position.inMilliseconds;
-    final endMs = (startMs + 2000).clamp(0, totalMs);
+    final endMs = (startMs + kAnnotationDefaultDurationMs).clamp(0, totalMs);
     final result = await _showAnnotationDialog(
         startMs: startMs, endMs: endMs, text: '', language: 'en');
     if (result == null || !mounted) return;
@@ -813,10 +823,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 360 (sidebar) + a minimum usable video width — overlay on narrow screens.
-        const kBreakpoint = 1280.0;
-
-        if (constraints.maxWidth < kBreakpoint) {
+        if (constraints.maxWidth < kAnnotationSidebarBreakpoint) {
           return Stack(
             children: [
               Positioned.fill(child: videoStack),
@@ -825,7 +832,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 right: 0,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: constraints.maxHeight - 32),
-                  child: _MobileAnnotationOverlay(
+                  child: MobileAnnotationOverlay(
                     annotations: _annotations,
                     position: position,
                     onTap: onAnnotationTap,
@@ -842,7 +849,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
             Expanded(child: videoStack),
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: _AnnotationSidebar(
+              child: AnnotationSidebar(
                 annotations: _annotations,
                 position: position,
                 onTap: onAnnotationTap,
@@ -894,7 +901,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                       Positioned.fill(
                         child: IgnorePointer(
                           child: CustomPaint(
-                            painter: _AnnotationDotPainter(
+                            painter: AnnotationDotPainter(
                               annotations: _annotations,
                               totalMs: totalMs,
                               color: Theme.of(context).colorScheme.primary,
@@ -908,7 +915,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Text(
-                  '${_fmt(state.position)} / ${_fmt(state.totalDuration)}',
+                  '${formatDuration(state.position)} / ${formatDuration(state.totalDuration)}',
                   style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ),
@@ -990,348 +997,5 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (_dbgLog.length > 12) _dbgLog.removeAt(0);
     debugPrint('[TS] $msg');
     if (mounted) setState(() {});
-  }
-
-  static String _fmt(Duration d) {
-    final m = d.inMinutes;
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-}
-
-class _AnnotationDotPainter extends CustomPainter {
-  final List<TrickAnnotation> annotations;
-  final int totalMs;
-  final Color color;
-
-  // Flutter's default RoundSliderOverlayShape has overlayRadius 12, which
-  // becomes the horizontal inset of the track inside the Slider widget.
-  static const double _trackPadding = 12.0;
-  static const double _dotRadius = 4.0;
-
-  const _AnnotationDotPainter({
-    required this.annotations,
-    required this.totalMs,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (totalMs == 0) return;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    final trackWidth = size.width - _trackPadding * 2;
-    final centerY = size.height / 2;
-    for (final a in annotations) {
-      final x = (_trackPadding + a.startMs / totalMs * trackWidth)
-          .clamp(_trackPadding, size.width - _trackPadding);
-      canvas.drawCircle(Offset(x, centerY), _dotRadius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_AnnotationDotPainter old) =>
-      annotations != old.annotations || totalMs != old.totalMs;
-}
-
-class _AnnotationSidebar extends StatefulWidget {
-  final List<TrickAnnotation> annotations;
-  final Duration position;
-  final void Function(TrickAnnotation) onTap;
-
-  const _AnnotationSidebar({
-    required this.annotations,
-    required this.position,
-    required this.onTap,
-  });
-
-  @override
-  State<_AnnotationSidebar> createState() => _AnnotationSidebarState();
-}
-
-class _AnnotationSidebarState extends State<_AnnotationSidebar> {
-  bool _expanded = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = [...widget.annotations]
-      ..sort((a, b) => a.startMs.compareTo(b.startMs));
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      width: _expanded ? 288 : 43,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        alignment: Alignment.topCenter,
-        child: _expanded ? _buildExpanded(sorted) : _buildCollapsed(),
-      ),
-    );
-  }
-
-  Widget _buildCollapsed() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 10),
-        IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.white54),
-          iconSize: 24,
-          padding: EdgeInsets.zero,
-          tooltip: 'Show annotations',
-          onPressed: () => setState(() => _expanded = true),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExpanded(List<TrickAnnotation> sorted) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 5, 5),
-          child: Row(
-            children: [
-              const Text(
-                'ANNOTATIONS',
-                style: TextStyle(
-                    color: Colors.white38, fontSize: 12, letterSpacing: 1.2),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white38),
-                iconSize: 22,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Hide annotations',
-                onPressed: () => setState(() => _expanded = false),
-              ),
-            ],
-          ),
-        ),
-        Builder(builder: (context) {
-            final activeId = sorted
-                .where((a) => a.isActiveAt(widget.position))
-                .fold<TrickAnnotation?>(
-                  null,
-                  (best, a) =>
-                      best == null || a.startMs >= best.startMs ? a : best,
-                )
-                ?.id;
-            return ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 16),
-            itemCount: sorted.length,
-            separatorBuilder: (context, i) => Divider(
-              height: 1,
-              thickness: 1,
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
-            itemBuilder: (context, i) {
-              final a = sorted[i];
-              final isActive = a.id == activeId;
-              return GestureDetector(
-                onTap: () => widget.onTap(a),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.85)
-                        : Colors.white.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        a.text,
-                        style: TextStyle(
-                          color: isActive ? Colors.black : Colors.white,
-                          fontSize: 14,
-                          fontWeight: isActive
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_fmtMs(a.startMs)} – ${_fmtMs(a.endMs)}',
-                        style: TextStyle(
-                          color: isActive
-                              ? Colors.black.withValues(alpha: 0.7)
-                              : Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-          }),
-      ],
-    );
-  }
-
-  static String _fmtMs(int ms) {
-    final d = Duration(milliseconds: ms);
-    final m = d.inMinutes;
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-}
-
-class _MobileAnnotationOverlay extends StatefulWidget {
-  final List<TrickAnnotation> annotations;
-  final Duration position;
-  final void Function(TrickAnnotation) onTap;
-
-  const _MobileAnnotationOverlay({
-    required this.annotations,
-    required this.position,
-    required this.onTap,
-  });
-
-  @override
-  State<_MobileAnnotationOverlay> createState() => _MobileAnnotationOverlayState();
-}
-
-class _MobileAnnotationOverlayState extends State<_MobileAnnotationOverlay> {
-  bool _expanded = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = [...widget.annotations]..sort((a, b) => a.startMs.compareTo(b.startMs));
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8, bottom: 4),
-          child: GestureDetector(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _expanded ? Icons.chevron_right : Icons.chevron_left,
-                color: Colors.white54,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          clipBehavior: Clip.hardEdge,
-          child: _expanded
-              ? SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      for (final a in sorted)
-                        _MobileAnnotationChip(
-                          annotation: a,
-                          isActive: a.isActiveAt(widget.position),
-                          onTap: () => widget.onTap(a),
-                        ),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-}
-
-class _MobileAnnotationChip extends StatelessWidget {
-  final TrickAnnotation annotation;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _MobileAnnotationChip({
-    required this.annotation,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  static String _fmtMs(int ms) {
-    final d = Duration(milliseconds: ms);
-    final m = d.inMinutes;
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = isActive ? Colors.black : Colors.white;
-    final timeColor = isActive ? Colors.black54 : Colors.white38;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8, bottom: 4),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          width: 180,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.92)
-                : Colors.black.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            alignment: Alignment.topCenter,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  annotation.text,
-                  maxLines: isActive ? null : 2,
-                  overflow: isActive ? TextOverflow.visible : TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${_fmtMs(annotation.startMs)} – ${_fmtMs(annotation.endMs)}',
-                  style: TextStyle(color: timeColor, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

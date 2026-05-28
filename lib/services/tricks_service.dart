@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/approval_status.dart';
 import '../models/trick.dart';
@@ -14,107 +15,188 @@ class TricksService {
       'end_position:positions!end_position_id(name)';
 
   static Future<List<Trick>> getApprovedTricks() async {
-    final data = await _client
-        .from('tricks')
-        .select(_select)
-        .eq('status', ApprovalStatus.approved.index)
-        .order('given_name');
-    return (data as List).map((e) => Trick.fromJson(e)).toList();
+    try {
+      final data = await _client
+          .from('tricks')
+          .select(_select)
+          .eq('status', ApprovalStatus.approved.index)
+          .order('given_name');
+      return (data as List).map((e) => Trick.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getApprovedTricks: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<Trick> getTrickById(int id) async {
-    final data =
-        await _client.from('tricks').select(_select).eq('id', id).single();
-    return Trick.fromJson(data);
+    try {
+      final data =
+          await _client.from('tricks').select(_select).eq('id', id).single();
+      return Trick.fromJson(data);
+    } catch (e, st) {
+      debugPrint('TricksService.getTrickById($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<List<Trick>> getTricksByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
-    final data = await _client
-        .from('tricks')
-        .select(_select)
-        .inFilter('id', ids);
-    return (data as List).map((e) => Trick.fromJson(e)).toList();
+    try {
+      final data = await _client
+          .from('tricks')
+          .select(_select)
+          .inFilter('id', ids);
+      return (data as List).map((e) => Trick.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getTricksByIds: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<List<Trick>> getTricksRequiring(int trickId) async {
-    final data = await _client
-        .from('tricks')
-        .select(_select)
-        .eq('status', ApprovalStatus.approved.index)
-        .contains('prerequisite_trick_ids', [trickId]);
-    return (data as List).map((e) => Trick.fromJson(e)).toList();
+    try {
+      final data = await _client
+          .from('tricks')
+          .select(_select)
+          .eq('status', ApprovalStatus.approved.index)
+          .contains('prerequisite_trick_ids', [trickId]);
+      return (data as List).map((e) => Trick.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getTricksRequiring($trickId): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<List<Trick>> getPendingTricks() async {
-    final data = await _client
-        .from('tricks')
-        .select(_select)
-        .eq('status', ApprovalStatus.pending.index)
-        .order('date_submitted');
-    return (data as List).map((e) => Trick.fromJson(e)).toList();
+    try {
+      final data = await _client
+          .from('tricks')
+          .select(_select)
+          .eq('status', ApprovalStatus.pending.index)
+          .order('date_submitted');
+      return (data as List).map((e) => Trick.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getPendingTricks: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> submitTrick(Trick trick) async {
-    final profile = await AuthService.getCurrentProfile();
-    if (profile == null) return;
-    await _client.from('tricks').insert({
-      ...trick.toInsertJson(),
-      'submitted_by': profile.intId,
-    });
+    try {
+      final profile = await AuthService.getCurrentProfile();
+      if (profile == null) {
+        debugPrint('TricksService.submitTrick: no authenticated profile');
+        return;
+      }
+      await _client.from('tricks').insert({
+        ...trick.toInsertJson(),
+        'submitted_by': profile.intId,
+      });
+    } catch (e, st) {
+      debugPrint('TricksService.submitTrick: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> updateTrickStatus(int id, ApprovalStatus status) async {
-    await _client.from('tricks').update({'status': status.index}).eq('id', id);
+    try {
+      await _client.from('tricks').update({'status': status.index}).eq('id', id);
+    } catch (e, st) {
+      debugPrint('TricksService.updateTrickStatus($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> updateTrick(
       int id, Map<String, dynamic> updates) async {
-    await _client.from('tricks').update(updates).eq('id', id);
+    try {
+      await _client.from('tricks').update(updates).eq('id', id);
+    } catch (e, st) {
+      debugPrint('TricksService.updateTrick($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<List<Position>> getPositions() async {
-    final data =
-        await _client.from('positions').select().order('name');
-    return (data as List).map((e) => Position.fromJson(e)).toList();
+    try {
+      final data =
+          await _client.from('positions').select().order('name');
+      return (data as List).map((e) => Position.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getPositions: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> addPosition(String name) async {
-    await _client.from('positions').insert({'name': name});
+    try {
+      await _client.from('positions').insert({'name': name});
+    } catch (e, st) {
+      debugPrint('TricksService.addPosition($name): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> deleteTrick(int id) async {
-    await _client.from('tricks').delete().eq('id', id);
+    try {
+      await _client.from('tricks').delete().eq('id', id);
+    } catch (e, st) {
+      debugPrint('TricksService.deleteTrick($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> submitTrickSuggestion({
     required int trickId,
     required Map<String, dynamic> fields,
   }) async {
-    final profile = await AuthService.getCurrentProfile();
-    if (profile == null) return;
-    await _client.from('trick_suggestions').insert({
-      'trick_id': trickId,
-      ...fields,
-      'submitted_by': profile.intId,
-    });
+    try {
+      final profile = await AuthService.getCurrentProfile();
+      if (profile == null) {
+        debugPrint('TricksService.submitTrickSuggestion: no authenticated profile');
+        return;
+      }
+      await _client.from('trick_suggestions').insert({
+        'trick_id': trickId,
+        ...fields,
+        'submitted_by': profile.intId,
+      });
+    } catch (e, st) {
+      debugPrint('TricksService.submitTrickSuggestion(trickId=$trickId): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<List<TrickSuggestion>> getPendingSuggestions() async {
-    final data = await _client
-        .from('trick_suggestions')
-        .select(_select)
-        .order('date_submitted');
-    return (data as List).map((e) => TrickSuggestion.fromJson(e)).toList();
+    try {
+      final data = await _client
+          .from('trick_suggestions')
+          .select(_select)
+          .order('date_submitted');
+      return (data as List).map((e) => TrickSuggestion.fromJson(e)).toList();
+    } catch (e, st) {
+      debugPrint('TricksService.getPendingSuggestions: $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> deleteSuggestion(int id) async {
-    await _client.from('trick_suggestions').delete().eq('id', id);
+    try {
+      await _client.from('trick_suggestions').delete().eq('id', id);
+    } catch (e, st) {
+      debugPrint('TricksService.deleteSuggestion($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> approveSuggestion(TrickSuggestion suggestion) async {
-    final delta = suggestion.toDeltaJson();
-    if (delta.isNotEmpty) await updateTrick(suggestion.trickId, delta);
-    await deleteSuggestion(suggestion.id);
+    try {
+      final delta = suggestion.toDeltaJson();
+      if (delta.isNotEmpty) await updateTrick(suggestion.trickId, delta);
+      await deleteSuggestion(suggestion.id);
+    } catch (e, st) {
+      debugPrint('TricksService.approveSuggestion(${suggestion.id}): $e\n$st');
+      rethrow;
+    }
   }
 }

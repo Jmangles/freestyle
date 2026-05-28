@@ -7,7 +7,7 @@ import '../models/trick.dart';
 import '../models/position.dart';
 import '../services/tricks_service.dart';
 import '../utils/date_formatters.dart';
-import '../utils/string_utils.dart';
+import 'trick_form_controller.dart';
 
 class SubmitTrickScreen extends StatefulWidget {
   /// When provided, operates in admin-edit mode instead of submission mode.
@@ -27,21 +27,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
 
-  late final TextEditingController _givenName;
-  late final TextEditingController _technicalName;
-  late final TextEditingController _originalPerformer;
-  late final TextEditingController _description;
-  late final TextEditingController _tips;
-  late final TextEditingController _videoLink;
-  late final TextEditingController _videoStart;
-  late final TextEditingController _videoEnd;
-  int _difficultyTier = -1;
-  DateTime? _datePerformed;
-  int? _startPositionId;
-  int? _endPositionId;
-  List<int> _prerequisiteIds = [];
-  bool _isCore = false;
-
+  late final TrickFormController _form;
   late Future<SubmitMeta> _metaFuture;
   late final VoidCallback _nameListener;
 
@@ -51,29 +37,13 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   @override
   void initState() {
     super.initState();
-    final t = widget.existingTrick ?? widget.suggestionForTrick;
-    _givenName = TextEditingController(text: t?.givenName);
-    _technicalName = TextEditingController(text: t?.technicalName);
-    _originalPerformer = TextEditingController(text: t?.originalPerformer);
-    _description = TextEditingController(text: t?.description);
-    _tips = TextEditingController(text: t?.tips);
-    _videoLink = TextEditingController(text: t?.videoLink);
-    _videoStart = TextEditingController(
-        text: t?.videoStart != null ? '${t!.videoStart}' : '');
-    _videoEnd = TextEditingController(
-        text: t?.videoEnd != null ? '${t!.videoEnd}' : '');
-    if (t != null) {
-      _difficultyTier = t.difficultyTier;
-      _datePerformed = t.datePerformed;
-      _startPositionId = t.startPositionId;
-      _endPositionId = t.endPositionId;
-      _prerequisiteIds = List.from(t.prerequisiteTrickIds);
-    }
-    _isCore = widget.existingTrick?.isCore ?? false;
+    _form = TrickFormController.fromTrick(
+        widget.existingTrick ?? widget.suggestionForTrick);
+    if (widget.existingTrick != null) _form.isCore = widget.existingTrick!.isCore;
     _metaFuture = _loadMeta();
     _nameListener = () => setState(() {});
-    _givenName.addListener(_nameListener);
-    _technicalName.addListener(_nameListener);
+    _form.givenName.addListener(_nameListener);
+    _form.technicalName.addListener(_nameListener);
   }
 
   Future<SubmitMeta> _loadMeta() async {
@@ -84,81 +54,10 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
 
   @override
   void dispose() {
-    _givenName.removeListener(_nameListener);
-    _technicalName.removeListener(_nameListener);
-    _givenName.dispose();
-    _technicalName.dispose();
-    _originalPerformer.dispose();
-    _description.dispose();
-    _tips.dispose();
-    _videoLink.dispose();
-    _videoStart.dispose();
-    _videoEnd.dispose();
+    _form.givenName.removeListener(_nameListener);
+    _form.technicalName.removeListener(_nameListener);
+    _form.dispose();
     super.dispose();
-  }
-
-  Map<String, dynamic> get _formFields => {
-        'given_name': _givenName.text.trim(),
-        'technical_name': trimToNull(_technicalName.text),
-        'difficulty_tier': _difficultyTier,
-        'date_performed': _datePerformed?.toIso8601String().split('T').first,
-        'original_performer': trimToNull(_originalPerformer.text),
-        'prerequisite_trick_ids': _prerequisiteIds,
-        'description': trimToNull(_description.text),
-        'tips': trimToNull(_tips.text),
-        'video_link': trimToNull(_videoLink.text),
-        'video_start': int.tryParse(_videoStart.text.trim()),
-        'video_end': int.tryParse(_videoEnd.text.trim()),
-        'start_position_id': _startPositionId,
-        'end_position_id': _endPositionId,
-        'flags': _isCore ? 1 : 0,
-      };
-
-  /// Compares form values against [original] and returns only changed,
-  /// non-null fields. Null values are excluded because the sparse table
-  /// uses null to mean "no change".
-  Map<String, dynamic> _computeSuggestionDelta(Trick original) {
-    final fields = <String, dynamic>{};
-
-    final name = _givenName.text.trim();
-    if (name.isNotEmpty && name != original.givenName) fields['given_name'] = name;
-
-    final techName = trimToNull(_technicalName.text);
-    if (techName != null && techName != original.technicalName) fields['technical_name'] = techName;
-
-    if (_difficultyTier != original.difficultyTier) fields['difficulty_tier'] = _difficultyTier;
-
-    final origDate = original.datePerformed?.toIso8601String().split('T').first;
-    final suggestedDate = _datePerformed?.toIso8601String().split('T').first;
-    if (suggestedDate != null && suggestedDate != origDate) fields['date_performed'] = suggestedDate;
-
-    final performer = trimToNull(_originalPerformer.text);
-    if (performer != null && performer != original.originalPerformer) fields['original_performer'] = performer;
-
-    final prereqsChanged =
-        _prerequisiteIds.length != original.prerequisiteTrickIds.length ||
-        !_prerequisiteIds.toSet().containsAll(original.prerequisiteTrickIds);
-    if (prereqsChanged) fields['prerequisite_trick_ids'] = _prerequisiteIds;
-
-    final desc = trimToNull(_description.text);
-    if (desc != null && desc != original.description) fields['description'] = desc;
-
-    final tips = trimToNull(_tips.text);
-    if (tips != null && tips != original.tips) fields['tips'] = tips;
-
-    final video = trimToNull(_videoLink.text);
-    if (video != null && video != original.videoLink) fields['video_link'] = video;
-
-    final start = int.tryParse(_videoStart.text.trim());
-    if (start != null && start != original.videoStart) fields['video_start'] = start;
-
-    final end = int.tryParse(_videoEnd.text.trim());
-    if (end != null && end != original.videoEnd) fields['video_end'] = end;
-
-    if (_startPositionId != null && _startPositionId != original.startPositionId) fields['start_position_id'] = _startPositionId;
-    if (_endPositionId != null && _endPositionId != original.endPositionId) fields['end_position_id'] = _endPositionId;
-
-    return fields;
   }
 
   Future<void> _submit() async {
@@ -166,9 +65,9 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
     setState(() => _loading = true);
     try {
       if (_isEditing) {
-        await TricksService.updateTrick(widget.existingTrick!.id, _formFields);
+        await TricksService.updateTrick(widget.existingTrick!.id, _form.formFields);
       } else if (_isSuggesting) {
-        final delta = _computeSuggestionDelta(widget.suggestionForTrick!);
+        final delta = _form.computeSuggestionDelta(widget.suggestionForTrick!);
         if (delta.isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -185,20 +84,20 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       } else {
         final trick = Trick(
           id: 0,
-          givenName: _givenName.text.trim(),
-          technicalName: trimToNull(_technicalName.text),
-          difficultyTier: _difficultyTier,
+          givenName: _form.givenName.text.trim(),
+          technicalName: _form.formFields['technical_name'] as String?,
+          difficultyTier: _form.difficultyTier,
           dateSubmitted: DateTime.now(),
-          datePerformed: _datePerformed,
-          originalPerformer: trimToNull(_originalPerformer.text),
-          prerequisiteTrickIds: _prerequisiteIds,
-          description: trimToNull(_description.text),
-          tips: trimToNull(_tips.text),
-          videoLink: trimToNull(_videoLink.text),
-          videoStart: int.tryParse(_videoStart.text.trim()),
-          videoEnd: int.tryParse(_videoEnd.text.trim()),
-          startPositionId: _startPositionId,
-          endPositionId: _endPositionId,
+          datePerformed: _form.datePerformed,
+          originalPerformer: _form.formFields['original_performer'] as String?,
+          prerequisiteTrickIds: _form.prerequisiteIds,
+          description: _form.formFields['description'] as String?,
+          tips: _form.formFields['tips'] as String?,
+          videoLink: _form.formFields['video_link'] as String?,
+          videoStart: _form.formFields['video_start'] as int?,
+          videoEnd: _form.formFields['video_end'] as int?,
+          startPositionId: _form.startPositionId,
+          endPositionId: _form.endPositionId,
           status: ApprovalStatus.pending,
         );
         await TricksService.submitTrick(trick);
@@ -261,17 +160,17 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _field(context, _givenName, l10n.givenNameLabel, required: true),
+            _field(context, _form.givenName, l10n.givenNameLabel, required: true),
             const SizedBox(height: 12),
-            _field(context, _technicalName, l10n.technicalNameLabel),
+            _field(context, _form.technicalName, l10n.technicalNameLabel),
             if (!_isEditing) _SimilarTricksWarning(
-              givenQuery: _givenName.text.trim(),
-              technicalQuery: _technicalName.text.trim(),
+              givenQuery: _form.givenName.text.trim(),
+              technicalQuery: _form.technicalName.text.trim(),
               allTricks: allTricks,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
-              initialValue: _difficultyTier,
+              initialValue: _form.difficultyTier,
               decoration: InputDecoration(
                 labelText: l10n.difficultyRequiredLabel,
                 border: const OutlineInputBorder(),
@@ -281,12 +180,12 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 for (int v = 1; v <= 30; v++)
                   DropdownMenuItem(value: v, child: Text(Trick.tierLabel(v))),
               ],
-              onChanged: (v) => setState(() => _difficultyTier = v!),
+              onChanged: (v) => setState(() => _form.difficultyTier = v!),
               validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int?>(
-              initialValue: _startPositionId,
+              initialValue: _form.startPositionId,
               decoration: InputDecoration(
                   labelText: l10n.startPositionRequiredLabel,
                   border: const OutlineInputBorder()),
@@ -295,12 +194,12 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
-              onChanged: (v) => setState(() => _startPositionId = v),
+              onChanged: (v) => setState(() => _form.startPositionId = v),
               validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int?>(
-              initialValue: _endPositionId,
+              initialValue: _form.endPositionId,
               decoration: InputDecoration(
                   labelText: l10n.endPositionRequiredLabel,
                   border: const OutlineInputBorder()),
@@ -309,23 +208,23 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 ...sortedPositions.map((p) =>
                     DropdownMenuItem(value: p.id, child: Text(p.name))),
               ],
-              onChanged: (v) => setState(() => _endPositionId = v),
+              onChanged: (v) => setState(() => _form.endPositionId = v),
               validator: (v) => v == null ? l10n.requiredValidator : null,
             ),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(_datePerformed == null
+              title: Text(_form.datePerformed == null
                   ? l10n.dateFirstPerformedOptional
-                  : l10n.dateFirstPerformedWithDate(formatDisplayDate(_datePerformed!))),
+                  : l10n.dateFirstPerformedWithDate(formatDisplayDate(_form.datePerformed!))),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_datePerformed != null)
+                  if (_form.datePerformed != null)
                     IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: () =>
-                          setState(() => _datePerformed = null),
+                          setState(() => _form.datePerformed = null),
                     ),
                   IconButton(
                     icon: const Icon(Icons.calendar_today),
@@ -335,28 +234,28 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            _field(context, _originalPerformer, l10n.originalPerformerLabel),
+            _field(context, _form.originalPerformer, l10n.originalPerformerLabel),
             const SizedBox(height: 12),
             _PrerequisiteSelector(
               allTricks: allTricks
                   .where((t) =>
                       !_isEditing || t.id != widget.existingTrick!.id)
                   .toList(),
-              selectedIds: _prerequisiteIds,
-              onChanged: (ids) => setState(() => _prerequisiteIds = ids),
+              selectedIds: _form.prerequisiteIds,
+              onChanged: (ids) => setState(() => _form.prerequisiteIds = ids),
             ),
             const SizedBox(height: 12),
-            _field(context, _description, l10n.descriptionLabel, maxLines: 4),
+            _field(context, _form.description, l10n.descriptionLabel, maxLines: 4),
             const SizedBox(height: 12),
-            _field(context, _tips, l10n.tipsLabel, maxLines: 4),
+            _field(context, _form.tips, l10n.tipsLabel, maxLines: 4),
             const SizedBox(height: 12),
-            _field(context, _videoLink, l10n.videoLinkUrlLabel),
+            _field(context, _form.videoLink, l10n.videoLinkUrlLabel),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _videoStart,
+                    controller: _form.videoStart,
                     decoration: InputDecoration(
                       labelText: l10n.loopStartLabel,
                       border: const OutlineInputBorder(),
@@ -367,7 +266,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    controller: _videoEnd,
+                    controller: _form.videoEnd,
                     decoration: InputDecoration(
                       labelText: l10n.loopEndLabel,
                       border: const OutlineInputBorder(),
@@ -383,8 +282,8 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.coreTrickLabel),
                 subtitle: Text(l10n.coreTrickSubtitle),
-                value: _isCore,
-                onChanged: (v) => setState(() => _isCore = v),
+                value: _form.isCore,
+                onChanged: (v) => setState(() => _form.isCore = v),
               ),
             ],
             const SizedBox(height: 24),
@@ -410,11 +309,11 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _datePerformed ?? DateTime.now(),
+      initialDate: _form.datePerformed ?? DateTime.now(),
       firstDate: DateTime(1990),
       lastDate: DateTime.now(),
     );
-    if (picked != null) setState(() => _datePerformed = picked);
+    if (picked != null) setState(() => _form.datePerformed = picked);
   }
 
   Widget _field(

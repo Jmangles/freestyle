@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<(String, List<Trick>)> _groups = [];
   late final StreamSubscription _authSub;
   late final RealtimeChannel _tricksChannel;
+  bool _loadInProgress = false;
 
   @override
   void initState() {
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _nameSearchController = TextEditingController();
     _load(initial: true);
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      _load();
+      _load(); // guard inside _load() prevents concurrent runs
     });
     _tricksChannel = Supabase.instance.client
         .channel('public:tricks')
@@ -67,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load({bool initial = false}) async {
+    if (_loadInProgress) return;
+    _loadInProgress = true;
     if (initial) {
       setState(() {
         _initialLoading = true;
@@ -101,6 +104,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _hasError = true;
         });
       }
+    } finally {
+      _loadInProgress = false;
     }
   }
 

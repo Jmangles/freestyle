@@ -3,8 +3,8 @@ import 'playback_direction.dart';
 import 'training_video_state.dart';
 import 'video_provider.dart';
 
-// 1 frame at 60fps
-const Duration _kFrameStep = Duration(microseconds: 16667);
+/// One frame at 60 fps — used for frame-step operations.
+const Duration kFrameStep = Duration(microseconds: 16667);
 
 class TrainingVideoController extends ChangeNotifier {
   final VideoProvider provider;
@@ -45,7 +45,7 @@ class TrainingVideoController extends ChangeNotifier {
 
   /// Advances one frame forward in trick time, pausing playback.
   void stepForward() {
-    final next = _state.position + _kFrameStep;
+    final next = _state.position + kFrameStep;
     _state = _state.copyWith(
       isPlaying: false,
       position: next > _state.totalDuration ? _state.totalDuration : next,
@@ -55,7 +55,7 @@ class TrainingVideoController extends ChangeNotifier {
 
   /// Steps one frame backward in trick time, pausing playback.
   void stepBackward() {
-    final prev = _state.position - _kFrameStep;
+    final prev = _state.position - kFrameStep;
     _state = _state.copyWith(
       isPlaying: false,
       position: prev < Duration.zero ? Duration.zero : prev,

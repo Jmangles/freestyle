@@ -28,7 +28,9 @@
       "Read(//c/Users/Jordan/**)",
       "Bash(dotnet build *)",
       "Bash(./VideoTrimmer.exe)",
-      "Bash(echo \"Exit code: $?\")"
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Websites\\\\highline\\\\lib\" -Recurse -Filter \"*.dart\")",
+      "Bash(Sort-Object)"
     ]
   }
 }

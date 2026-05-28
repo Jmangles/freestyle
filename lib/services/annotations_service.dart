@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trick_annotation.dart';
 import 'auth_service.dart';
@@ -7,15 +8,20 @@ class AnnotationsService {
 
   static Future<List<TrickAnnotation>> getForTrick(
       int trickId, String language) async {
-    final data = await _db
-        .from('trick_annotations')
-        .select()
-        .eq('trick_id', trickId)
-        .eq('language', language)
-        .order('start_ms');
-    return (data as List)
-        .map((e) => TrickAnnotation.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final data = await _db
+          .from('trick_annotations')
+          .select()
+          .eq('trick_id', trickId)
+          .eq('language', language)
+          .order('start_ms');
+      return (data as List)
+          .map((e) => TrickAnnotation.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      debugPrint('AnnotationsService.getForTrick($trickId): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<TrickAnnotation> create({
@@ -25,19 +31,26 @@ class AnnotationsService {
     required String text,
     String language = 'en',
   }) async {
-    final data = await _db
-        .from('trick_annotations')
-        .insert({
-          'trick_id': trickId,
-          'start_ms': startMs,
-          'end_ms': endMs,
-          'text': text,
-          'language': language,
-          'created_by': (await AuthService.getCurrentProfile())!.intId,
-        })
-        .select()
-        .single();
-    return TrickAnnotation.fromJson(data);
+    try {
+      final profile = await AuthService.getCurrentProfile();
+      if (profile == null) throw StateError('No authenticated profile for annotation creation');
+      final data = await _db
+          .from('trick_annotations')
+          .insert({
+            'trick_id': trickId,
+            'start_ms': startMs,
+            'end_ms': endMs,
+            'text': text,
+            'language': language,
+            'created_by': profile.intId,
+          })
+          .select()
+          .single();
+      return TrickAnnotation.fromJson(data);
+    } catch (e, st) {
+      debugPrint('AnnotationsService.create(trickId=$trickId): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<TrickAnnotation> update(
@@ -47,21 +60,31 @@ class AnnotationsService {
     required String text,
     required String language,
   }) async {
-    final data = await _db
-        .from('trick_annotations')
-        .update({
-          'start_ms': startMs,
-          'end_ms': endMs,
-          'text': text,
-          'language': language,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-    return TrickAnnotation.fromJson(data);
+    try {
+      final data = await _db
+          .from('trick_annotations')
+          .update({
+            'start_ms': startMs,
+            'end_ms': endMs,
+            'text': text,
+            'language': language,
+          })
+          .eq('id', id)
+          .select()
+          .single();
+      return TrickAnnotation.fromJson(data);
+    } catch (e, st) {
+      debugPrint('AnnotationsService.update($id): $e\n$st');
+      rethrow;
+    }
   }
 
   static Future<void> delete(int id) async {
-    await _db.from('trick_annotations').delete().eq('id', id);
+    try {
+      await _db.from('trick_annotations').delete().eq('id', id);
+    } catch (e, st) {
+      debugPrint('AnnotationsService.delete($id): $e\n$st');
+      rethrow;
+    }
   }
 }
