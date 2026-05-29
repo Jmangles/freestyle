@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +17,9 @@ import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../utils/date_formatters.dart';
 import '../utils/difficulty_tier.dart';
+import '../utils/network_utils.dart';
 import '../utils/youtube_utils.dart';
+import '../video/offline_video_service.dart';
 import '../widgets/back_home_leading.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/youtube_loop_player.dart';
@@ -32,11 +37,24 @@ class TrickDetailScreen extends StatefulWidget {
 class _TrickDetailScreenState extends State<TrickDetailScreen> {
   late Future<TrickDetailData> _future;
   TrickDetailData? _data;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    if (!kIsWeb) {
+      _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+        setDeviceConnectivity(results);
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
   }
 
   Future<TrickDetailData> _load() async {
@@ -122,8 +140,15 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
               videoLink: existing.videoLink,
               videoStart: existing.videoStart,
               videoEnd: existing.videoEnd,
+              updatedAt: existing.updatedAt,
             )
-          : UserTrick(id: -1, userId: -1, trickId: widget.trickId, consistency: c);
+          : UserTrick(
+              id: -1,
+              userId: -1,
+              trickId: widget.trickId,
+              consistency: c,
+              updatedAt: DateTime.now(),
+            );
       setState(() {
         _data = TrickDetailData(
           trick: _data!.trick,
@@ -211,7 +236,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
                   tooltip: l10n.deleteTrickTooltip,
                   onPressed: () => _deleteTrick(trick),
                 ),
-              ] else if (!canEditTricks && AuthService.isLoggedIn && trick != null)
+              ] else if (!canEditTricks && AuthService.isLoggedIn && trick != null && !isDeviceOffline)
                 IconButton(
                   icon: const Icon(Icons.rate_review_outlined),
                   tooltip: l10n.suggestEditTooltip,
@@ -370,16 +395,25 @@ class _TrickDetailScreenState extends State<TrickDetailScreen> {
             ),
           ],
 
-          if (trick.hasTrainingVideo) ...[
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => context.push('/trick/${trick.id}/training-studio'),
-              icon: const Icon(Icons.play_circle_outline),
-              label: const Text('Training Studio'),
+          if (trick.hasTrainingVideo)
+            ValueListenableBuilder<Set<int>>(
+              valueListenable: OfflineVideoService.savedTrickIds,
+              builder: (context, saved, _) {
+                if (isDeviceOffline && !saved.contains(trick.id)) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: FilledButton.icon(
+                    onPressed: () => context.push('/trick/${trick.id}/training-studio'),
+                    icon: const Icon(Icons.play_circle_outline),
+                    label: const Text('Training Studio'),
+                  ),
+                );
+              },
             ),
-          ],
 
-          if (!trick.hasTrainingVideo && trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
+          if (!trick.hasTrainingVideo && !isDeviceOffline && trick.videoLink != null && trick.videoLink!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildVideoPlayer(trick.videoLink!, trick.videoStart, trick.videoEnd),
           ],

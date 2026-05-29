@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/approval_status.dart';
+import '../models/position.dart';
 import '../models/trick.dart';
 import '../models/trick_suggestion.dart';
-import '../models/position.dart';
+import '../utils/network_utils.dart';
 import 'auth_service.dart';
+import 'local_database.dart';
 
 class TricksService {
   static final _client = Supabase.instance.client;
@@ -15,45 +18,74 @@ class TricksService {
       'end_position:positions!end_position_id(name)';
 
   static Future<List<Trick>> getApprovedTricks() async {
+    if (isDeviceOffline) return LocalDatabase.getTricks();
     try {
       final data = await _client
           .from('tricks')
           .select(_select)
           .eq('status', ApprovalStatus.approved.index)
           .order('given_name');
-      return (data as List).map((e) => Trick.fromJson(e)).toList();
+      final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
+      await LocalDatabase.cacheTricks(tricks);
+      await LocalDatabase.setMeta(
+          'tricks_last_synced', DateTime.now().toUtc().toIso8601String());
+      return tricks;
     } catch (e, st) {
-      debugPrint('TricksService.getApprovedTricks: $e\n$st');
-      rethrow;
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('TricksService.getApprovedTricks: $e\n$st');
+        rethrow;
+      }
+      debugPrint('TricksService.getApprovedTricks: offline, using cache');
+      return LocalDatabase.getTricks();
     }
   }
 
   static Future<Trick> getTrickById(int id) async {
+    if (isDeviceOffline) {
+      final cached = await LocalDatabase.getTrickById(id);
+      if (cached != null) return cached;
+      throw Exception('Trick $id not in local cache and device is offline');
+    }
     try {
       final data =
           await _client.from('tricks').select(_select).eq('id', id).single();
-      return Trick.fromJson(data);
+      final trick = Trick.fromJson(data);
+      await LocalDatabase.cacheTricks([trick]);
+      return trick;
     } catch (e, st) {
-      debugPrint('TricksService.getTrickById($id): $e\n$st');
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('TricksService.getTrickById($id): $e\n$st');
+        rethrow;
+      }
+      final cached = await LocalDatabase.getTrickById(id);
+      if (cached != null) return cached;
       rethrow;
     }
   }
 
   static Future<List<Trick>> getTricksByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
+    if (isDeviceOffline) return LocalDatabase.getTricksByIds(ids);
     try {
-      final data = await _client
-          .from('tricks')
-          .select(_select)
-          .inFilter('id', ids);
-      return (data as List).map((e) => Trick.fromJson(e)).toList();
+      final data =
+          await _client.from('tricks').select(_select).inFilter('id', ids);
+      final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
+      await LocalDatabase.cacheTricks(tricks);
+      return tricks;
     } catch (e, st) {
-      debugPrint('TricksService.getTricksByIds: $e\n$st');
-      rethrow;
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('TricksService.getTricksByIds: $e\n$st');
+        rethrow;
+      }
+      return LocalDatabase.getTricksByIds(ids);
     }
   }
 
   static Future<List<Trick>> getTricksRequiring(int trickId) async {
+    if (isDeviceOffline) {
+      final all = await LocalDatabase.getTricks();
+      return all.where((t) => t.prerequisiteTrickIds.contains(trickId)).toList();
+    }
     try {
       final data = await _client
           .from('tricks')
@@ -62,8 +94,12 @@ class TricksService {
           .contains('prerequisite_trick_ids', [trickId]);
       return (data as List).map((e) => Trick.fromJson(e)).toList();
     } catch (e, st) {
-      debugPrint('TricksService.getTricksRequiring($trickId): $e\n$st');
-      rethrow;
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('TricksService.getTricksRequiring($trickId): $e\n$st');
+        rethrow;
+      }
+      final all = await LocalDatabase.getTricks();
+      return all.where((t) => t.prerequisiteTrickIds.contains(trickId)).toList();
     }
   }
 
@@ -107,8 +143,7 @@ class TricksService {
     }
   }
 
-  static Future<void> updateTrick(
-      int id, Map<String, dynamic> updates) async {
+  static Future<void> updateTrick(int id, Map<String, dynamic> updates) async {
     try {
       await _client.from('tricks').update(updates).eq('id', id);
     } catch (e, st) {
@@ -118,13 +153,20 @@ class TricksService {
   }
 
   static Future<List<Position>> getPositions() async {
+    if (isDeviceOffline) return LocalDatabase.getPositions();
     try {
-      final data =
-          await _client.from('positions').select().order('name');
-      return (data as List).map((e) => Position.fromJson(e)).toList();
+      final data = await _client.from('positions').select().order('name');
+      final positions = (data as List).map((e) => Position.fromJson(e)).toList();
+      await LocalDatabase.cachePositions(positions);
+      await LocalDatabase.setMeta(
+          'positions_last_synced', DateTime.now().toUtc().toIso8601String());
+      return positions;
     } catch (e, st) {
-      debugPrint('TricksService.getPositions: $e\n$st');
-      rethrow;
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('TricksService.getPositions: $e\n$st');
+        rethrow;
+      }
+      return LocalDatabase.getPositions();
     }
   }
 
