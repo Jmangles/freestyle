@@ -1,13 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/trick_annotation.dart';
+import '../utils/network_utils.dart';
 import 'auth_service.dart';
+import 'local_database.dart';
 
 class AnnotationsService {
   static final _db = Supabase.instance.client;
 
   static Future<List<TrickAnnotation>> getForTrick(
       int trickId, String language) async {
+    if (isDeviceOffline) return LocalDatabase.getAnnotations(trickId, language);
     try {
       final data = await _db
           .from('trick_annotations')
@@ -15,12 +19,17 @@ class AnnotationsService {
           .eq('trick_id', trickId)
           .eq('language', language)
           .order('start_ms');
-      return (data as List)
+      final annotations = (data as List)
           .map((e) => TrickAnnotation.fromJson(e as Map<String, dynamic>))
           .toList();
+      await LocalDatabase.cacheAnnotations(annotations, trickId, language);
+      return annotations;
     } catch (e, st) {
-      debugPrint('AnnotationsService.getForTrick($trickId): $e\n$st');
-      rethrow;
+      if (kIsWeb || !isNetworkError(e)) {
+        debugPrint('AnnotationsService.getForTrick($trickId): $e\n$st');
+        rethrow;
+      }
+      return LocalDatabase.getAnnotations(trickId, language);
     }
   }
 
@@ -33,7 +42,9 @@ class AnnotationsService {
   }) async {
     try {
       final profile = await AuthService.getCurrentProfile();
-      if (profile == null) throw StateError('No authenticated profile for annotation creation');
+      if (profile == null) {
+        throw StateError('No authenticated profile for annotation creation');
+      }
       final data = await _db
           .from('trick_annotations')
           .insert({
