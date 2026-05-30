@@ -59,3 +59,6 @@ app.*.map.json
 
 # Local Netlify folder
 .netlify
+
+# FVM Version Cache
+.fvm/
