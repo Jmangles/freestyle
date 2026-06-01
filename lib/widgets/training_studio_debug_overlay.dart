@@ -17,6 +17,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
   final bool forwardSaved;
   final bool reversedSaved;
   final bool hasCachedPath;
+  final String qualityInfo;
   final List<String> log;
 
   const TrainingStudioDebugOverlay({
@@ -36,6 +37,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
     required this.forwardSaved,
     required this.reversedSaved,
     required this.hasCachedPath,
+    required this.qualityInfo,
     required this.log,
   });
 
@@ -90,6 +92,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
                 '  revSaved=$reversedSaved'
                 '  cached=$hasCachedPath',
               ),
+              if (qualityInfo.isNotEmpty) Text('connection: $qualityInfo'),
               if (log.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 for (final line in log.reversed)

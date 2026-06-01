@@ -4,9 +4,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
-import '../constants/layout_constants.dart';
 import '../constants/playback_constants.dart';
 import '../utils/network_utils.dart';
+import '../utils/connection_speed.dart';
 import '../utils/web_connection.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
@@ -86,7 +86,8 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   bool _cancelReversedDownload = false;
   String? _initError;
 
-  // Debug counters — only populated in debug mode.
+  // Debug counters/info — only populated in debug mode.
+  String _dbgQualityInfo = '';
   int _dbgFwdFalseEof = 0;
   int _dbgFwdRealEof = 0;
   int _dbgFwdDebounced = 0;
@@ -363,13 +364,17 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final type = getWebConnectionType();
 
       if (type != null) {
-        _useMobileQuality = type == 'cellular';
+        _useMobileQuality = type == 'slow-2g' || type == '2g' || type == '3g';
         isWifi = !_useMobileQuality;
+        if (kDebugMode) _dbgQualityInfo = 'effectiveType=$type';
       } else {
-        final view = WidgetsBinding.instance.platformDispatcher.implicitView!;
-        final logicalWidth = view.physicalSize.width / view.devicePixelRatio;
-        _useMobileQuality = logicalWidth < kMobileWidthBreakpoint;
+        String? speedTestError;
+        final mbps = await estimateConnectionSpeedMbps(
+          onError: kDebugMode ? (e) => speedTestError = e : null,
+        );
+        _useMobileQuality = mbps != null && mbps < kMobileQualityThresholdMbps;
         isWifi = !_useMobileQuality;
+        if (kDebugMode) _dbgQualityInfo = 'speedTest=${mbps != null ? '${mbps.toStringAsFixed(2)}Mbps' : 'null${speedTestError != null ? ' ($speedTestError)' : ''}'}';
       }
 
       _isOfflineAtInit = false;
@@ -1102,6 +1107,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 forwardSaved: _forwardSaved,
                 reversedSaved: _reversedSaved,
                 hasCachedPath: _forwardCachePath != null,
+                qualityInfo: _dbgQualityInfo,
                 log: _dbgLog,
               ),
             Positioned(
