@@ -36,7 +36,7 @@ This follows the existing pattern where bit 0 (value `1`) denotes `isCore`.
 ## Training Studio UI
 The training studio is a full screen with the video occupying the main area and a control bar below.
 
-**Left side controls:** Play/Pause, Restart, Direction toggle (forward/reverse), Step Back, Step Forward
+**Left side controls:** Play/Pause, Restart, Step Back, Step Forward
 
 **Right side controls:** Playback speed, Annotations *(stretch goal)*
 
@@ -48,31 +48,22 @@ The video must be trimmed to a maximum of 10 seconds.
 We will need to show a preview to users while they are in the process of uploading, reusing our existing video player as much as possible would be ideal.
 
 When the user is happy with the result they can trigger an upload which will go to the CDN.
-The name of the video should be in the format {trick_id}/forward.mp4 for the forward direction and {trick_id}/reversed.mp4 for the reverse.
+The name of the video should be in the format {trick_id}/forward.mp4.
 
-If this trick is being uploaded as part of a user landing a trick, the format should be {trick_id}/{user_id}_forward.mp4 and {trick_id}/{user_id}_reverse.mp4
+If this trick is being uploaded as part of a user landing a trick, the format should be {trick_id}/{user_id}_forward.mp4.
 
 ## Video Upload Backend
 Editors (users where `canEditTricks` is true on their `Profile`) will see an upload icon on the trick details screen. Tapping it opens a file picker to select a source video.
 
-Encoding takes place client-side using `ffmpeg_kit_flutter` to avoid server costs. The package bundles FFmpeg natively for iOS and Android. Two files are produced:
-1. The forward video (re-encoded to ensure consistent keyframe intervals)
-2. The reversed copy
-
-Both are uploaded to Bunny.net and the trick's `flags` field is updated to set bit 1.
+Encoding takes place client-side using `ffmpeg_kit_flutter` to avoid server costs. The package bundles FFmpeg natively for iOS and Android. The forward video is re-encoded to ensure consistent keyframe intervals, then uploaded to Bunny.net and the trick's `flags` field is updated to set bit 1.
 
 `ffmpeg_kit_flutter` does not support Flutter web. If upload from a web build is ever required, both files would need to be prepared manually and uploaded via a separate tool.
 
-Encoding commands run client-side (using `-preset medium` rather than `-preset slow` to keep encode time reasonable on device):
+Encoding command run client-side (using `-preset medium` rather than `-preset slow` to keep encode time reasonable on device):
 ```bash
 # Forward (replace 8 and 15 with trim start/end in seconds)
 ffmpeg -i input.mp4 -vf "trim=start=8:end=15,setpts=PTS-STARTPTS" -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_forward.mp4
-
-# Reversed
-ffmpeg -i input.mp4 -vf "trim=start=8:end=15,setpts=PTS-STARTPTS,reverse" -c:v libx264 -crf 18 -preset medium -r 60 -g 30 -keyint_min 30 -sc_threshold 0 -an trick_reversed.mp4
 ```
-
-Do not use `-ss`/`-to` as input options alongside `-vf reverse`. Those flags preserve original timestamps, which causes `reverse` to reorder frames incorrectly. The `trim` filter combined with `setpts=PTS-STARTPTS` resets timestamps to zero before reversing.
 
 ## Implementation Phases
 1. **Video player backend and local provider** — `VideoProvider` interface, `LocalVideoProvider`, player state logic, unit tests
@@ -123,15 +114,6 @@ Videos will be hosted on Bunny.net. It offers strong global CDN performance at l
 - **Codec**: H.264
 - **Frame rate**: 60fps upload target, transcoded to 720p60 as a fallback
 - **Keyframe interval**: Every 30 frames (0.5s) to enable fast seeking
-- **Reversed copy**: A reversed version of every video is pre-generated at upload time to support instant backward playback without re-encoding at runtime
-### Backward Playback Implementation
-Standard H.264 uses inter-frame prediction, making real-time reverse playback impractical. Instead, each video will have a pre-encoded reversed copy stored alongside it. When the user switches to reverse playback, the player switches to the reversed file at the mirrored timestamp:
-
-```
-reversed_position = total_duration - current_position
-```
-
-For example, if a video is 12s long and the user is at 4s, the reversed file seeks to 8s. The same formula applies when switching back to forward. The player state must track `totalDuration` from the forward file as the canonical source of truth, since both files have the same duration.
 ### Flutter Player
 The `media_kit` package (wraps libmpv) will be used as the video player. It supports:
 - Precise seeking for frame-by-frame (seek by 1/60s per step)

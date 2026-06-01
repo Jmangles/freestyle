@@ -3,11 +3,10 @@ import '../video/training_video_state.dart';
 
 class TrainingStudioDebugOverlay extends StatelessWidget {
   final TrainingVideoState state;
-  final Duration forwardPlayerPosition;
+  final Duration playerPosition;
   final bool useMobileQuality;
   final bool buffering;
-  final bool forwardLooping;
-  final bool reversedLooping;
+  final bool looping;
   final int fwdFired;
   final int fwdFalseEof;
   final int fwdRealEof;
@@ -15,7 +14,6 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
   final bool isOfflineAtInit;
   final bool isLiveOffline;
   final bool forwardSaved;
-  final bool reversedSaved;
   final bool hasCachedPath;
   final String qualityInfo;
   final List<String> log;
@@ -23,11 +21,10 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
   const TrainingStudioDebugOverlay({
     super.key,
     required this.state,
-    required this.forwardPlayerPosition,
+    required this.playerPosition,
     required this.useMobileQuality,
     required this.buffering,
-    required this.forwardLooping,
-    required this.reversedLooping,
+    required this.looping,
     required this.fwdFired,
     required this.fwdFalseEof,
     required this.fwdRealEof,
@@ -35,7 +32,6 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
     required this.isOfflineAtInit,
     required this.isLiveOffline,
     required this.forwardSaved,
-    required this.reversedSaved,
     required this.hasCachedPath,
     required this.qualityInfo,
     required this.log,
@@ -67,7 +63,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
               Text(
                 '${useMobileQuality ? 'MOBILE' : 'FULL'}'
                 '  ctrl=${state.position.inMilliseconds}ms'
-                '  player=${forwardPlayerPosition.inMilliseconds}ms'
+                '  player=${playerPosition.inMilliseconds}ms'
                 '  total=${state.totalDuration.inMilliseconds}ms',
                 style: TextStyle(
                   color: useMobileQuality ? Colors.orange : Colors.greenAccent,
@@ -77,8 +73,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
               Text(
                 '${state.isPlaying ? 'PLAYING' : 'paused'}'
                 '  ${buffering ? 'BUFFERING' : 'buf-ok'}'
-                '  fwdLoop=$forwardLooping'
-                '  revLoop=$reversedLooping',
+                '  loop=$looping',
               ),
               Text(
                 'completed: fired=$fwdFired'
@@ -89,7 +84,6 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
               Text(
                 'initOffline=$isOfflineAtInit  liveOffline=$isLiveOffline'
                 '  fwdSaved=$forwardSaved'
-                '  revSaved=$reversedSaved'
                 '  cached=$hasCachedPath',
               ),
               if (qualityInfo.isNotEmpty) Text('connection: $qualityInfo'),

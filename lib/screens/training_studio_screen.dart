@@ -15,7 +15,6 @@ import '../models/trick_annotation.dart';
 import '../services/annotations_service.dart';
 import '../services/auth_service.dart';
 import '../video/offline_video_service.dart';
-import '../video/playback_direction.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
 import '../widgets/back_home_leading.dart';
@@ -41,49 +40,35 @@ class TrainingStudioScreen extends StatefulWidget {
 }
 
 class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
-  late final Player _forwardPlayer;
-  late final Player _reversedPlayer;
-  late final VideoController _forwardVideoController;
-  late final VideoController _reversedVideoController;
+  late final Player _player;
+  late final VideoController _videoController;
   late final TrainingVideoController _controller;
 
-  late final StreamSubscription<Duration> _forwardPositionSub;
-  late final StreamSubscription<Duration> _reversedPositionSub;
+  late final StreamSubscription<Duration> _positionSub;
   late final StreamSubscription<Duration> _durationSub;
-  late final StreamSubscription<bool> _forwardCompletedSub;
-  late final StreamSubscription<bool> _reversedCompletedSub;
-  late final StreamSubscription<bool> _forwardPlayingSub;
-  late final StreamSubscription<bool> _reversedPlayingSub;
-  late final StreamSubscription<bool> _forwardBufferingSub;
-  late final StreamSubscription<bool> _reversedBufferingSub;
+  late final StreamSubscription<bool> _completedSub;
+  late final StreamSubscription<bool> _playingSub;
+  late final StreamSubscription<bool> _bufferingSub;
 
   bool _loading = true;
   double? _downloadProgress; // null = indeterminate, 0.0–1.0 = known
   bool _buffering = false;
-  bool _reversedLoaded = false;
   bool _useMobileQuality = false;
-  bool _forwardLooping = false;
-  bool _reversedLooping = false;
-  DateTime? _lastForwardCompletedAt;
-  DateTime? _lastReversedCompletedAt;
+  bool _looping = false;
+  DateTime? _lastCompletedAt;
   List<TrickAnnotation> _annotations = [];
   bool _isEditor = false;
 
   // Snapshot of offline state taken once at player-init time. Used only for
   // quality-selection logic (_resolveNativeForwardPath) and the debug overlay.
-  // Live UI decisions (e.g. the reverse-button visibility) use isDeviceOffline
-  // from network_utils, which is kept current by the connectivity subscription.
   bool _isOfflineAtInit = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _forwardSaved = false;
-  bool _reversedSaved = false;
   // Non-null when the forward video was downloaded to app cache and can be saved permanently.
   String? _forwardCachePath;
   String _forwardFilename = kForwardVideo;
   bool _saving = false;
-  bool _reversedDownloading = false;
   bool _cancelForwardDownload = false;
-  bool _cancelReversedDownload = false;
   String? _initError;
 
   // Debug counters/info — only populated in debug mode.
@@ -94,18 +79,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   int get _dbgFwdFired => _dbgFwdFalseEof + _dbgFwdRealEof;
   final List<String> _dbgLog = [];
 
-  Player get _activePlayer =>
-      _controller.state.direction == PlaybackDirection.forward
-          ? _forwardPlayer
-          : _reversedPlayer;
-
   @override
   void initState() {
     super.initState();
-    _forwardPlayer = Player();
-    _reversedPlayer = Player();
-    _forwardVideoController = VideoController(_forwardPlayer);
-    _reversedVideoController = VideoController(_reversedPlayer);
+    _player = Player();
+    _videoController = VideoController(_player);
 
     _controller = TrainingVideoController(
       provider: widget.provider,
@@ -118,10 +96,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _setupSubscriptions();
 
     if (!kIsWeb) {
-      // Updates the global isDeviceOffline flag and triggers a rebuild so
-      // live UI decisions (e.g. reverse-button visibility) react immediately.
-      // Pending-writes flushing on reconnect is handled separately by
-      // main_shell.dart's own connectivity subscription — no overlap here.
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         setDeviceConnectivity(results);
         if (mounted) setState(() {});
@@ -133,24 +107,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   void _setupSubscriptions() {
-    _forwardCompletedSub =
-        _forwardPlayer.stream.completed.listen(_onForwardCompleted);
-    _reversedCompletedSub =
-        _reversedPlayer.stream.completed.listen(_onReversedCompleted);
-    // Duration only needs to come from one file — both are the same length.
-    _durationSub = _forwardPlayer.stream.duration.listen(_onDuration);
-    _forwardPositionSub =
-        _forwardPlayer.stream.position.listen(_onForwardPosition);
-    _reversedPositionSub =
-        _reversedPlayer.stream.position.listen(_onReversedPosition);
-    _forwardPlayingSub =
-        _forwardPlayer.stream.playing.listen(_onForwardPlaying);
-    _reversedPlayingSub =
-        _reversedPlayer.stream.playing.listen(_onReversedPlaying);
-    _forwardBufferingSub =
-        _forwardPlayer.stream.buffering.listen(_onForwardBuffering);
-    _reversedBufferingSub =
-        _reversedPlayer.stream.buffering.listen(_onReversedBuffering);
+    _completedSub = _player.stream.completed.listen(_onCompleted);
+    _durationSub = _player.stream.duration.listen(_onDuration);
+    _positionSub = _player.stream.position.listen(_onPosition);
+    _playingSub = _player.stream.playing.listen(_onPlaying);
+    _bufferingSub = _player.stream.buffering.listen(_onBuffering);
   }
 
   // Manual looping so the playback rate is preserved on each cycle.
@@ -170,36 +131,33 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   // Debounce: calling play() at a keep-open EOF causes an immediate
   // re-completion event. We collapse any bursts within kEofDebounce so the
   // first event drives the decision and subsequent ones are ignored.
-  void _onForwardCompleted(bool done) {
-    if (!done || _forwardLooping) return;
+  void _onCompleted(bool done) {
+    if (!done || _looping) return;
 
     final total = _controller.state.totalDuration;
 
     if (total < kEofTolerance) return;
 
     final now = DateTime.now();
-    // ctrlPos  = last value our stream subscription recorded (may be stale).
-    // playerPos = value held directly in the Player object (updated first).
-    // Logging both reveals whether position-stream staleness is the culprit.
     final ctrlPos = _controller.state.position;
-    final playerPos = _forwardPlayer.state.position;
+    final playerPos = _player.state.position;
 
-    if (_lastForwardCompletedAt != null &&
-        now.difference(_lastForwardCompletedAt!) < kEofDebounce) {
+    if (_lastCompletedAt != null &&
+        now.difference(_lastCompletedAt!) < kEofDebounce) {
       _dbgEvent(
           'FWD debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}',
           _DbgCounter.fwdDebounced);
       return;
     }
 
-    _lastForwardCompletedAt = now;
+    _lastCompletedAt = now;
 
     if (ctrlPos < total - kEofTolerance) {
       _dbgEvent(
           'FWD false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}',
           _DbgCounter.fwdFalseEof);
       // False EOF — demuxer hit network EOF but buffered frames remain.
-      _forwardPlayer.play();
+      _player.play();
       return;
     }
 
@@ -207,53 +165,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         'FWD real-EOF→loop ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}',
         _DbgCounter.fwdRealEof);
 
-    _forwardLooping = true;
-    _forwardPlayer.seek(Duration.zero).then((_) {
+    _looping = true;
+    _player.seek(Duration.zero).then((_) {
       if (!mounted) return;
-      _forwardPlayer.setRate(_controller.state.speed);
-      _forwardPlayer.play();
-    });
-  }
-
-  void _onReversedCompleted(bool done) {
-    if (!done || _reversedLooping) return;
-
-    final total = _controller.state.totalDuration;
-
-    if (total < kEofTolerance) return;
-
-    final now = DateTime.now();
-    final ctrlPos = _controller.state.position;
-    final playerPos = _reversedPlayer.state.position;
-
-    if (_lastReversedCompletedAt != null &&
-        now.difference(_lastReversedCompletedAt!) < kEofDebounce) {
-      _dbgEvent(
-          'REV debounce ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds}');
-      return;
-    }
-
-    _lastReversedCompletedAt = now;
-
-    // For the reversed file, filePos = total − trickTime, so real EOF is
-    // trickTime ≈ 0. False EOF is trickTime > kEofTolerance (file still far from end).
-    if (ctrlPos > kEofTolerance) {
-      _dbgEvent(
-          'REV false-EOF ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
-      // False EOF — demuxer hit network EOF but buffered frames remain.
-      _reversedPlayer.play();
-      return;
-    }
-
-    _dbgEvent(
-        'REV real-EOF→loop ctrl=${ctrlPos.inMilliseconds} player=${playerPos.inMilliseconds} total=${total.inMilliseconds}');
-
-    _reversedLooping = true;
-    _reversedPlayer.seek(Duration.zero).then((_) {
-      if (!mounted) return;
-
-      _reversedPlayer.setRate(_controller.state.speed);
-      _reversedPlayer.play();
+      _player.setRate(_controller.state.speed);
+      _player.play();
     });
   }
 
@@ -267,49 +183,31 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     setState(() => _loading = false);
   }
 
-  // Forward position is trick time directly.
-  void _onForwardPosition(Duration pos) {
-    if (_controller.state.direction != PlaybackDirection.forward) return;
+  void _onPosition(Duration pos) {
     final prev = _controller.state.position;
-    if (!_forwardLooping && prev > kJumpMinPrev && pos < prev - kEofDebounce) {
+    if (!_looping && prev > kJumpMinPrev && pos < prev - kEofDebounce) {
       final total = _controller.state.totalDuration;
       final isEofLoop = total > Duration.zero &&
           prev >= total - kEofTolerance &&
           pos < kNearStartThreshold;
       if (isEofLoop) {
-        // keep-open reset position before our completed handler ran; claim
-        // the loop now so the pending completed event exits early.
-        _forwardLooping = true;
+        _looping = true;
       }
       _dbgEvent('POS↩ ${prev.inMilliseconds}→${pos.inMilliseconds}ms'
-          ' player=${_forwardPlayer.state.position.inMilliseconds}ms'
-          ' loop=$_forwardLooping eofLoop=$isEofLoop');
+          ' player=${_player.state.position.inMilliseconds}ms'
+          ' loop=$_looping eofLoop=$isEofLoop');
     }
-    if (_forwardLooping && pos > kLoopClearThreshold) {
-      _forwardLooping = false;
+    if (_looping && pos > kLoopClearThreshold) {
+      _looping = false;
     }
     _controller.updatePosition(pos);
     if (mounted) setState(() {});
   }
 
-  // Reversed file position must be mirrored to get trick time.
-  void _onReversedPosition(Duration pos) {
-    if (_controller.state.direction != PlaybackDirection.reversed) return;
-    if (_controller.state.totalDuration == Duration.zero) return;
-    if (_reversedLooping && pos > kLoopClearThreshold) {
-      _reversedLooping = false;
-    }
-    _controller.updatePosition(_controller.state.totalDuration - pos);
-    if (mounted) setState(() {});
-  }
-
-  // Sync controller play/pause state from the actual player so that browser
-  // autoplay blocks (fresh page loads) are reflected in the UI correctly.
-  void _onForwardPlaying(bool playing) {
+  void _onPlaying(bool playing) {
     _dbgEvent(
         'FWD playing=$playing pos=${_controller.state.position.inMilliseconds}ms'
-        ' fwdLoop=$_forwardLooping');
-    if (_controller.state.direction != PlaybackDirection.forward) return;
+        ' loop=$_looping');
     if (playing) {
       _controller.play();
     } else {
@@ -317,22 +215,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     }
   }
 
-  void _onReversedPlaying(bool playing) {
-    if (_controller.state.direction != PlaybackDirection.reversed) return;
-    if (playing) {
-      _controller.play();
-    } else {
-      _controller.pause();
-    }
-  }
-
-  void _onForwardBuffering(bool buffering) {
-    if (_controller.state.direction != PlaybackDirection.forward) return;
-    if (mounted) setState(() => _buffering = buffering);
-  }
-
-  void _onReversedBuffering(bool buffering) {
-    if (_controller.state.direction != PlaybackDirection.reversed) return;
+  void _onBuffering(bool buffering) {
     if (mounted) setState(() => _buffering = buffering);
   }
 
@@ -401,16 +284,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
           await OfflineVideoService.videoExists(widget.trickId, kForwardVideo);
       final fwdMobileExists = await OfflineVideoService.videoExists(
           widget.trickId, kForwardMobileVideo);
-      final revExists =
-          await OfflineVideoService.videoExists(widget.trickId, kReversedVideo);
-      final revMobileExists = await OfflineVideoService.videoExists(
-          widget.trickId, kReversedMobileVideo);
 
       if (!mounted) return;
 
       setState(() {
         _forwardSaved = fwdExists || fwdMobileExists;
-        _reversedSaved = revExists || revMobileExists;
       });
 
       final resolved = await _resolveNativeForwardPath(
@@ -453,15 +331,14 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
     if (!mounted) return;
 
-    await _configureMpvForStreaming(_forwardPlayer);
+    await _configureMpvForStreaming(_player);
 
     if (!mounted) return;
 
-    _forwardPlayer.open(Media(forwardPath), play: true);
+    _player.open(Media(forwardPath), play: true);
     _controller.play();
-    
+
     if (mounted) setState(() => _downloadProgress = null);
-    // Reversed video is opened lazily on first direction toggle to save mobile bandwidth.
   }
 
   /// Resolves the forward-video path, filename, and quality settings for the
@@ -636,89 +513,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     });
   }
 
-  /// Loads the reversed video into the reversed player.
-  /// Returns true on success, false if the user cancelled or an error occurred.
-  Future<bool> _loadReversedVideo() async {
-    if (_reversedDownloading) return false; // guard against double-tap race
-    String reversedPath;
-
-    if (!kIsWeb && _reversedSaved) {
-      // Serve from permanent storage — prefer the matching quality, fall back to the other.
-      final preferred =
-          _useMobileQuality ? kReversedMobileVideo : kReversedVideo;
-      final fallback =
-          _useMobileQuality ? kReversedVideo : kReversedMobileVideo;
-      String? path;
-      if (await OfflineVideoService.videoExists(widget.trickId, preferred)) {
-        path = await OfflineVideoService.videoPath(widget.trickId, preferred);
-      } else if (await OfflineVideoService.videoExists(
-          widget.trickId, fallback)) {
-        path = await OfflineVideoService.videoPath(widget.trickId, fallback);
-      }
-      if (path == null || !mounted) return false;
-      reversedPath = path;
-    } else if (!kIsWeb) {
-      // Online — check storage, then download directly to permanent storage.
-      // Set the flag synchronously before the first await so a second tap
-      // cannot slip through the guard at the top of this method.
-      setState(() => _reversedDownloading = true);
-      final sufficient = await OfflineVideoService.hasSufficientStorage();
-      if (!mounted) return false;
-      if (!sufficient) {
-        final proceed = await showStorageWarning(context);
-        if (!mounted) return false;
-        if (proceed != true) {
-          setState(() => _reversedDownloading = false);
-          return false;
-        }
-      }
-      try {
-        final reversedUrl = _useMobileQuality
-            ? widget.provider.reversedMobileUrl(widget.trickId)
-            : widget.provider.reversedUrl(widget.trickId);
-        final filename =
-            _useMobileQuality ? kReversedMobileVideo : kReversedVideo;
-        reversedPath = await OfflineVideoService.downloadToPermanent(
-          reversedUrl.toString(),
-          widget.trickId,
-          filename,
-          isCancelled: () => _cancelReversedDownload,
-        );
-        if (!mounted) return false;
-        setState(() {
-          _reversedDownloading = false;
-          _reversedSaved = true;
-        });
-      } catch (e) {
-        if (!mounted) return false;
-        setState(() => _reversedDownloading = false);
-        if (e is OfflineVideoCancelledException) return false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not download reversed video: $e')),
-        );
-        return false;
-      }
-    } else {
-      // Web
-      final reversedUrl = _useMobileQuality
-          ? widget.provider.reversedMobileUrl(widget.trickId)
-          : widget.provider.reversedUrl(widget.trickId);
-      reversedPath = reversedUrl.toString();
-    }
-
-    _reversedLooping = false;
-    await _configureMpvForStreaming(_reversedPlayer);
-    try {
-      await _reversedPlayer.open(Media(reversedPath), play: false);
-    } catch (e) {
-      debugPrint('TrainingStudio: failed to open reversed video: $e');
-      return false;
-    }
-    _reversedLoaded =
-        true; // set after successful open so a failed open leaves the flag clear
-    return true;
-  }
-
   Future<void> _saveVideo() async {
     if (_saving || _forwardCachePath == null || _forwardSaved) return;
     setState(() => _saving = true);
@@ -741,7 +535,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         if (!mounted || proceed != true) return;
       }
 
-      _cancelReversedDownload = true;
       try {
         await OfflineVideoService.saveFromCache(
             _forwardCachePath!, widget.trickId, _forwardFilename);
@@ -756,7 +549,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       }
     } finally {
       if (mounted) setState(() => _saving = false);
-      _cancelReversedDownload = false;
     }
   }
 
@@ -765,29 +557,17 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (confirmed != true || !mounted) return;
 
     _cancelForwardDownload = true;
-    _cancelReversedDownload = true;
     try {
       // deleteAllVideos removes the entire trick directory. The quality upgrade
       // may write forward.mp4 after the cancel flags are set but before the
       // flag checks run; deleting the whole directory covers that window.
       await OfflineVideoService.deleteAllVideos(widget.trickId);
       if (!mounted) return;
-      final hadReversedLoaded = _reversedLoaded;
       setState(() {
         _forwardSaved = false;
         _forwardCachePath = null;
-        _reversedSaved = false;
-        _reversedLoaded = false;
       });
       OfflineVideoService.markDeleted(widget.trickId);
-      // Stop the reversed player so it doesn't hold a file handle on the
-      // now-deleted path. Resets the looping flag while we're here.
-      if (hadReversedLoaded) {
-        _reversedLooping = false;
-        try {
-          await _reversedPlayer.stop();
-        } catch (_) {}
-      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -800,7 +580,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       // and making the video reappear on next launch. _startQualityUpgrade
       // resets the flag itself before each new download cycle, so leaving it
       // true here is safe and keeps the cancel effective until the next save.
-      _cancelReversedDownload = false;
     }
   }
 
@@ -828,49 +607,43 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   @override
   void dispose() {
     _cancelForwardDownload = true;
-    _cancelReversedDownload = true;
     _connectivitySub?.cancel();
-    _forwardPositionSub.cancel();
-    _reversedPositionSub.cancel();
+    _positionSub.cancel();
     _durationSub.cancel();
-    _forwardCompletedSub.cancel();
-    _reversedCompletedSub.cancel();
-    _forwardPlayingSub.cancel();
-    _reversedPlayingSub.cancel();
-    _forwardBufferingSub.cancel();
-    _reversedBufferingSub.cancel();
+    _completedSub.cancel();
+    _playingSub.cancel();
+    _bufferingSub.cancel();
     _controller.dispose();
-    _forwardPlayer.dispose();
-    _reversedPlayer.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   Future<void> _play() async {
     _controller.play();
-    await _activePlayer.play();
+    await _player.play();
   }
 
   Future<void> _pause() async {
     _controller.pause();
-    await _activePlayer.pause();
+    await _player.pause();
   }
 
   Future<void> _restart() async {
     _controller.restart();
-    await _activePlayer.seek(_controller.state.fileSeekPosition);
-    await _activePlayer.play();
+    await _player.seek(_controller.state.position);
+    await _player.play();
   }
 
   Future<void> _stepForward() async {
-    await _activePlayer.pause();
+    await _player.pause();
     _controller.stepForward();
-    await _activePlayer.seek(_controller.state.fileSeekPosition);
+    await _player.seek(_controller.state.position);
   }
 
   Future<void> _stepBackward() async {
-    await _activePlayer.pause();
+    await _player.pause();
     _controller.stepBackward();
-    await _activePlayer.seek(_controller.state.fileSeekPosition);
+    await _player.seek(_controller.state.position);
   }
 
   Future<void> _togglePlayPause() async {
@@ -883,38 +656,14 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
   Future<void> _setSpeed(double speed) async {
     _controller.setSpeed(speed);
-    await _forwardPlayer.setRate(speed);
-    await _reversedPlayer.setRate(speed);
-  }
-
-  Future<void> _toggleDirection() async {
-    await _activePlayer.pause();
-
-    if (_controller.state.direction == PlaybackDirection.forward &&
-        !_reversedLoaded) {
-      final loaded = await _loadReversedVideo();
-      if (!mounted) return;
-      if (!loaded) {
-        await _activePlayer.play();
-        _controller.play();
-        return;
-      }
-    }
-
-    _controller.toggleDirection();
-    _forwardLooping = false;
-    _reversedLooping = false;
-    await _activePlayer.seek(_controller.state.fileSeekPosition);
-    await _activePlayer.setRate(_controller.state.speed);
-    await _activePlayer.play();
-    _controller.play();
+    await _player.setRate(speed);
   }
 
   void _onScrub(double value) {
     if (_controller.state.totalDuration == Duration.zero) return;
     final newPosition = _controller.state.totalDuration * value;
     _controller.updatePosition(newPosition);
-    _activePlayer.seek(_controller.state.fileSeekPosition);
+    _player.seek(newPosition);
   }
 
   void _showAnnotationsSheet() {
@@ -925,7 +674,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       onAnnotationTap: (a) {
         _setSpeed(0.25);
         _controller.updatePosition(Duration(milliseconds: a.startMs));
-        _activePlayer.seek(_controller.state.fileSeekPosition);
+        _player.seek(_controller.state.position);
         _play();
       },
       onAddTapped: _showAddAnnotationDialog,
@@ -1071,8 +820,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                           ),
                         )
                       : TrainingStudioVideoArea(
-                          forwardController: _forwardVideoController,
-                          reversedController: _reversedVideoController,
+                          videoController: _videoController,
                           state: _controller.state,
                           annotations: _annotations,
                           onTap: _togglePlayPause,
@@ -1080,8 +828,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                             _setSpeed(0.25);
                             _controller.updatePosition(
                                 Duration(milliseconds: a.startMs));
-                            _activePlayer
-                                .seek(_controller.state.fileSeekPosition);
+                            _player.seek(_controller.state.position);
                             _play();
                           },
                         ),
@@ -1093,11 +840,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
             if (kDebugMode && !_loading)
               TrainingStudioDebugOverlay(
                 state: _controller.state,
-                forwardPlayerPosition: _forwardPlayer.state.position,
+                playerPosition: _player.state.position,
                 useMobileQuality: _useMobileQuality,
                 buffering: _buffering,
-                forwardLooping: _forwardLooping,
-                reversedLooping: _reversedLooping,
+                looping: _looping,
                 fwdFired: _dbgFwdFired,
                 fwdFalseEof: _dbgFwdFalseEof,
                 fwdRealEof: _dbgFwdRealEof,
@@ -1105,7 +851,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 isOfflineAtInit: _isOfflineAtInit,
                 isLiveOffline: isDeviceOffline,
                 forwardSaved: _forwardSaved,
-                reversedSaved: _reversedSaved,
                 hasCachedPath: _forwardCachePath != null,
                 qualityInfo: _dbgQualityInfo,
                 log: _dbgLog,
@@ -1118,8 +863,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 state: _controller.state,
                 loading: _loading,
                 hasError: _initError != null,
-                reversedDownloading: _reversedDownloading,
-                reversedSaved: _reversedSaved,
                 isEditor: _isEditor,
                 annotations: _annotations,
                 onStepBackward: _stepBackward,
@@ -1127,7 +870,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                 onPlay: _play,
                 onPause: _pause,
                 onRestart: _restart,
-                onToggleDirection: _toggleDirection,
                 onScrub: _onScrub,
                 onSetSpeed: _setSpeed,
                 onShowAnnotations: _showAnnotationsSheet,

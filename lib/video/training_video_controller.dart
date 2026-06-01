@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'playback_direction.dart';
 import 'training_video_state.dart';
 import 'video_provider.dart';
 
@@ -17,9 +16,7 @@ class TrainingVideoController extends ChangeNotifier {
 
   TrainingVideoState get state => _state;
 
-  Uri get currentVideoUrl => _state.direction == PlaybackDirection.forward
-      ? provider.forwardUrl(trickId)
-      : provider.reversedUrl(trickId);
+  Uri get currentVideoUrl => provider.forwardUrl(trickId);
 
   void play() {
     if (_state.isPlaying) return;
@@ -33,13 +30,9 @@ class TrainingVideoController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Seeks to the start of the current playback direction and resumes.
-  /// Forward: seeks to trick-time 0. Reversed: seeks to trick-time totalDuration.
+  /// Seeks to the start and resumes.
   void restart() {
-    final startPosition = _state.direction == PlaybackDirection.forward
-        ? Duration.zero
-        : _state.totalDuration;
-    _state = _state.copyWith(position: startPosition, isPlaying: true);
+    _state = _state.copyWith(position: Duration.zero, isPlaying: true);
     notifyListeners();
   }
 
@@ -70,27 +63,14 @@ class TrainingVideoController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Flips playback direction. Trick-time position is preserved so the
-  /// media_kit layer can convert to the correct file-seek position via
-  /// TrainingVideoState.fileSeekPosition.
-  void toggleDirection() {
-    final newDirection = _state.direction == PlaybackDirection.forward
-        ? PlaybackDirection.reversed
-        : PlaybackDirection.forward;
-    _state = _state.copyWith(direction: newDirection);
-    notifyListeners();
-  }
-
-  /// Called by the media_kit integration (phase 2) to sync playback position.
-  /// Position must be in trick time, not file time.
+  /// Called by the media_kit integration to sync playback position.
   void updatePosition(Duration position) {
     if (_state.position == position) return;
     _state = _state.copyWith(position: position);
     notifyListeners();
   }
 
-  /// Called when the video file reports its duration. Both files have the
-  /// same duration so this only needs to be set once from the forward file.
+  /// Called when the video file reports its duration.
   void setDuration(Duration duration) {
     if (_state.totalDuration == duration) return;
     _state = _state.copyWith(totalDuration: duration);

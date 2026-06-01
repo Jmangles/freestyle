@@ -1,9 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/trick_annotation.dart';
 import '../utils/date_formatters.dart';
-import '../utils/network_utils.dart';
-import '../video/playback_direction.dart';
 import '../video/training_video_state.dart';
 import 'annotation_widgets.dart';
 
@@ -11,8 +8,6 @@ class TrainingStudioControls extends StatelessWidget {
   final TrainingVideoState state;
   final bool loading;
   final bool hasError;
-  final bool reversedDownloading;
-  final bool reversedSaved;
   final bool isEditor;
   final List<TrickAnnotation> annotations;
 
@@ -21,7 +16,6 @@ class TrainingStudioControls extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onPause;
   final VoidCallback onRestart;
-  final VoidCallback onToggleDirection;
   final ValueChanged<double> onScrub;
   final ValueChanged<double> onSetSpeed;
   final VoidCallback onShowAnnotations;
@@ -31,8 +25,6 @@ class TrainingStudioControls extends StatelessWidget {
     required this.state,
     required this.loading,
     required this.hasError,
-    required this.reversedDownloading,
-    required this.reversedSaved,
     required this.isEditor,
     required this.annotations,
     required this.onStepBackward,
@@ -40,7 +32,6 @@ class TrainingStudioControls extends StatelessWidget {
     required this.onPlay,
     required this.onPause,
     required this.onRestart,
-    required this.onToggleDirection,
     required this.onScrub,
     required this.onSetSpeed,
     required this.onShowAnnotations,
@@ -54,7 +45,6 @@ class TrainingStudioControls extends StatelessWidget {
         ? (state.position.inMicroseconds / totalMicros).clamp(0.0, 1.0)
         : 0.0;
     final canAct = !loading && !hasError;
-    final hideReverseButton = !kIsWeb && !loading && isDeviceOffline && !reversedSaved;
 
     return Container(
       color: Colors.black.withValues(alpha: 0.65),
@@ -132,30 +122,6 @@ class TrainingStudioControls extends StatelessWidget {
                 tooltip: 'Restart',
                 onPressed: canAct ? onRestart : null,
               ),
-              if (!hideReverseButton)
-                reversedDownloading
-                    ? const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        ),
-                      )
-                    : IconButton(
-                        icon: Icon(
-                          state.direction == PlaybackDirection.forward
-                              ? Icons.arrow_forward
-                              : Icons.arrow_back,
-                          color: state.direction == PlaybackDirection.reversed
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.white,
-                        ),
-                        tooltip: state.direction == PlaybackDirection.forward
-                            ? 'Playing forward — tap to reverse'
-                            : 'Playing reversed — tap to go forward',
-                        onPressed: canAct ? onToggleDirection : null,
-                      ),
               const Spacer(),
               if (isEditor)
                 IconButton(

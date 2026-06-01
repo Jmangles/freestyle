@@ -8,8 +8,6 @@ const int _kMinFreeBytes = 1024 * 1024 * 1024; // 1 GB
 
 const String kForwardVideo = 'forward.mp4';
 const String kForwardMobileVideo = 'forward_mobile.mp4';
-const String kReversedVideo = 'reversed.mp4';
-const String kReversedMobileVideo = 'reversed_mobile.mp4';
 
 class OfflineVideoService {
   static final ValueNotifier<Set<int>> savedTrickIds = ValueNotifier(const {});
@@ -29,10 +27,6 @@ class OfflineVideoService {
         final name = entity.path.replaceAll('\\', '/').split('/').last;
         final id = int.tryParse(name);
         if (id == null) continue;
-        // Only forward-file presence determines whether a trick is "saved".
-        // Reversed files are downloaded on-demand and do not affect the saved
-        // indicator — checking them here would show the badge for tricks where
-        // only a reversed file remains after a failed/partial save.
         if (await File('${entity.path}/$kForwardVideo').exists() ||
             await File('${entity.path}/$kForwardMobileVideo').exists()) {
           ids.add(id);

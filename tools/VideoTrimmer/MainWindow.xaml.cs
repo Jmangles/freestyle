@@ -261,21 +261,13 @@ public partial class MainWindow : Window
             Directory.CreateDirectory(outDir);
 
             var forwardPath       = Path.Combine(outDir, "forward.mp4");
-            var reversedPath      = Path.Combine(outDir, "reversed.mp4");
             var forwardMobilePath = Path.Combine(outDir, "forward_mobile.mp4");
-            var reversedMobilePath = Path.Combine(outDir, "reversed_mobile.mp4");
 
-            SetStatus("Encoding forward.mp4 (1/4)…");
-            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardPath, reverse: false));
+            SetStatus("Encoding forward.mp4 (1/2)…");
+            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardPath));
 
-            SetStatus("Encoding reversed.mp4 (2/4)…");
-            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, reversedPath, reverse: true));
-
-            SetStatus("Encoding forward_mobile.mp4 (3/4)…");
-            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardMobilePath, reverse: false, mobile: true));
-
-            SetStatus("Encoding reversed_mobile.mp4 (4/4)…");
-            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, reversedMobilePath, reverse: true, mobile: true));
+            SetStatus("Encoding forward_mobile.mp4 (2/2)…");
+            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardMobilePath, mobile: true));
 
             WriteManifestEntry(Path.Combine(outputBase, "manifest.csv"), trickId, inputPath, _trimStart, _trimEnd);
             SetStatus($"Done! Saved to {outDir}");
@@ -355,17 +347,11 @@ public partial class MainWindow : Window
                     trickId);
                 Directory.CreateDirectory(outDir);
 
-                SetStatus($"{prefix} Encoding forward.mp4 (1/4)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward.mp4"), reverse: false), ct);
+                SetStatus($"{prefix} Encoding forward.mp4 (1/2)…");
+                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward.mp4")), ct);
 
-                SetStatus($"{prefix} Encoding reversed.mp4 (2/4)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "reversed.mp4"), reverse: true), ct);
-
-                SetStatus($"{prefix} Encoding forward_mobile.mp4 (3/4)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward_mobile.mp4"), reverse: false, mobile: true), ct);
-
-                SetStatus($"{prefix} Encoding reversed_mobile.mp4 (4/4)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "reversed_mobile.mp4"), reverse: true, mobile: true), ct);
+                SetStatus($"{prefix} Encoding forward_mobile.mp4 (2/2)…");
+                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward_mobile.mp4"), mobile: true), ct);
             }
             SetStatus($"Done — {entries.Count} trick(s) regenerated.");
         }
@@ -429,32 +415,28 @@ public partial class MainWindow : Window
         writer.WriteLine($"{trickId},\"{sourceFile}\",{trimStart:F3},{trimEnd:F3},{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
     }
 
-    private static string BuildArgs(string input, double start, double end, string output, bool reverse, bool mobile = false)
-{
-    string codec, crf, preset, codecParams;
-
-    if (mobile)
+    private static string BuildArgs(string input, double start, double end, string output, bool mobile = false)
     {
-        codec       = "libx264";
-        crf         = "26";
-        preset      = "veryslow";
-        codecParams = "-profile:v high -level:v 4.1 -g 30 -keyint_min 30 -sc_threshold 0";
-    }
-    else
-    {
-        codec       = "libx264";
-        crf         = "18";
-        preset      = "veryslow";
-        codecParams = "-g 30 -keyint_min 30 -sc_threshold 0";
-    }
+        string crf, preset, codecParams;
 
-    var scale = mobile ? ",scale=720:1280" : "";
-    var vf = reverse
-        ? $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale},reverse"
-        : $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale}";
+        if (mobile)
+        {
+            crf         = "26";
+            preset      = "veryslow";
+            codecParams = "-profile:v high -level:v 4.1 -g 30 -keyint_min 30 -sc_threshold 0";
+        }
+        else
+        {
+            crf         = "18";
+            preset      = "veryslow";
+            codecParams = "-g 30 -keyint_min 30 -sc_threshold 0";
+        }
 
-    return $"-y -i \"{input}\" -vf \"{vf}\" -c:v {codec} -crf {crf} -preset {preset} {codecParams} -r 60 -an \"{output}\"";
-}
+        var scale = mobile ? ",scale=720:1280" : "";
+        var vf = $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale}";
+
+        return $"-y -i \"{input}\" -vf \"{vf}\" -c:v libx264 -crf {crf} -preset {preset} {codecParams} -r 60 -an \"{output}\"";
+    }
 
     private static async Task RunFfmpegAsync(string args, CancellationToken ct = default)
     {

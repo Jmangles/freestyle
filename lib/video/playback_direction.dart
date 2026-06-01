@@ -1,1 +1,0 @@
-enum PlaybackDirection { forward, reversed }

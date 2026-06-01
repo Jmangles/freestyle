@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import '../constants/layout_constants.dart';
 import '../models/trick_annotation.dart';
-import '../video/playback_direction.dart';
 import '../video/training_video_state.dart';
 import 'annotation_widgets.dart';
 
 class TrainingStudioVideoArea extends StatelessWidget {
-  final VideoController forwardController;
-  final VideoController reversedController;
+  final VideoController videoController;
   final TrainingVideoState state;
   final List<TrickAnnotation> annotations;
   final VoidCallback onTap;
@@ -16,8 +14,7 @@ class TrainingStudioVideoArea extends StatelessWidget {
 
   const TrainingStudioVideoArea({
     super.key,
-    required this.forwardController,
-    required this.reversedController,
+    required this.videoController,
     required this.state,
     required this.annotations,
     required this.onTap,
@@ -26,23 +23,11 @@ class TrainingStudioVideoArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isForward = state.direction == PlaybackDirection.forward;
     final position = state.position;
 
     final videoStack = GestureDetector(
       onTap: onTap,
-      child: Stack(
-        children: [
-          Offstage(
-            offstage: !isForward,
-            child: Video(controller: forwardController, controls: null, fit: BoxFit.fitHeight),
-          ),
-          Offstage(
-            offstage: isForward,
-            child: Video(controller: reversedController, controls: null, fit: BoxFit.fitHeight),
-          ),
-        ],
-      ),
+      child: Video(controller: videoController, controls: null, fit: BoxFit.fitHeight),
     );
 
     if (annotations.isEmpty) return videoStack;

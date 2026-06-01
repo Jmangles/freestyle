@@ -19,7 +19,4 @@ class LocalVideoProvider implements VideoProvider {
   /// Ignores trickId — serves the single set of test fixture videos.
   @override
   Uri forwardUrl(int trickId) => Uri.parse('$baseUrl/trick_forward.mp4');
-
-  @override
-  Uri reversedUrl(int trickId) => Uri.parse('$baseUrl/trick_reversed.mp4');
 }
