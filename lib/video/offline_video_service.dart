@@ -3,11 +3,20 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'storage_check_native.dart'
     if (dart.library.html) 'storage_check_stub.dart';
+import '../utils/av1_support.dart';
 
 const int _kMinFreeBytes = 1024 * 1024 * 1024; // 1 GB
 
-const String kForwardVideo = 'forward.mp4';
-const String kForwardMobileVideo = 'forward_mobile.mp4';
+String get kForwardVideo => 'forward${av1Supported ? '_av1' : ''}.mp4';
+String get kForwardMobileVideo =>
+    'forward_mobile${av1Supported ? '_av1' : ''}.mp4';
+
+const _kAllVideoFilenames = [
+  'forward.mp4',
+  'forward_mobile.mp4',
+  'forward_av1.mp4',
+  'forward_mobile_av1.mp4',
+];
 
 class OfflineVideoService {
   static final ValueNotifier<Set<int>> savedTrickIds = ValueNotifier(const {});
@@ -27,10 +36,14 @@ class OfflineVideoService {
         final name = entity.path.replaceAll('\\', '/').split('/').last;
         final id = int.tryParse(name);
         if (id == null) continue;
-        if (await File('${entity.path}/$kForwardVideo').exists() ||
-            await File('${entity.path}/$kForwardMobileVideo').exists()) {
-          ids.add(id);
+        bool hasVideo = false;
+        for (final name in _kAllVideoFilenames) {
+          if (await File('${entity.path}/$name').exists()) {
+            hasVideo = true;
+            break;
+          }
         }
+        if (hasVideo) ids.add(id);
       }
       savedTrickIds.value = ids;
     } finally {

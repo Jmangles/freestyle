@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
 import '../video/training_video_state.dart';
 
+String _variantLabel(String filename) => switch (filename) {
+      'forward_mobile_av1.mp4' => 'MOBILE-AV1',
+      'forward_av1.mp4' => 'FULL-AV1',
+      'forward_mobile.mp4' => 'MOBILE',
+      _ => 'FULL',
+    };
+
+Color _variantColor(String filename) => switch (filename) {
+      'forward_mobile_av1.mp4' => Colors.amber,
+      'forward_av1.mp4' => Colors.cyanAccent,
+      'forward_mobile.mp4' => Colors.orange,
+      _ => Colors.greenAccent,
+    };
+
 class TrainingStudioDebugOverlay extends StatelessWidget {
   final TrainingVideoState state;
   final Duration playerPosition;
+  final String filename;
   final bool useMobileQuality;
   final bool buffering;
   final bool looping;
@@ -22,6 +37,7 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
     super.key,
     required this.state,
     required this.playerPosition,
+    required this.filename,
     required this.useMobileQuality,
     required this.buffering,
     required this.looping,
@@ -61,12 +77,12 @@ class TrainingStudioDebugOverlay extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${useMobileQuality ? 'MOBILE' : 'FULL'}'
+                '${_variantLabel(filename)}'
                 '  ctrl=${state.position.inMilliseconds}ms'
                 '  player=${playerPosition.inMilliseconds}ms'
                 '  total=${state.totalDuration.inMilliseconds}ms',
                 style: TextStyle(
-                  color: useMobileQuality ? Colors.orange : Colors.greenAccent,
+                  color: _variantColor(filename),
                   fontWeight: FontWeight.bold,
                 ),
               ),

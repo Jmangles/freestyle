@@ -260,14 +260,22 @@ public partial class MainWindow : Window
             var outDir      = Path.Combine(outputBase, trickId);
             Directory.CreateDirectory(outDir);
 
-            var forwardPath       = Path.Combine(outDir, "forward.mp4");
-            var forwardMobilePath = Path.Combine(outDir, "forward_mobile.mp4");
+            var forwardPath          = Path.Combine(outDir, "forward.mp4");
+            var forwardMobilePath    = Path.Combine(outDir, "forward_mobile.mp4");
+            var forwardAv1Path       = Path.Combine(outDir, "forward_av1.mp4");
+            var forwardMobileAv1Path = Path.Combine(outDir, "forward_mobile_av1.mp4");
 
-            SetStatus("Encoding forward.mp4 (1/2)…");
+            SetStatus("Encoding forward.mp4 (1/4)…");
             await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardPath));
 
-            SetStatus("Encoding forward_mobile.mp4 (2/2)…");
+            SetStatus("Encoding forward_mobile.mp4 (2/4)…");
             await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardMobilePath, mobile: true));
+
+            SetStatus("Encoding forward_av1.mp4 (3/4)…");
+            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardAv1Path, av1: true));
+
+            SetStatus("Encoding forward_mobile_av1.mp4 (4/4)…");
+            await RunFfmpegAsync(BuildArgs(inputPath, _trimStart, _trimEnd, forwardMobileAv1Path, mobile: true, av1: true));
 
             WriteManifestEntry(Path.Combine(outputBase, "manifest.csv"), trickId, inputPath, _trimStart, _trimEnd);
             SetStatus($"Done! Saved to {outDir}");
@@ -294,7 +302,22 @@ public partial class MainWindow : Window
 
     private void Stop_Click(object sender, RoutedEventArgs e) => _regenerateCts?.Cancel();
 
-    private async void RegenerateAll_Click(object sender, RoutedEventArgs e)
+    private async void RegenerateAll_Click(object sender, RoutedEventArgs e) =>
+        await StartRegenerateAsync(h264Full: true, h264Mobile: true, av1Full: true, av1Mobile: true);
+
+    private async void RegenH264Full_Click(object sender, RoutedEventArgs e) =>
+        await StartRegenerateAsync(h264Full: true);
+
+    private async void RegenH264Mobile_Click(object sender, RoutedEventArgs e) =>
+        await StartRegenerateAsync(h264Mobile: true);
+
+    private async void RegenAv1Full_Click(object sender, RoutedEventArgs e) =>
+        await StartRegenerateAsync(av1Full: true);
+
+    private async void RegenAv1Mobile_Click(object sender, RoutedEventArgs e) =>
+        await StartRegenerateAsync(av1Mobile: true);
+
+    private async Task StartRegenerateAsync(bool h264Full = false, bool h264Mobile = false, bool av1Full = false, bool av1Mobile = false)
     {
         var outputBase = OutputDirBox.Text.Trim();
         var defaultManifest = string.IsNullOrEmpty(outputBase) ? "" : Path.Combine(outputBase, "manifest.csv");
@@ -321,10 +344,15 @@ public partial class MainWindow : Window
 
         if (entries.Count == 0) { SetStatus("Manifest is empty."); return; }
 
-        GenerateBtn.IsEnabled    = false;
-        BrowseVideoBtn.IsEnabled = false;
-        RegenerateBtn.IsEnabled  = false;
-        StopBtn.IsEnabled        = true;
+        var variants = new List<(string suffix, bool mobile, bool av1)>();
+        if (h264Full)   variants.Add(("forward.mp4",            false, false));
+        if (h264Mobile) variants.Add(("forward_mobile.mp4",     true,  false));
+        if (av1Full)    variants.Add(("forward_av1.mp4",        false, true));
+        if (av1Mobile)  variants.Add(("forward_mobile_av1.mp4", true,  true));
+
+        Button[] regenButtons = [GenerateBtn, BrowseVideoBtn, RegenerateBtn, RegenH264FullBtn, RegenH264MobileBtn, RegenAv1FullBtn, RegenAv1MobileBtn];
+        foreach (var btn in regenButtons) btn.IsEnabled = false;
+        StopBtn.IsEnabled = true;
 
         _regenerateCts = new CancellationTokenSource();
         var ct = _regenerateCts.Token;
@@ -347,11 +375,12 @@ public partial class MainWindow : Window
                     trickId);
                 Directory.CreateDirectory(outDir);
 
-                SetStatus($"{prefix} Encoding forward.mp4 (1/2)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward.mp4")), ct);
-
-                SetStatus($"{prefix} Encoding forward_mobile.mp4 (2/2)…");
-                await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, "forward_mobile.mp4"), mobile: true), ct);
+                for (int v = 0; v < variants.Count; v++)
+                {
+                    var (suffix, mobile, av1) = variants[v];
+                    SetStatus($"{prefix} Encoding {suffix} ({v + 1}/{variants.Count})…");
+                    await RunFfmpegAsync(BuildArgs(sourceFile, trimStart, trimEnd, Path.Combine(outDir, suffix), mobile, av1), ct);
+                }
             }
             SetStatus($"Done — {entries.Count} trick(s) regenerated.");
         }
@@ -362,11 +391,9 @@ public partial class MainWindow : Window
         finally
         {
             _regenerateCts.Dispose();
-            _regenerateCts           = null;
-            GenerateBtn.IsEnabled    = true;
-            BrowseVideoBtn.IsEnabled = true;
-            RegenerateBtn.IsEnabled  = true;
-            StopBtn.IsEnabled        = false;
+            _regenerateCts = null;
+            foreach (var btn in regenButtons) btn.IsEnabled = true;
+            StopBtn.IsEnabled = false;
         }
     }
 
@@ -415,27 +442,25 @@ public partial class MainWindow : Window
         writer.WriteLine($"{trickId},\"{sourceFile}\",{trimStart:F3},{trimEnd:F3},{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
     }
 
-    private static string BuildArgs(string input, double start, double end, string output, bool mobile = false)
+    private static string BuildArgs(string input, double start, double end, string output, bool mobile = false, bool av1 = false)
     {
-        string crf, preset, codecParams;
-
-        if (mobile)
+        string codecArgs;
+        if (av1)
         {
-            crf         = "26";
-            preset      = "veryslow";
-            codecParams = "-profile:v high -level:v 4.1 -g 30 -keyint_min 30 -sc_threshold 0";
+            var crf = "30";
+            codecArgs = $"-c:v libsvtav1 -crf {crf} -preset 4 -g 30 -keyint_min 30 -sc_threshold 0";
         }
         else
         {
-            crf         = "18";
-            preset      = "veryslow";
-            codecParams = "-g 30 -keyint_min 30 -sc_threshold 0";
+            var crf   = mobile ? "26" : "18";
+            var extra = mobile ? " -profile:v high -level:v 4.1" : "";
+            codecArgs = $"-c:v libx264 -crf {crf} -preset veryslow{extra} -g 30 -keyint_min 30 -sc_threshold 0";
         }
 
-        var scale = mobile ? ",scale=720:1280" : "";
+        var scale = mobile ? (av1 ? ",scale=-2:720" : ",scale=720:1280") : "";
         var vf = $"trim=start={start:F3}:end={end:F3},setpts=PTS-STARTPTS,crop=1080:1920{scale}";
 
-        return $"-y -i \"{input}\" -vf \"{vf}\" -c:v libx264 -crf {crf} -preset {preset} {codecParams} -r 60 -an \"{output}\"";
+        return $"-y -i \"{input}\" -vf \"{vf}\" {codecArgs} -r 60 -an \"{output}\"";
     }
 
     private static async Task RunFfmpegAsync(string args, CancellationToken ct = default)

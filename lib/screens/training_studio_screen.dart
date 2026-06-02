@@ -228,6 +228,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       // pub stub doesn't declare it, so we use dynamic dispatch to avoid the
       // static type error. The try-catch handles platforms without the method.
       final dynamic native = player.platform;
+      if (Platform.isAndroid) {
+        await native.setProperty('hwdec', 'mediacodec');
+      } else if (Platform.isIOS) {
+        await native.setProperty('hwdec', 'videotoolbox');
+      } else {
+        await native.setProperty('hwdec', 'auto-safe');
+      }
       await native.setProperty('cache', 'yes');
       await native.setProperty('demuxer-max-bytes', kMpvCacheBytes);
       await native.setProperty('demuxer-max-back-bytes',
@@ -322,6 +329,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       }
     } else {
       // Web
+      _forwardFilename = _useMobileQuality ? kForwardMobileVideo : kForwardVideo;
       final forwardUrl = _useMobileQuality
           ? widget.provider.forwardMobileUrl(widget.trickId)
           : widget.provider.forwardUrl(widget.trickId);
@@ -841,6 +849,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
               TrainingStudioDebugOverlay(
                 state: _controller.state,
                 playerPosition: _player.state.position,
+                filename: _forwardFilename,
                 useMobileQuality: _useMobileQuality,
                 buffering: _buffering,
                 looping: _looping,

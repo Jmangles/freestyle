@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 const _speedTestUrl = 'https://freestyledb.b-cdn.net/speedtest.bin';
 
 // Threshold below which we serve mobile-quality video (in Mbps).
-const kMobileQualityThresholdMbps = 2.0;
+const kMobileQualityThresholdMbps = 4.0;
 
 /// Downloads the speed-test asset from the CDN and returns the estimated
 /// connection speed in Mbps, or null if the request fails.

@@ -14,6 +14,7 @@ import 'services/user_tricks_service.dart';
 import 'video/offline_video_service.dart';
 import 'supabase_config.dart';
 import 'theme_controller.dart';
+import 'utils/av1_support.dart';
 import 'utils/network_utils.dart';
 
 Future<void> main() async {
@@ -31,6 +32,7 @@ Future<void> main() async {
 
   await ThemeController.init();
   await LocalDatabase.init();
+  await initAv1Support();
 
   if (!kIsWeb) {
     final connectivity = await Connectivity().checkConnectivity();
