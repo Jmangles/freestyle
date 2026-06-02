@@ -33,6 +33,17 @@
 /build/
 /test/fixtures/videos/*
 
+# Android-specific generated plugin file
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS and macOS specific generated plugin files
+**/ios/**/GeneratedPluginRegistrant.*
+**/macos/**/GeneratedPluginRegistrant.*
+
+# Desktop and Web generic catch-all rules
+generated_plugin_registrant.*
+GeneratedPluginRegistrant.*
+
 # Web related
 
 # Symbolication related
