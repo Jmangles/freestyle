@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trick_vote_stats.dart';
 import '../models/user_trick.dart';
 import '../utils/network_utils.dart';
+import '../utils/offline_fallback.dart';
 import 'auth_service.dart';
 import 'local_database.dart';
 
@@ -274,19 +275,16 @@ class UserTricksService {
     );
   }
 
-  static Future<TrickVoteStats> getTrickVoteStats(int trickId) async {
-    if (isDeviceOffline) return TrickVoteStats.empty();
-    try {
-      final data = await _client
-          .rpc('get_trick_vote_stats', params: {'p_trick_id': trickId});
-      return TrickVoteStats.fromRpc(data as Map<String, dynamic>);
-    } catch (e, st) {
-      if (kIsWeb || !isNetworkError(e)) {
-        debugPrint('UserTricksService.getTrickVoteStats($trickId): $e\n$st');
-        rethrow;
-      }
-      return TrickVoteStats.empty();
-    }
+  static Future<TrickVoteStats> getTrickVoteStats(int trickId) {
+    return withOfflineFallback(
+      caller: 'UserTricksService.getTrickVoteStats($trickId)',
+      online: () async {
+        final data = await _client
+            .rpc('get_trick_vote_stats', params: {'p_trick_id': trickId});
+        return TrickVoteStats.fromRpc(data as Map<String, dynamic>);
+      },
+      offline: () async => TrickVoteStats.empty(),
+    );
   }
 
   // ─── Flush pending writes ─────────────────────────────────────────────────

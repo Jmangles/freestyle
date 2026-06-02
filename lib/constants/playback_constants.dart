@@ -1,5 +1,23 @@
 // Playback and loop-detection timing constants for the video layer.
 
+// Threshold below which we serve mobile-quality video (in Mbps).
+const kMobileQualityThresholdMbps = 2.0;
+
+/// MPV demuxer forward and backward cache limits (64 MB each).
+const String kMpvCacheBytes = '67108864';
+
+/// MPV network timeout in seconds.
+const String kMpvNetworkTimeout = '20';
+
+/// Default new-annotation end offset in milliseconds relative to its start.
+const int kAnnotationDefaultDurationMs = 2000;
+
+/// Minimum iOS version to try to serve AV1
+const int kMinIosVersionForAv1 = 14;
+
+/// Minimum Android version to try to serve AV1
+const int kMinAndroidVersionForAv1 = 29;
+
 /// Debounce window for completed-event bursts from the media player.
 const Duration kEofDebounce = Duration(milliseconds: 300);
 
@@ -18,12 +36,3 @@ const Duration kLoopClearThreshold = Duration(milliseconds: 200);
 
 /// Positions below this are treated as "at start" for EOF-loop detection.
 const Duration kNearStartThreshold = Duration(milliseconds: 100);
-
-/// MPV demuxer forward and backward cache limits (64 MB each).
-const String kMpvCacheBytes = '67108864';
-
-/// MPV network timeout in seconds.
-const String kMpvNetworkTimeout = '20';
-
-/// Default new-annotation end offset in milliseconds relative to its start.
-const int kAnnotationDefaultDurationMs = 2000;

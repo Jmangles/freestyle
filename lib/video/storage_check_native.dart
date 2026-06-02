@@ -7,24 +7,29 @@ import 'dart:io';
 int? statvfsFreeBytes(String path) {
   try {
     final lib = DynamicLibrary.process();
+
     final cMalloc = lib.lookupFunction<
         Pointer<Uint8> Function(IntPtr),
         Pointer<Uint8> Function(int)>('malloc');
+
     final cFree = lib.lookupFunction<
         Void Function(Pointer<Uint8>),
         void Function(Pointer<Uint8>)>('free');
+
     final statvfs = lib.lookupFunction<
         Int32 Function(Pointer<Uint8>, Pointer<Uint8>),
         int Function(Pointer<Uint8>, Pointer<Uint8>)>('statvfs');
 
     final pathBytes = [...utf8.encode(path), 0];
     final pathPtr = cMalloc(pathBytes.length);
+
     for (var i = 0; i < pathBytes.length; i++) {
       pathPtr[i] = pathBytes[i];
     }
 
     const bufSize = 512; // Darwin arm64 struct is ~176 B today; 512 gives headroom for future SDK changes
     final buf = cMalloc(bufSize);
+
     for (var i = 0; i < bufSize; i++) {
       buf[i] = 0;
     }
@@ -51,7 +56,9 @@ int? statvfsFreeBytes(String path) {
       // f_frsize (unsigned long, 8 B) at offset 8; f_bavail (uint64_t) at offset 32.
       // 32-bit Android not handled — null causes the caller to allow the operation.
       if (sizeOf<IntPtr>() != 8) return null;
+
       final freeBytes = _readU64LE(buf, 8) * _readU64LE(buf, 32);
+
       return freeBytes > k8TiB ? null : freeBytes;
     } finally {
       cFree(pathPtr);
@@ -64,9 +71,11 @@ int? statvfsFreeBytes(String path) {
 
 int _readU64LE(Pointer<Uint8> buf, int offset) {
   var v = 0;
+
   for (var i = 7; i >= 0; i--) {
     v = (v << 8) | buf[offset + i];
   }
+  
   return v;
 }
 

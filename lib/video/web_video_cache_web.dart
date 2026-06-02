@@ -16,9 +16,13 @@ final _sessionCache = <String, String>{};
 ({String url, bool isMobile})? getCachedWebVideo(
     String fullKey, String mobileKey) {
   final full = _sessionCache[fullKey];
+
   if (full != null) return (url: full, isMobile: false);
+
   final mobile = _sessionCache[mobileKey];
+
   if (mobile != null) return (url: mobile, isMobile: true);
+  
   return null;
 }
 
@@ -30,6 +34,7 @@ Future<String?> downloadAndCacheWebVideo(
   void Function(String)? onError,
 }) async {
   final cached = _sessionCache[cacheKey];
+
   if (cached != null) {
     onProgress?.call(1.0);
     return cached;
@@ -39,6 +44,7 @@ Future<String?> downloadAndCacheWebVideo(
   try {
     final request = http.Request('GET', Uri.parse(url));
     final streamed = await client.send(request);
+
     if (streamed.statusCode != 200) {
       onError?.call('HTTP ${streamed.statusCode}');
       return null;
@@ -52,9 +58,13 @@ Future<String?> downloadAndCacheWebVideo(
 
     await for (final chunk in streamed.stream) {
       if (isCancelled?.call() == true) return null;
+
       builder.add(chunk);
       received += chunk.length;
-      if (total > 0) onProgress?.call(received / total);
+
+      if (total <= 0) continue;
+
+      onProgress?.call(received / total);
     }
 
     if (isCancelled?.call() == true) return null;
@@ -63,12 +73,17 @@ Future<String?> downloadAndCacheWebVideo(
     final List<JSAny?> parts = [bytes.toJS];
     final blob = _Blob(parts.toJS);
     final objectUrl = _createObjectUrl(blob);
+
     _sessionCache[cacheKey] = objectUrl;
+
     onProgress?.call(1.0);
+
     return objectUrl;
   } catch (e, st) {
     debugPrint('WebVideoCache: download/blob failed: $e\n$st');
+
     onError?.call(e.toString());
+    
     return null;
   } finally {
     client.close();

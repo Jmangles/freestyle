@@ -17,33 +17,45 @@ class AuthService {
 
   static Future<Profile?> getCurrentProfile({bool forceRefresh = false}) async {
     if (_cachedProfile != null && !forceRefresh) return _cachedProfile;
+
     final user = currentUser;
     if (user == null) return null;
+
     if (isDeviceOffline) return _cachedProfile ?? await _loadProfileFromDisk();
+
     try {
       final data = await _client
           .from('profiles')
           .select()
           .eq('id', user.id)
           .maybeSingle();
+
       if (data == null) return null;
+
       _cachedProfile = Profile.fromJson(data);
+
       unawaited(LocalDatabase.setMeta('cached_profile', jsonEncode(data)));
+
       return _cachedProfile;
     } catch (e, st) {
       if (kIsWeb || !isNetworkError(e)) {
         debugPrint('AuthService.getCurrentProfile: $e\n$st');
         rethrow;
       }
+
       debugPrint('AuthService.getCurrentProfile: offline, using cache');
+
       return _cachedProfile ?? await _loadProfileFromDisk();
     }
   }
 
   static Future<Profile?> _loadProfileFromDisk() async {
     final stored = await LocalDatabase.getMeta('cached_profile');
+
     if (stored == null) return null;
+
     _cachedProfile = Profile.fromJson(jsonDecode(stored) as Map<String, dynamic>);
+
     return _cachedProfile;
   }
 

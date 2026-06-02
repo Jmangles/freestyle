@@ -19,16 +19,20 @@ class AnnotationsService {
           .eq('trick_id', trickId)
           .eq('language', language)
           .order('start_ms');
+
       final annotations = (data as List)
           .map((e) => TrickAnnotation.fromJson(e as Map<String, dynamic>))
           .toList();
+
       await LocalDatabase.cacheAnnotations(annotations, trickId, language);
+
       return annotations;
     } catch (e, st) {
       if (kIsWeb || !isNetworkError(e)) {
         debugPrint('AnnotationsService.getForTrick($trickId): $e\n$st');
         rethrow;
       }
+
       return LocalDatabase.getAnnotations(trickId, language);
     }
   }
@@ -42,9 +46,11 @@ class AnnotationsService {
   }) async {
     try {
       final profile = await AuthService.getCurrentProfile();
+
       if (profile == null) {
         throw StateError('No authenticated profile for annotation creation');
       }
+
       final data = await _db
           .from('trick_annotations')
           .insert({
@@ -57,7 +63,9 @@ class AnnotationsService {
           })
           .select()
           .single();
+
       return TrickAnnotation.fromJson(data);
+
     } catch (e, st) {
       debugPrint('AnnotationsService.create(trickId=$trickId): $e\n$st');
       rethrow;
@@ -83,6 +91,7 @@ class AnnotationsService {
           .eq('id', id)
           .select()
           .single();
+          
       return TrickAnnotation.fromJson(data);
     } catch (e, st) {
       debugPrint('AnnotationsService.update($id): $e\n$st');

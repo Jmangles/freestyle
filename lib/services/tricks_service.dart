@@ -6,6 +6,7 @@ import '../models/position.dart';
 import '../models/trick.dart';
 import '../models/trick_suggestion.dart';
 import '../utils/network_utils.dart';
+import '../utils/offline_fallback.dart';
 import 'auth_service.dart';
 import 'local_database.dart';
 
@@ -17,27 +18,23 @@ class TricksService {
       'start_position:positions!start_position_id(name), '
       'end_position:positions!end_position_id(name)';
 
-  static Future<List<Trick>> getApprovedTricks() async {
-    if (isDeviceOffline) return LocalDatabase.getTricks();
-    try {
-      final data = await _client
-          .from('tricks')
-          .select(_select)
-          .eq('status', ApprovalStatus.approved.index)
-          .order('given_name');
-      final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
-      await LocalDatabase.cacheTricks(tricks);
-      await LocalDatabase.setMeta(
-          'tricks_last_synced', DateTime.now().toUtc().toIso8601String());
-      return tricks;
-    } catch (e, st) {
-      if (kIsWeb || !isNetworkError(e)) {
-        debugPrint('TricksService.getApprovedTricks: $e\n$st');
-        rethrow;
-      }
-      debugPrint('TricksService.getApprovedTricks: offline, using cache');
-      return LocalDatabase.getTricks();
-    }
+  static Future<List<Trick>> getApprovedTricks() {
+    return withOfflineFallback(
+      caller: 'TricksService.getApprovedTricks',
+      online: () async {
+        final data = await _client
+            .from('tricks')
+            .select(_select)
+            .eq('status', ApprovalStatus.approved.index)
+            .order('given_name');
+        final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
+        await LocalDatabase.cacheTricks(tricks);
+        await LocalDatabase.setMeta(
+            'tricks_last_synced', DateTime.now().toUtc().toIso8601String());
+        return tricks;
+      },
+      offline: () => LocalDatabase.getTricks(),
+    );
   }
 
   static Future<Trick> getTrickById(int id) async {
@@ -63,44 +60,37 @@ class TricksService {
     }
   }
 
-  static Future<List<Trick>> getTricksByIds(List<int> ids) async {
-    if (ids.isEmpty) return [];
-    if (isDeviceOffline) return LocalDatabase.getTricksByIds(ids);
-    try {
-      final data =
-          await _client.from('tricks').select(_select).inFilter('id', ids);
-      final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
-      await LocalDatabase.cacheTricks(tricks);
-      return tricks;
-    } catch (e, st) {
-      if (kIsWeb || !isNetworkError(e)) {
-        debugPrint('TricksService.getTricksByIds: $e\n$st');
-        rethrow;
-      }
-      return LocalDatabase.getTricksByIds(ids);
-    }
+  static Future<List<Trick>> getTricksByIds(List<int> ids) {
+    if (ids.isEmpty) return Future.value([]);
+    return withOfflineFallback(
+      caller: 'TricksService.getTricksByIds',
+      online: () async {
+        final data =
+            await _client.from('tricks').select(_select).inFilter('id', ids);
+        final tricks = (data as List).map((e) => Trick.fromJson(e)).toList();
+        await LocalDatabase.cacheTricks(tricks);
+        return tricks;
+      },
+      offline: () => LocalDatabase.getTricksByIds(ids),
+    );
   }
 
-  static Future<List<Trick>> getTricksRequiring(int trickId) async {
-    if (isDeviceOffline) {
-      final all = await LocalDatabase.getTricks();
-      return all.where((t) => t.prerequisiteTrickIds.contains(trickId)).toList();
-    }
-    try {
-      final data = await _client
-          .from('tricks')
-          .select(_select)
-          .eq('status', ApprovalStatus.approved.index)
-          .contains('prerequisite_trick_ids', [trickId]);
-      return (data as List).map((e) => Trick.fromJson(e)).toList();
-    } catch (e, st) {
-      if (kIsWeb || !isNetworkError(e)) {
-        debugPrint('TricksService.getTricksRequiring($trickId): $e\n$st');
-        rethrow;
-      }
-      final all = await LocalDatabase.getTricks();
-      return all.where((t) => t.prerequisiteTrickIds.contains(trickId)).toList();
-    }
+  static Future<List<Trick>> getTricksRequiring(int trickId) {
+    return withOfflineFallback(
+      caller: 'TricksService.getTricksRequiring($trickId)',
+      online: () async {
+        final data = await _client
+            .from('tricks')
+            .select(_select)
+            .eq('status', ApprovalStatus.approved.index)
+            .contains('prerequisite_trick_ids', [trickId]);
+        return (data as List).map((e) => Trick.fromJson(e)).toList();
+      },
+      offline: () async {
+        final all = await LocalDatabase.getTricks();
+        return all.where((t) => t.prerequisiteTrickIds.contains(trickId)).toList();
+      },
+    );
   }
 
   static Future<List<Trick>> getPendingTricks() async {
@@ -152,22 +142,20 @@ class TricksService {
     }
   }
 
-  static Future<List<Position>> getPositions() async {
-    if (isDeviceOffline) return LocalDatabase.getPositions();
-    try {
-      final data = await _client.from('positions').select().order('name');
-      final positions = (data as List).map((e) => Position.fromJson(e)).toList();
-      await LocalDatabase.cachePositions(positions);
-      await LocalDatabase.setMeta(
-          'positions_last_synced', DateTime.now().toUtc().toIso8601String());
-      return positions;
-    } catch (e, st) {
-      if (kIsWeb || !isNetworkError(e)) {
-        debugPrint('TricksService.getPositions: $e\n$st');
-        rethrow;
-      }
-      return LocalDatabase.getPositions();
-    }
+  static Future<List<Position>> getPositions() {
+    return withOfflineFallback(
+      caller: 'TricksService.getPositions',
+      online: () async {
+        final data = await _client.from('positions').select().order('name');
+        final positions =
+            (data as List).map((e) => Position.fromJson(e)).toList();
+        await LocalDatabase.cachePositions(positions);
+        await LocalDatabase.setMeta(
+            'positions_last_synced', DateTime.now().toUtc().toIso8601String());
+        return positions;
+      },
+      offline: () => LocalDatabase.getPositions(),
+    );
   }
 
   static Future<void> addPosition(String name) async {

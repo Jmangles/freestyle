@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import '../constants/playback_constants.dart';
@@ -14,10 +13,13 @@ import 'package:media_kit_video/media_kit_video.dart';
 import '../models/trick_annotation.dart';
 import '../services/annotations_service.dart';
 import '../services/auth_service.dart';
+import '../video/mpv_config.dart';
 import '../video/offline_video_service.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
+import '../video/video_quality_resolver.dart';
 import '../video/web_video_cache.dart';
+import '../utils/safe_state.dart';
 import '../widgets/back_home_leading.dart';
 import '../widgets/training_studio_controls.dart';
 import '../widgets/training_studio_debug_overlay.dart';
@@ -40,7 +42,8 @@ class TrainingStudioScreen extends StatefulWidget {
   State<TrainingStudioScreen> createState() => _TrainingStudioScreenState();
 }
 
-class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
+class _TrainingStudioScreenState extends State<TrainingStudioScreen>
+    with SafeStateMixin {
   late final Player _player;
   late final VideoController _videoController;
   late final TrainingVideoController _controller;
@@ -61,7 +64,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   bool _isEditor = false;
 
   // Snapshot of offline state taken once at player-init time. Used only for
-  // quality-selection logic (_resolveNativeForwardPath) and the debug overlay.
+  // quality-selection logic and the debug overlay.
   bool _isOfflineAtInit = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _forwardSaved = false;
@@ -94,7 +97,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       trickId: widget.trickId,
     );
     _controller.addListener(() {
-      if (mounted) setState(() {});
+      safeSetState(() {});
     });
 
     _setupSubscriptions();
@@ -102,7 +105,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (!kIsWeb) {
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         setDeviceConnectivity(results);
-        if (mounted) setState(() {});
+        safeSetState(() {});
       });
     }
 
@@ -215,11 +218,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       _looping = false;
     }
     // Position advancing is the reliable signal that autoplay actually worked.
-    if (kIsWeb && _awaitingWebAutoplay && pos > const Duration(milliseconds: 200)) {
+    if (kIsWeb &&
+        _awaitingWebAutoplay &&
+        pos > const Duration(milliseconds: 200)) {
       _awaitingWebAutoplay = false;
     }
     _controller.updatePosition(pos);
-    if (mounted) setState(() {});
+    safeSetState(() {});
   }
 
   void _onPlaying(bool playing) {
@@ -241,40 +246,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   void _onBuffering(bool buffering) {
-    if (mounted) setState(() => _buffering = buffering);
-  }
-
-  // Configure MPV to buffer aggressively so temporary network stalls are
-  // absorbed by the cache rather than reported as EOF mid-playback.
-  Future<void> _configureMpvForStreaming(Player player) async {
-    if (kIsWeb) return;
-    try {
-      // NativePlayer.setProperty exists at runtime on Android/desktop but the
-      // pub stub doesn't declare it, so we use dynamic dispatch to avoid the
-      // static type error. The try-catch handles platforms without the method.
-      final dynamic native = player.platform;
-      if (Platform.isAndroid) {
-        await native.setProperty('hwdec', 'mediacodec');
-      } else if (Platform.isIOS) {
-        await native.setProperty('hwdec', 'videotoolbox');
-      } else {
-        await native.setProperty('hwdec', 'auto-safe');
-      }
-      await native.setProperty('cache', 'yes');
-      await native.setProperty('demuxer-max-bytes', kMpvCacheBytes);
-      await native.setProperty('demuxer-max-back-bytes',
-          kMpvCacheBytes); // seek(0) on loop served from memory
-      await native.setProperty('cache-pause',
-          'yes'); // stall instead of false-EOF when buffer runs dry mid-stream
-      await native.setProperty(
-          'keep-open', 'yes'); // pause at EOF instead of stopping
-      await native.setProperty('network-timeout', kMpvNetworkTimeout);
-    } catch (_) {}
+    safeSetState(() => _buffering = buffering);
   }
 
   Future<void> _initPlayers() async {
-    // isWifi is only used by the native resolution path below.
-    // Web determines quality lazily inside the else branch after the cache check.
     bool isWifi = false;
 
     if (!kIsWeb) {
@@ -307,24 +282,27 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         _forwardSaved = fwdExists || fwdMobileExists;
       });
 
-      final resolved = await _resolveNativeForwardPath(
+      final resolved = await resolveNativeForwardPath(VideoResolutionContext(
+        trickId: widget.trickId,
+        provider: widget.provider,
         isWifi: isWifi,
         isOffline: _isOfflineAtInit,
         fwdExists: fwdExists,
         fwdMobileExists: fwdMobileExists,
-      );
+        isCancelled: () => _cancelForwardDownload,
+        onProgress: (p) {
+          if (mounted) setState(() => _downloadProgress = p);
+        },
+        isMounted: () => mounted,
+      ));
 
-      // This is not redundant, the above async method may complete when the user has navigated away.
       if (!mounted) return;
 
       if (resolved == null) {
-        // Offline with no saved file — button should have been hidden upstream,
-        // but guard against deep links or back-nav races.
         setState(() {
           _loading = false;
           _initError = 'No saved video available offline.';
         });
-
         return;
       }
 
@@ -406,7 +384,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
     if (!mounted) return;
 
-    await _configureMpvForStreaming(_player);
+    await configureMpvForStreaming(_player);
 
     if (!mounted) return;
 
@@ -417,152 +395,16 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (mounted) setState(() => _downloadProgress = null);
   }
 
-  /// Resolves the forward-video path, filename, and quality settings for the
-  /// current connectivity and on-device file state. Returns null when offline
-  /// with no saved file — the caller should surface an error and abort init.
-  Future<
-      ({
-        String path,
-        String filename,
-        bool useMobileQuality,
-        String? cachePath,
-        bool startQualityUpgrade,
-      })?> _resolveNativeForwardPath({
-    required bool isWifi,
-    required bool isOffline,
-    required bool fwdExists,
-    required bool fwdMobileExists,
-  }) async {
-    if (isWifi) {
-      if (fwdExists) {
-        return (
-          path: await OfflineVideoService.videoPath(
-              widget.trickId, kForwardVideo),
-          filename: kForwardVideo,
-          useMobileQuality: false,
-          cachePath: null,
-          startQualityUpgrade: false,
-        );
-      }
-      if (fwdMobileExists) {
-        // Serve mobile quality from device; trigger silent background upgrade.
-        return (
-          path: await OfflineVideoService.videoPath(
-              widget.trickId, kForwardMobileVideo),
-          filename: kForwardMobileVideo,
-          useMobileQuality: true,
-          cachePath: null,
-          startQualityUpgrade: true,
-        );
-      }
-      // WiFi + neither on device → evict any mobile cache entry, download full quality.
-      final fullUrl = widget.provider.forwardUrl(widget.trickId).toString();
-      final cacheDir = await getApplicationCacheDirectory();
-      final mobileCache =
-          File('${cacheDir.path}/ts_${widget.trickId}_fwd_mobile.mp4');
-      if (await mobileCache.exists()) {
-        await mobileCache.delete().catchError((_) => mobileCache);
-      }
-      if (!mounted) return null;
-      final cached = await OfflineVideoService.downloadToCache(
-        fullUrl,
-        cacheKey: '${widget.trickId}_fwd',
-        isCancelled: () => _cancelForwardDownload,
-        onProgress: (p) {
-          if (mounted) setState(() => _downloadProgress = p);
-        },
-      );
-      if (!mounted) return null;
-      return (
-        path: cached ?? fullUrl,
-        filename: kForwardVideo,
-        useMobileQuality: false,
-        cachePath: cached,
-        startQualityUpgrade: false,
-      );
-    }
-
-    if (isOffline) {
-      if (fwdExists) {
-        return (
-          path: await OfflineVideoService.videoPath(
-              widget.trickId, kForwardVideo),
-          filename: kForwardVideo,
-          useMobileQuality: false,
-          cachePath: null,
-          startQualityUpgrade: false,
-        );
-      }
-      if (fwdMobileExists) {
-        return (
-          path: await OfflineVideoService.videoPath(
-              widget.trickId, kForwardMobileVideo),
-          filename: kForwardMobileVideo,
-          useMobileQuality: true,
-          cachePath: null,
-          startQualityUpgrade: false,
-        );
-      }
-      return null; // No saved file and offline.
-    }
-
-    // Cellular
-    if (fwdExists) {
-      // Full quality on device — no downgrade on mobile.
-      return (
-        path:
-            await OfflineVideoService.videoPath(widget.trickId, kForwardVideo),
-        filename: kForwardVideo,
-        useMobileQuality: false,
-        cachePath: null,
-        startQualityUpgrade: false,
-      );
-    }
-    if (fwdMobileExists) {
-      return (
-        path: await OfflineVideoService.videoPath(
-            widget.trickId, kForwardMobileVideo),
-        filename: kForwardMobileVideo,
-        useMobileQuality: true,
-        cachePath: null,
-        startQualityUpgrade: false,
-      );
-    }
-    // Cellular + neither on device → download mobile quality to cache.
-    final mobileUrl =
-        widget.provider.forwardMobileUrl(widget.trickId).toString();
-    final cached = await OfflineVideoService.downloadToCache(
-      mobileUrl,
-      cacheKey: '${widget.trickId}_fwd_mobile',
-      isCancelled: () => _cancelForwardDownload,
-      onProgress: (p) {
-        if (mounted) setState(() => _downloadProgress = p);
-      },
-    );
-    if (!mounted) return null;
-    return (
-      path: cached ?? mobileUrl,
-      filename: kForwardMobileVideo,
-      useMobileQuality: true,
-      cachePath: cached,
-      startQualityUpgrade: false,
-    );
-  }
-
   /// Silently downloads full-quality forward video to replace the mobile-quality
   /// permanent file. Intentionally unawaited; cancellable via [_cancelForwardDownload].
   Future<void> _startQualityUpgrade() async {
-    // Guard: if dispose (or any other caller) set the cancel flag before this
-    // coroutine ran on the event loop, exit without resetting it.
     if (_cancelForwardDownload) return;
-    // Reset cancellation before starting. This executes synchronously at the
-    // unawaited() call site — before downloadToPermanent's first await and
-    // therefore before any user interaction can set _cancelForwardDownload = true.
-    // Removing this line would also be safe (the flag starts false), but keeping
-    // it makes the intent explicit for future readers.
+
     _cancelForwardDownload = false;
+
     try {
       final fullUrl = widget.provider.forwardUrl(widget.trickId).toString();
+      
       await OfflineVideoService.downloadToPermanent(
         fullUrl,
         widget.trickId,
@@ -570,19 +412,20 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         isCancelled: () => _cancelForwardDownload,
       );
     } catch (_) {
-      // Download failed or was cancelled — partial file cleaned up by downloadToPermanent.
       return;
     }
+
     if (!mounted || _cancelForwardDownload) return;
-    // Delete the mobile-quality file separately so a delete failure doesn't
-    // obscure a successful download (and leave both files on disk silently).
+
     try {
       await OfflineVideoService.deleteVideo(
           widget.trickId, kForwardMobileVideo);
     } catch (e) {
       debugPrint('Quality upgrade: failed to delete $kForwardMobileVideo: $e');
     }
+
     if (!mounted) return;
+
     setState(() {
       _forwardFilename = kForwardVideo;
       _useMobileQuality = false;
@@ -593,38 +436,41 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (_saving || _forwardCachePath == null || _forwardSaved) return;
     setState(() => _saving = true);
     try {
-      if (!await File(_forwardCachePath!).exists()) {
+      final fileExists = await File(_forwardCachePath!).exists();
+      if (!fileExists) {
         if (!mounted) return;
+
         setState(() => _forwardCachePath = null);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Cached video was cleared — reopen the training studio to re-download')),
-        );
+
+        showInfoSnackBar(
+            'Cached video was cleared — reopen the training studio to re-download');
         return;
       }
 
       final sufficient = await OfflineVideoService.hasSufficientStorage();
+
       if (!mounted) return;
+
       if (!sufficient) {
         final proceed = await showStorageWarning(context);
-        if (!mounted || proceed != true) return;
+
+        if (!mounted || !proceed) return;
       }
 
       try {
         await OfflineVideoService.saveFromCache(
             _forwardCachePath!, widget.trickId, _forwardFilename);
+
         if (!mounted) return;
+
         setState(() => _forwardSaved = true);
+
         OfflineVideoService.markSaved(widget.trickId);
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save video: $e')),
-        );
+        showInfoSnackBar('Could not save video: $e');
       }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      safeSetState(() => _saving = false);
     }
   }
 
@@ -634,9 +480,6 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
     _cancelForwardDownload = true;
     try {
-      // deleteAllVideos removes the entire trick directory. The quality upgrade
-      // may write forward.mp4 after the cancel flags are set but before the
-      // flag checks run; deleting the whole directory covers that window.
       await OfflineVideoService.deleteAllVideos(widget.trickId);
       if (!mounted) return;
       setState(() {
@@ -645,18 +488,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       });
       OfflineVideoService.markDeleted(widget.trickId);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not delete video: $e')),
-      );
-    } finally {
-      // _cancelForwardDownload is intentionally NOT reset here. Resetting it in
-      // finally races with a still-running download future: the future's rename
-      // could land after the directory was deleted, recreating the file on disk
-      // and making the video reappear on next launch. _startQualityUpgrade
-      // resets the flag itself before each new download cycle, so leaving it
-      // true here is safe and keeps the cancel effective until the next save.
+      showInfoSnackBar('Could not delete video: $e');
     }
+    // _cancelForwardDownload is intentionally NOT reset here — see _startQualityUpgrade.
   }
 
   Future<void> _loadAnnotationsAndProfile() async {
@@ -668,30 +502,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       final profileFuture = AuthService.getCurrentProfile();
       final annotations = await annotationsFuture;
       final profile = await profileFuture;
-      if (mounted) {
-        setState(() {
-          _annotations = annotations;
-          _isEditor = profile?.canEditTricks == true;
-        });
-      }
+      safeSetState(() {
+        _annotations = annotations;
+        _isEditor = profile?.canEditTricks == true;
+      });
     } catch (e, st) {
       debugPrint('TrainingStudio._loadAnnotationsAndProfile: $e\n$st');
-      // Annotations are non-critical — the player continues working without them.
     }
-  }
-
-  @override
-  void dispose() {
-    _cancelForwardDownload = true;
-    _connectivitySub?.cancel();
-    _positionSub.cancel();
-    _durationSub.cancel();
-    _completedSub.cancel();
-    _playingSub.cancel();
-    _bufferingSub.cancel();
-    _controller.dispose();
-    _player.dispose();
-    super.dispose();
   }
 
   Future<void> _play() async {
@@ -711,17 +528,14 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     await _player.play();
   }
 
-  Future<void> _stepForward() async {
+  Future<void> _step(void Function() move) async {
     await _player.pause();
-    _controller.stepForward();
+    move();
     await _player.seek(_controller.state.position);
   }
 
-  Future<void> _stepBackward() async {
-    await _player.pause();
-    _controller.stepBackward();
-    await _player.seek(_controller.state.position);
-  }
+  Future<void> _stepForward() => _step(_controller.stepForward);
+  Future<void> _stepBackward() => _step(_controller.stepBackward);
 
   Future<void> _togglePlayPause() async {
     if (_controller.state.isPlaying) {
@@ -729,6 +543,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     } else {
       await _play();
     }
+  }
+
+  void _seekToAnnotation(TrickAnnotation a) {
+    _setSpeed(0.25);
+    _controller.updatePosition(Duration(milliseconds: a.startMs));
+    _player.seek(_controller.state.position);
+    _play();
   }
 
   Future<void> _setSpeed(double speed) async {
@@ -748,27 +569,17 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
       context,
       annotations: _annotations,
       currentPosition: _controller.state.position,
-      onAnnotationTap: (a) {
-        _setSpeed(0.25);
-        _controller.updatePosition(Duration(milliseconds: a.startMs));
-        _player.seek(_controller.state.position);
-        _play();
-      },
+      onAnnotationTap: _seekToAnnotation,
       onAddTapped: _showAddAnnotationDialog,
       onEditTapped: _showEditAnnotationDialog,
       onDeleteAnnotation: (a) async {
         try {
           await AnnotationsService.delete(a.id);
         } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not delete annotation: $e')),
-            );
-          }
+          showInfoSnackBar('Could not delete annotation: $e');
           return false;
         }
-        if (mounted)
-          setState(() => _annotations.removeWhere((x) => x.id == a.id));
+        safeSetState(() => _annotations.removeWhere((x) => x.id == a.id));
         return true;
       },
     );
@@ -794,18 +605,12 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         text: result.$3,
         language: result.$4,
       );
-      if (mounted) {
-        setState(() {
-          _annotations = [..._annotations, annotation]
-            ..sort((a, b) => a.startMs.compareTo(b.startMs));
-        });
-      }
+      safeSetState(() {
+        _annotations = [..._annotations, annotation]
+          ..sort((a, b) => a.startMs.compareTo(b.startMs));
+      });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save annotation: $e')),
-        );
-      }
+      showInfoSnackBar('Could not save annotation: $e');
     }
   }
 
@@ -826,19 +631,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         text: result.$3,
         language: result.$4,
       );
-      if (mounted) {
-        setState(() {
-          _annotations = _annotations
-              .map((a) => a.id == annotation.id ? updated : a)
-              .toList();
-        });
-      }
+      safeSetState(() {
+        _annotations = _annotations
+            .map((a) => a.id == annotation.id ? updated : a)
+            .toList();
+      });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save annotation: $e')),
-        );
-      }
+      showInfoSnackBar('Could not save annotation: $e');
     }
   }
 
@@ -872,10 +671,16 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
               IconButton(
                 icon: Icon(
                   Icons.save_alt,
-                  color: (!_loading && _forwardCachePath != null) ? null : Colors.white38,
+                  color: (!_loading && _forwardCachePath != null)
+                      ? null
+                      : Colors.white38,
                 ),
-                tooltip: (!_loading && _forwardCachePath != null) ? 'Save to device' : null,
-                onPressed: (!_loading && _forwardCachePath != null) ? _saveVideo : null,
+                tooltip: (!_loading && _forwardCachePath != null)
+                    ? 'Save to device'
+                    : null,
+                onPressed: (!_loading && _forwardCachePath != null)
+                    ? _saveVideo
+                    : null,
               ),
           ],
         ],
@@ -901,13 +706,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
                           state: _controller.state,
                           annotations: _annotations,
                           onTap: _togglePlayPause,
-                          onAnnotationTap: (a) {
-                            _setSpeed(0.25);
-                            _controller.updatePosition(
-                                Duration(milliseconds: a.startMs));
-                            _player.seek(_controller.state.position);
-                            _play();
-                          },
+                          onAnnotationTap: _seekToAnnotation,
                         ),
             ),
             if (!_loading && _buffering)
@@ -977,7 +776,21 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _dbgLog.add(entry);
     if (_dbgLog.length > 12) _dbgLog.removeAt(0);
     debugPrint('[TS] $msg');
-    if (mounted) setState(() {});
+    safeSetState(() {});
+  }
+
+  @override
+  void dispose() {
+    _cancelForwardDownload = true;
+    _connectivitySub?.cancel();
+    _positionSub.cancel();
+    _durationSub.cancel();
+    _completedSub.cancel();
+    _playingSub.cancel();
+    _bufferingSub.cancel();
+    _controller.dispose();
+    _player.dispose();
+    super.dispose();
   }
 }
 

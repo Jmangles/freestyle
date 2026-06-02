@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/layout_constants.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/profile.dart';
@@ -141,10 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int _crossAxisCount(double width) {
-    const sizes = {1: 225, 2: 275, 3: 325};
-    const minCols = {1: 3, 2: 2, 3: 1};
-    final calculated = (width / sizes[_gridSize]!).floor();
-    return calculated.clamp(minCols[_gridSize]!, 20);
+    final calculated = (width / kGridCellWidth[_gridSize]!).floor();
+    return calculated.clamp(kGridMinColumns[_gridSize]!, 20);
   }
 
   void _showFilterSheet() async {
@@ -294,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisCount: crossAxisCount,
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
-                            mainAxisExtent: compact ? 64.0 : 100.0,
+                            mainAxisExtent: compact ? kGridCompactExtent : kGridNormalExtent,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => _buildTrickCard(groupTricks[i], compact: compact),

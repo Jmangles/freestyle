@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
+import '../utils/safe_state.dart';
 import '../models/approval_status.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
@@ -23,7 +24,8 @@ class SubmitTrickScreen extends StatefulWidget {
   State<SubmitTrickScreen> createState() => _SubmitTrickScreenState();
 }
 
-class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
+class _SubmitTrickScreenState extends State<SubmitTrickScreen>
+    with SafeStateMixin {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
 
@@ -69,11 +71,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
       } else if (_isSuggesting) {
         final delta = _form.computeSuggestionDelta(widget.suggestionForTrick!);
         if (delta.isEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(context.l10n.suggestionNoChanges),
-            ));
-          }
+          showInfoSnackBar(context.l10n.suggestionNoChanges);
           setState(() => _loading = false);
           return;
         }
@@ -103,25 +101,17 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen> {
         await TricksService.submitTrick(trick);
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_isEditing
-              ? context.l10n.trickUpdated
-              : _isSuggesting
-                  ? context.l10n.suggestionSubmittedForReview
-                  : context.l10n.trickSubmittedForReview),
-        ));
+        showInfoSnackBar(_isEditing
+            ? context.l10n.trickUpdated
+            : _isSuggesting
+                ? context.l10n.suggestionSubmittedForReview
+                : context.l10n.trickSubmittedForReview);
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Theme.of(context).colorScheme.error),
-        );
-      }
+      showErrorSnackBar(e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      safeSetState(() => _loading = false);
     }
   }
 
