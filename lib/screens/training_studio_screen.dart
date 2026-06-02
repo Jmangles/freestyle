@@ -17,6 +17,7 @@ import '../services/auth_service.dart';
 import '../video/offline_video_service.dart';
 import '../video/training_video_controller.dart';
 import '../video/video_provider.dart';
+import '../video/web_video_cache.dart';
 import '../widgets/back_home_leading.dart';
 import '../widgets/training_studio_controls.dart';
 import '../widgets/training_studio_debug_overlay.dart';
@@ -69,6 +70,9 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   String _forwardFilename = kForwardVideo;
   bool _saving = false;
   bool _cancelForwardDownload = false;
+  // True from open() until the first playing=true event, so that any
+  // playing=false fired during blob-URL initialisation triggers a re-play.
+  bool _awaitingWebAutoplay = false;
   String? _initError;
 
   // Debug counters/info — only populated in debug mode.
@@ -181,6 +185,16 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (!mounted) return;
 
     setState(() => _loading = false);
+
+    // On web, play:true in open() can lose a race against the duration event
+    // with local blob URLs. Nudge play immediately, then once more after a short
+    // delay to cover the case where play() is silently absorbed with no events.
+    if (kIsWeb) {
+      _player.play();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _awaitingWebAutoplay) _player.play();
+      });
+    }
   }
 
   void _onPosition(Duration pos) {
@@ -200,6 +214,10 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     if (_looping && pos > kLoopClearThreshold) {
       _looping = false;
     }
+    // Position advancing is the reliable signal that autoplay actually worked.
+    if (kIsWeb && _awaitingWebAutoplay && pos > const Duration(milliseconds: 200)) {
+      _awaitingWebAutoplay = false;
+    }
     _controller.updatePosition(pos);
     if (mounted) setState(() {});
   }
@@ -208,6 +226,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
     _dbgEvent(
         'FWD playing=$playing pos=${_controller.state.position.inMilliseconds}ms'
         ' loop=$_looping');
+    if (kIsWeb) {
+      // Don't clear on playing=true — it can fire briefly before the player
+      // settles back to false. Cleared by position advancement instead.
+      if (!playing && _awaitingWebAutoplay) {
+        _player.play();
+      }
+    }
     if (playing) {
       _controller.play();
     } else {
@@ -248,27 +273,11 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   Future<void> _initPlayers() async {
-    bool isWifi;
+    // isWifi is only used by the native resolution path below.
+    // Web determines quality lazily inside the else branch after the cache check.
+    bool isWifi = false;
 
-    if (kIsWeb) {
-      final type = getWebConnectionType();
-
-      if (type != null) {
-        _useMobileQuality = type == 'slow-2g' || type == '2g' || type == '3g';
-        isWifi = !_useMobileQuality;
-        if (kDebugMode) _dbgQualityInfo = 'effectiveType=$type';
-      } else {
-        String? speedTestError;
-        final mbps = await estimateConnectionSpeedMbps(
-          onError: kDebugMode ? (e) => speedTestError = e : null,
-        );
-        _useMobileQuality = mbps != null && mbps < kMobileQualityThresholdMbps;
-        isWifi = !_useMobileQuality;
-        if (kDebugMode) _dbgQualityInfo = 'speedTest=${mbps != null ? '${mbps.toStringAsFixed(2)}Mbps' : 'null${speedTestError != null ? ' ($speedTestError)' : ''}'}';
-      }
-
-      _isOfflineAtInit = false;
-    } else {
+    if (!kIsWeb) {
       final result = await Connectivity().checkConnectivity();
 
       _isOfflineAtInit = result.every((r) => r == ConnectivityResult.none);
@@ -328,13 +337,71 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
         unawaited(_startQualityUpgrade());
       }
     } else {
-      // Web
-      _forwardFilename = _useMobileQuality ? kForwardMobileVideo : kForwardVideo;
-      final forwardUrl = _useMobileQuality
-          ? widget.provider.forwardMobileUrl(widget.trickId)
-          : widget.provider.forwardUrl(widget.trickId);
+      // Web — check session cache before quality detection so quality stays
+      // consistent across visits and the speed test doesn't re-run needlessly.
+      _isOfflineAtInit = false;
+      final fullKey = '${widget.trickId}_full';
+      final mobileKey = '${widget.trickId}_mobile';
+      final preCached = getCachedWebVideo(fullKey, mobileKey);
 
-      forwardPath = forwardUrl.toString();
+      if (preCached != null) {
+        forwardPath = preCached.url;
+        _useMobileQuality = preCached.isMobile;
+        _forwardFilename =
+            preCached.isMobile ? kForwardMobileVideo : kForwardVideo;
+        if (kDebugMode) {
+          _dbgQualityInfo =
+              'sessionCache (${preCached.isMobile ? 'mobile' : 'full'})';
+        }
+      } else {
+        if (isMobileBrowser()) {
+          // Mobile browsers are limited by hardware decoding, not bandwidth —
+          // the speed test can't detect this, so always serve mobile quality.
+          _useMobileQuality = true;
+          if (kDebugMode) _dbgQualityInfo = 'mobileBrowser';
+        } else {
+          final type = getWebConnectionType();
+          if (type != null) {
+            _useMobileQuality =
+                type == 'slow-2g' || type == '2g' || type == '3g';
+            if (kDebugMode) _dbgQualityInfo = 'effectiveType=$type';
+          } else {
+            String? speedTestError;
+            final mbps = await estimateConnectionSpeedMbps(
+              onError: kDebugMode ? (e) => speedTestError = e : null,
+            );
+            _useMobileQuality =
+                mbps != null && mbps < kMobileQualityThresholdMbps;
+            if (kDebugMode) {
+              _dbgQualityInfo =
+                  'speedTest=${mbps != null ? '${mbps.toStringAsFixed(2)}Mbps' : 'null${speedTestError != null ? ' ($speedTestError)' : ''}'}';
+            }
+          }
+        }
+
+        _forwardFilename =
+            _useMobileQuality ? kForwardMobileVideo : kForwardVideo;
+        final forwardUrl = _useMobileQuality
+            ? widget.provider.forwardMobileUrl(widget.trickId)
+            : widget.provider.forwardUrl(widget.trickId);
+        final cacheKey = _useMobileQuality ? mobileKey : fullKey;
+
+        final blobUrl = await downloadAndCacheWebVideo(
+          forwardUrl.toString(),
+          cacheKey: cacheKey,
+          isCancelled: () => _cancelForwardDownload,
+          onProgress: (p) {
+            if (mounted) setState(() => _downloadProgress = p);
+          },
+          onError: kDebugMode
+              ? (e) {
+                  if (mounted) setState(() => _dbgQualityInfo += ' err:$e');
+                }
+              : null,
+        );
+        if (!mounted) return;
+        forwardPath = blobUrl ?? forwardUrl.toString();
+      }
     }
 
     if (!mounted) return;
@@ -343,6 +410,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
 
     if (!mounted) return;
 
+    if (kIsWeb) _awaitingWebAutoplay = true;
     _player.open(Media(forwardPath), play: true);
     _controller.play();
 
@@ -632,6 +700,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen> {
   }
 
   Future<void> _pause() async {
+    _awaitingWebAutoplay = false;
     _controller.pause();
     await _player.pause();
   }
