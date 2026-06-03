@@ -270,5 +270,33 @@
   "editorModeSubtitle": "Resaltar contenido faltante en las tarjetas de trucos",
   "editorMissingPrefix": "Faltante:",
   "editorAllPresent": "Todos los campos presentes",
-  "editorShowOnlyMissing": "Mostrar solo trucos con falta de:"
+  "editorShowOnlyMissing": "Mostrar solo trucos con falta de:",
+
+  "trainingStudioTitle": "Estudio de Entrenamiento",
+  "removeFromDevice": "Eliminar del dispositivo",
+  "saveToDeviceTooltip": "Guardar en dispositivo",
+
+  "couldNotDeleteAnnotation": "No se pudo eliminar la anotación: {error}",
+  "couldNotSaveAnnotation": "No se pudo guardar la anotación: {error}",
+
+  "noSavedVideoOffline": "No hay video guardado disponible sin conexión.",
+  "cachedVideoCleared": "El video en caché fue eliminado — vuelve a abrir el estudio de entrenamiento para descargarlo",
+  "couldNotSaveVideo": "No se pudo guardar el video: {error}",
+  "couldNotDeleteVideo": "No se pudo eliminar el video: {error}",
+
+  "annotationsTitle": "Anotaciones",
+  "addAtTime": "Agregar en {time}",
+  "noAnnotationsYet": "Sin anotaciones aún",
+  "addAnnotationTitle": "Agregar Anotación",
+  "editAnnotationTitle": "Editar Anotación",
+  "annotationTextLabel": "Texto",
+  "annotationStartLabel": "Inicio (s)",
+  "annotationEndLabel": "Fin (s)",
+  "annotationLanguageLabel": "Idioma",
+  "saveButton": "Guardar",
+
+  "lowStorageTitle": "Almacenamiento bajo",
+  "lowStorageMessage": "Hay menos de 1 GB de almacenamiento disponible. ¿Continuar de todas formas?",
+  "continueButton": "Continuar",
+  "deleteVideoMessage": "¿Eliminar el video guardado de tu dispositivo?"
 }

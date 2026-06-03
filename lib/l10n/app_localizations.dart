@@ -1389,6 +1389,34 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show only tricks missing:'**
   String get editorShowOnlyMissing;
+
+  String get trainingStudioTitle;
+  String get removeFromDevice;
+  String get saveToDeviceTooltip;
+
+  String couldNotDeleteAnnotation(String error);
+  String couldNotSaveAnnotation(String error);
+
+  String get noSavedVideoOffline;
+  String get cachedVideoCleared;
+  String couldNotSaveVideo(String error);
+  String couldNotDeleteVideo(String error);
+
+  String get annotationsTitle;
+  String addAtTime(String time);
+  String get noAnnotationsYet;
+  String get addAnnotationTitle;
+  String get editAnnotationTitle;
+  String get annotationTextLabel;
+  String get annotationStartLabel;
+  String get annotationEndLabel;
+  String get annotationLanguageLabel;
+  String get saveButton;
+
+  String get lowStorageTitle;
+  String get lowStorageMessage;
+  String get continueButton;
+  String get deleteVideoMessage;
 }
 
 class _AppLocalizationsDelegate

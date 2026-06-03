@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../utils/network_utils.dart';
 import '../utils/safe_state.dart';
 import '../video/video_provider.dart';
@@ -61,13 +62,13 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen>
         automaticallyImplyLeading: false,
         leadingWidth: context.canPop() ? 96 : 48,
         leading: const BackHomeLeading(showHome: true),
-        title: Text(widget.title ?? 'Training Studio'),
+        title: Text(widget.title ?? context.l10n.trainingStudioTitle),
         actions: [
           if (!kIsWeb) ...[
             if (forwardSaved)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Remove from device',
+                tooltip: context.l10n.removeFromDevice,
                 onPressed: saving ? null : confirmDeleteVideo,
               )
             else if (saving)
@@ -88,7 +89,7 @@ class _TrainingStudioScreenState extends State<TrainingStudioScreen>
                       : Colors.white38,
                 ),
                 tooltip: (!loading && forwardCachePath != null)
-                    ? 'Save to device'
+                    ? context.l10n.saveToDeviceTooltip
                     : null,
                 onPressed: (!loading && forwardCachePath != null)
                     ? saveVideo

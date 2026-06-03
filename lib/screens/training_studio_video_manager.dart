@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import '../constants/playback_constants.dart';
@@ -117,6 +118,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
   }
 
   Future<String?> _resolveNativeForwardPath(bool isWifi) async {
+    final l10n = context.l10n;
     final fwdExists =
         await OfflineVideoService.videoExists(videoTrickId, kForwardVideo);
     final fwdMobileExists =
@@ -143,7 +145,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
     if (resolved == null) {
       safeSetState(() {
         loading = false;
-        initError = 'No saved video available offline.';
+        initError = l10n.noSavedVideoOffline;
       });
       return null;
     }
@@ -279,6 +281,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
 
   Future<void> saveVideo() async {
     if (saving || forwardCachePath == null || forwardSaved) return;
+    final l10n = context.l10n;
 
     safeSetState(() => saving = true);
 
@@ -290,8 +293,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
 
         safeSetState(() => forwardCachePath = null);
 
-        showInfoSnackBar(
-            'Cached video was cleared — reopen the training studio to re-download');
+        showInfoSnackBar(l10n.cachedVideoCleared);
 
         return;
       }
@@ -310,12 +312,12 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
             forwardCachePath!, videoTrickId, forwardFilename);
 
         if (!mounted) return;
-        
+
         safeSetState(() => forwardSaved = true);
-        
+
         OfflineVideoService.markSaved(videoTrickId);
       } catch (e) {
-        showInfoSnackBar('Could not save video: $e');
+        showInfoSnackBar(l10n.couldNotSaveVideo(e.toString()));
       }
     } finally {
       safeSetState(() => saving = false);
@@ -323,6 +325,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
   }
 
   Future<void> confirmDeleteVideo() async {
+    final l10n = context.l10n;
     final confirmed = await showDeleteVideoDialog(context);
 
     if (confirmed != true || !mounted) return;
@@ -341,7 +344,7 @@ mixin TrainingStudioVideoManagerMixin<T extends StatefulWidget>
 
       OfflineVideoService.markDeleted(videoTrickId);
     } catch (e) {
-      showInfoSnackBar('Could not delete video: $e');
+      showInfoSnackBar(l10n.couldNotDeleteVideo(e.toString()));
     }
     // cancelForwardDownload is intentionally NOT reset here — see _startQualityUpgrade.
   }

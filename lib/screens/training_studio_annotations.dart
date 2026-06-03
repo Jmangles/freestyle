@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/playback_constants.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick_annotation.dart';
 import '../services/annotations_service.dart';
 import '../services/auth_service.dart';
@@ -45,10 +46,11 @@ mixin TrainingStudioAnnotationsMixin<T extends StatefulWidget>
       onAddTapped: showAddAnnotationDialog,
       onEditTapped: showEditAnnotationDialog,
       onDeleteAnnotation: (a) async {
+        final l10n = context.l10n;
         try {
           await AnnotationsService.delete(a.id);
         } catch (e) {
-          showInfoSnackBar('Could not delete annotation: $e');
+          showInfoSnackBar(l10n.couldNotDeleteAnnotation(e.toString()));
           return false;
         }
         safeSetState(() => annotations.removeWhere((x) => x.id == a.id));
@@ -58,6 +60,7 @@ mixin TrainingStudioAnnotationsMixin<T extends StatefulWidget>
   }
 
   Future<void> showAddAnnotationDialog() async {
+    final l10n = context.l10n;
     final totalMs = annotationTotalDuration.inMilliseconds;
     final startMs = annotationCurrentPosition.inMilliseconds;
     final endMs = (startMs + kAnnotationDefaultDurationMs).clamp(0, totalMs);
@@ -82,11 +85,12 @@ mixin TrainingStudioAnnotationsMixin<T extends StatefulWidget>
           ..sort((a, b) => a.startMs.compareTo(b.startMs));
       });
     } catch (e) {
-      showInfoSnackBar('Could not save annotation: $e');
+      showInfoSnackBar(l10n.couldNotSaveAnnotation(e.toString()));
     }
   }
 
   Future<void> showEditAnnotationDialog(TrickAnnotation annotation) async {
+    final l10n = context.l10n;
     final result = await showAnnotationFormDialog(
       context,
       startMs: annotation.startMs,
@@ -108,7 +112,7 @@ mixin TrainingStudioAnnotationsMixin<T extends StatefulWidget>
             annotations.map((a) => a.id == annotation.id ? updated : a).toList();
       });
     } catch (e) {
-      showInfoSnackBar('Could not save annotation: $e');
+      showInfoSnackBar(l10n.couldNotSaveAnnotation(e.toString()));
     }
   }
 }

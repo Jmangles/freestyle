@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_extension.dart';
 import '../models/trick_annotation.dart';
 import '../utils/date_formatters.dart';
 
@@ -40,11 +41,13 @@ void showAnnotationsSheet(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
-                Text('Annotations', style: Theme.of(context).textTheme.titleLarge),
+                Text(context.l10n.annotationsTitle,
+                    style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
                 FilledButton.icon(
                   icon: const Icon(Icons.add),
-                  label: Text('Add at ${formatDuration(currentPosition)}'),
+                  label: Text(context.l10n
+                      .addAtTime(formatDuration(currentPosition))),
                   onPressed: () {
                     Navigator.pop(ctx);
                     onAddTapped();
@@ -55,7 +58,8 @@ void showAnnotationsSheet(
           ),
           const Divider(height: 1),
           if (annotations.isEmpty)
-            const Expanded(child: Center(child: Text('No annotations yet')))
+            Expanded(
+                child: Center(child: Text(context.l10n.noAnnotationsYet)))
           else
             Expanded(
               child: ListView.separated(
@@ -122,14 +126,17 @@ Future<(int, int, String, String)?> showAnnotationFormDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        title: Text(text.isEmpty ? 'Add Annotation' : 'Edit Annotation'),
+        title: Text(text.isEmpty
+            ? context.l10n.addAnnotationTitle
+            : context.l10n.editAnnotationTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: textCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Text', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: context.l10n.annotationTextLabel,
+                  border: const OutlineInputBorder()),
               autofocus: true,
               maxLines: 3,
             ),
@@ -139,18 +146,22 @@ Future<(int, int, String, String)?> showAnnotationFormDialog(
                 Expanded(
                   child: TextField(
                     controller: startCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'Start (s)', border: OutlineInputBorder()),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                        labelText: context.l10n.annotationStartLabel,
+                        border: const OutlineInputBorder()),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: endCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'End (s)', border: OutlineInputBorder()),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                        labelText: context.l10n.annotationEndLabel,
+                        border: const OutlineInputBorder()),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],
@@ -158,19 +169,21 @@ Future<(int, int, String, String)?> showAnnotationFormDialog(
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: selectedLanguage,
-              decoration: const InputDecoration(
-                  labelText: 'Language', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: context.l10n.annotationLanguageLabel,
+                  border: const OutlineInputBorder()),
               items: _kLanguages
                   .map((l) => DropdownMenuItem(value: l.$1, child: Text(l.$2)))
                   .toList(),
-              onChanged: (v) => setDialogState(() => selectedLanguage = v ?? 'en'),
+              onChanged: (v) =>
+                  setDialogState(() => selectedLanguage = v ?? 'en'),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () {
@@ -181,7 +194,7 @@ Future<(int, int, String, String)?> showAnnotationFormDialog(
               if (s < 0 || e <= s) return;
               Navigator.pop(ctx, (s, e, t, selectedLanguage));
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.saveButton),
           ),
         ],
       ),
@@ -195,17 +208,16 @@ Future<bool> showStorageWarning(BuildContext context) async {
   return await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Low storage'),
-          content: const Text(
-              'Less than 1 GB of storage is available. Continue anyway?'),
+          title: Text(context.l10n.lowStorageTitle),
+          content: Text(context.l10n.lowStorageMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancelButton),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Continue'),
+              child: Text(context.l10n.continueButton),
             ),
           ],
         ),
@@ -219,12 +231,12 @@ Future<bool?> showDeleteVideoDialog(BuildContext context) {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Remove from device'),
-      content: const Text('Delete the saved video from your device?'),
+      title: Text(context.l10n.removeFromDevice),
+      content: Text(context.l10n.deleteVideoMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancelButton),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -232,7 +244,7 @@ Future<bool?> showDeleteVideoDialog(BuildContext context) {
             foregroundColor: Theme.of(ctx).colorScheme.onError,
           ),
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Delete'),
+          child: Text(context.l10n.deleteButton),
         ),
       ],
     ),
