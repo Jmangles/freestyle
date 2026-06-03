@@ -36,3 +36,11 @@ const Duration kLoopClearThreshold = Duration(milliseconds: 200);
 
 /// Positions below this are treated as "at start" for EOF-loop detection.
 const Duration kNearStartThreshold = Duration(milliseconds: 100);
+
+/// Delay before retrying play() on web to cover the race where the first call
+/// is silently absorbed before the player settles.
+const Duration kWebAutoplayRetryDelay = Duration(milliseconds: 500);
+
+/// Position must advance past this threshold before web autoplay is considered
+/// confirmed (cleared from awaitingWebAutoplay).
+const Duration kWebAutoplayAdvanceThreshold = Duration(milliseconds: 200);
