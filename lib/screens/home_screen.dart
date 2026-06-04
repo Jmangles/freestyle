@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const AppLogo.small(),
+        title: const AppLogo.big(height: 36),
         actions: [
           if (_profile?.canEditTricks == true)
             IconButton(

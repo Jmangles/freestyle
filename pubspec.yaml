@@ -36,9 +36,47 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.3.3
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.4
 
 flutter:
   generate: true
   uses-material-design: true
   assets:
     - assets/logos/
+
+# Native app icons, generated from the padded HF monogram master.
+# Regenerate with: dart run flutter_launcher_icons
+#
+# Web icons are intentionally NOT managed here: flutter_launcher_icons would
+# regenerate web/favicon.png at a hardcoded 16x16 from the padded master,
+# undoing the larger, tight-cropped tab icon. The web favicon is built from
+# tool/icon/web_favicon.png instead:
+#   magick tool/icon/web_favicon.png -resize 64x64 web/favicon.png
+flutter_launcher_icons:
+  image_path: "tool/icon/app_icon.png"
+  android: true
+  ios: true
+  # Adaptive icon (Android 8+). Without this, launchers auto-wrap the legacy
+  # square icon onto a generated (blue) background and mask it to a circle.
+  # Full-bleed white background + transparent HF foreground masks cleanly.
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "tool/icon/android_foreground.png"
+
+# Splash screen (Android + iOS), light/dark aware.
+# Regenerate with: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#ffffff"
+  color_dark: "#000000"
+  image: tool/splash/splash_logo.png
+  image_dark: tool/splash/splash_logo_dark.png
+  android: true
+  ios: true
+  web: false
+  # Android 12+ uses the system splash API: a masked icon on a solid color.
+  # Use the HF mark there (a wide wordmark would be clipped by the circle mask).
+  android_12:
+    image: tool/splash/android12_logo.png
+    icon_background_color: "#ffffff"
+    image_dark: tool/splash/android12_logo_dark.png
+    icon_background_color_dark: "#000000"
