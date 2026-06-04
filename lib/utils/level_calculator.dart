@@ -30,8 +30,8 @@ int computeLevel(num totalPoints) {
 num getPointScoreByDifficulty(int rawDifficulty) {
   if (rawDifficulty < 0) return 0;
   const tierModifier = 0.1;
-  final modifier = rawDifficulty % 3;
-  final tier = rawDifficulty / 3 - tierModifier * (1 + modifier);
+  final modifier = rawDifficulty % 3 - 1;
+  final tier = rawDifficulty ~/ 3 + tierModifier * modifier;
   return pow(1.5, tier - 1);
 }
 
