@@ -697,4 +697,87 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get editorShowOnlyMissing =>
       'Afficher uniquement les tricks manquant :';
+
+  @override
+  String get trainingStudioTitle => 'Studio d\'entraînement';
+
+  @override
+  String get removeFromDevice => 'Supprimer de l\'appareil';
+
+  @override
+  String get saveToDeviceTooltip => 'Enregistrer sur l\'appareil';
+
+  @override
+  String couldNotDeleteAnnotation(String error) {
+    return 'Impossible de supprimer l\'annotation : $error';
+  }
+
+  @override
+  String couldNotSaveAnnotation(String error) {
+    return 'Impossible d\'enregistrer l\'annotation : $error';
+  }
+
+  @override
+  String get noSavedVideoOffline =>
+      'Aucune vidéo enregistrée disponible hors ligne.';
+
+  @override
+  String get cachedVideoCleared =>
+      'La vidéo mise en cache a été supprimée — rouvrez le studio d\'entraînement pour la télécharger à nouveau';
+
+  @override
+  String couldNotSaveVideo(String error) {
+    return 'Impossible d\'enregistrer la vidéo : $error';
+  }
+
+  @override
+  String couldNotDeleteVideo(String error) {
+    return 'Impossible de supprimer la vidéo : $error';
+  }
+
+  @override
+  String get annotationsTitle => 'Annotations';
+
+  @override
+  String addAtTime(String time) {
+    return 'Ajouter à $time';
+  }
+
+  @override
+  String get noAnnotationsYet => 'Aucune annotation pour l\'instant';
+
+  @override
+  String get addAnnotationTitle => 'Ajouter une annotation';
+
+  @override
+  String get editAnnotationTitle => 'Modifier l\'annotation';
+
+  @override
+  String get annotationTextLabel => 'Texte';
+
+  @override
+  String get annotationStartLabel => 'Début (s)';
+
+  @override
+  String get annotationEndLabel => 'Fin (s)';
+
+  @override
+  String get annotationLanguageLabel => 'Langue';
+
+  @override
+  String get saveButton => 'Enregistrer';
+
+  @override
+  String get lowStorageTitle => 'Stockage faible';
+
+  @override
+  String get lowStorageMessage =>
+      'Moins de 1 Go de stockage disponible. Continuer quand même ?';
+
+  @override
+  String get continueButton => 'Continuer';
+
+  @override
+  String get deleteVideoMessage =>
+      'Supprimer la vidéo enregistrée de votre appareil ?';
 }

@@ -57,6 +57,7 @@ create table user_tricks (
   video_link      text,
   video_start     smallint,
   video_end       smallint,
+  updated_at      timestamptz not null default now(),
   unique(user_id, trick_id)
 );
 
@@ -89,7 +90,7 @@ create table trick_suggestions (
 create table tips (
   id              integer generated always as identity primary key,
   title           text not null,
-  header          text not null,
+  header          text,
   body            text not null,
   status          boolean not null default false,
   type            smallint not null default 0 check (type between 0 and 2),
@@ -218,6 +219,15 @@ grant usage, select on sequence trick_annotations_id_seq to authenticated;
 -- ============================================================
 -- Functions
 -- ============================================================
+
+create or replace function touch_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+
+create trigger user_tricks_updated_at
+  before update on user_tricks
+  for each row execute function touch_updated_at();
 
 create or replace function get_trick_vote_stats(p_trick_id integer)
 returns json language sql security definer as $$

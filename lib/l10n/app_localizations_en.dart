@@ -686,4 +686,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorShowOnlyMissing => 'Show only tricks missing:';
+
+  @override
+  String get trainingStudioTitle => 'Training Studio';
+
+  @override
+  String get removeFromDevice => 'Remove from device';
+
+  @override
+  String get saveToDeviceTooltip => 'Save to device';
+
+  @override
+  String couldNotDeleteAnnotation(String error) {
+    return 'Could not delete annotation: $error';
+  }
+
+  @override
+  String couldNotSaveAnnotation(String error) {
+    return 'Could not save annotation: $error';
+  }
+
+  @override
+  String get noSavedVideoOffline => 'No saved video available offline.';
+
+  @override
+  String get cachedVideoCleared =>
+      'Cached video was cleared — reopen the training studio to re-download';
+
+  @override
+  String couldNotSaveVideo(String error) {
+    return 'Could not save video: $error';
+  }
+
+  @override
+  String couldNotDeleteVideo(String error) {
+    return 'Could not delete video: $error';
+  }
+
+  @override
+  String get annotationsTitle => 'Annotations';
+
+  @override
+  String addAtTime(String time) {
+    return 'Add at $time';
+  }
+
+  @override
+  String get noAnnotationsYet => 'No annotations yet';
+
+  @override
+  String get addAnnotationTitle => 'Add Annotation';
+
+  @override
+  String get editAnnotationTitle => 'Edit Annotation';
+
+  @override
+  String get annotationTextLabel => 'Text';
+
+  @override
+  String get annotationStartLabel => 'Start (s)';
+
+  @override
+  String get annotationEndLabel => 'End (s)';
+
+  @override
+  String get annotationLanguageLabel => 'Language';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get lowStorageTitle => 'Low storage';
+
+  @override
+  String get lowStorageMessage =>
+      'Less than 1 GB of storage is available. Continue anyway?';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get deleteVideoMessage => 'Delete the saved video from your device?';
 }

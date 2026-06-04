@@ -104,6 +104,7 @@ class UserTrick {
   final String? videoLink;
   final int? videoStart;
   final int? videoEnd;
+  final DateTime updatedAt;
 
   const UserTrick({
     required this.id,
@@ -115,19 +116,28 @@ class UserTrick {
     this.videoLink,
     this.videoStart,
     this.videoEnd,
+    required this.updatedAt,
   });
 
   factory UserTrick.fromJson(Map<String, dynamic> json) => UserTrick(
         id: json['id'] as int,
         userId: json['user_id'] as int,
         trickId: json['trick_id'] as int,
-        consistency: Consistency.values[json['consistency'] as int],
+        consistency: Consistency.values.elementAtOrNull(
+                json['consistency'] as int) ??
+            Consistency.never,
         difficultyVote: json['difficulty_vote'] as int?,
         leashPosition: json['leash_position'] != null
-            ? LeashPosition.values[json['leash_position'] as int]
+            ? LeashPosition.values.elementAtOrNull(
+                json['leash_position'] as int)
             : null,
         videoLink: json['video_link'] as String?,
         videoStart: json['video_start'] as int?,
         videoEnd: json['video_end'] as int?,
+        // Epoch signals "no prior server write" to conflict resolution: a real
+        // server timestamp will always be after epoch, so the server row wins.
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'] as String)
+            : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       );
 }

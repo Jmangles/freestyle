@@ -270,5 +270,33 @@
   "editorModeSubtitle": "Mettre en évidence le contenu manquant sur les fiches de tricks",
   "editorMissingPrefix": "Manquant :",
   "editorAllPresent": "Tous les champs présents",
-  "editorShowOnlyMissing": "Afficher uniquement les tricks manquant :"
+  "editorShowOnlyMissing": "Afficher uniquement les tricks manquant :",
+
+  "trainingStudioTitle": "Studio d'entraînement",
+  "removeFromDevice": "Supprimer de l'appareil",
+  "saveToDeviceTooltip": "Enregistrer sur l'appareil",
+
+  "couldNotDeleteAnnotation": "Impossible de supprimer l'annotation : {error}",
+  "couldNotSaveAnnotation": "Impossible d'enregistrer l'annotation : {error}",
+
+  "noSavedVideoOffline": "Aucune vidéo enregistrée disponible hors ligne.",
+  "cachedVideoCleared": "La vidéo mise en cache a été supprimée — rouvrez le studio d'entraînement pour la télécharger à nouveau",
+  "couldNotSaveVideo": "Impossible d'enregistrer la vidéo : {error}",
+  "couldNotDeleteVideo": "Impossible de supprimer la vidéo : {error}",
+
+  "annotationsTitle": "Annotations",
+  "addAtTime": "Ajouter à {time}",
+  "noAnnotationsYet": "Aucune annotation pour l'instant",
+  "addAnnotationTitle": "Ajouter une annotation",
+  "editAnnotationTitle": "Modifier l'annotation",
+  "annotationTextLabel": "Texte",
+  "annotationStartLabel": "Début (s)",
+  "annotationEndLabel": "Fin (s)",
+  "annotationLanguageLabel": "Langue",
+  "saveButton": "Enregistrer",
+
+  "lowStorageTitle": "Stockage faible",
+  "lowStorageMessage": "Moins de 1 Go de stockage disponible. Continuer quand même ?",
+  "continueButton": "Continuer",
+  "deleteVideoMessage": "Supprimer la vidéo enregistrée de votre appareil ?"
 }

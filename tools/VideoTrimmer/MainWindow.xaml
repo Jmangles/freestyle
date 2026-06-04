@@ -274,16 +274,18 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="8"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="6"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Button Grid.Row="0" x:Name="GenerateBtn"
-                    Content="Generate  forward.mp4  +  reversed.mp4"
+                    Content="Generate  H.264 + AV1  ×  Full + Mobile  (4 files)"
                     Style="{StaticResource AccentButton}"
                     Height="44" FontSize="14" FontWeight="SemiBold"
                     Click="Generate_Click"/>
             <StackPanel Grid.Row="2" Orientation="Horizontal">
                 <Button x:Name="RegenerateBtn"
-                        Content="Regenerate from Manifest…"
+                        Content="Regenerate All from Manifest…"
                         Style="{StaticResource DarkButton}" Height="32"
                         Click="RegenerateAll_Click"/>
                 <Button x:Name="StopBtn" Content="Stop"
@@ -292,7 +294,22 @@
                         Margin="8,0,0,0" Width="60"
                         Click="Stop_Click"/>
             </StackPanel>
-            <TextBlock Grid.Row="3" x:Name="StatusLabel"
+            <StackPanel Grid.Row="4" Orientation="Horizontal">
+                <TextBlock Text="Regen variant:" Margin="0,0,8,0" Foreground="#888" FontSize="11"/>
+                <Button x:Name="RegenH264FullBtn" Content="H.264 Full"
+                        Style="{StaticResource DarkButton}" Height="28" FontSize="11"
+                        Click="RegenH264Full_Click"/>
+                <Button x:Name="RegenH264MobileBtn" Content="H.264 Mobile"
+                        Style="{StaticResource DarkButton}" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenH264Mobile_Click"/>
+                <Button x:Name="RegenAv1FullBtn" Content="AV1 Full"
+                        Style="{StaticResource DarkButton}" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenAv1Full_Click"/>
+                <Button x:Name="RegenAv1MobileBtn" Content="AV1 Mobile"
+                        Style="{StaticResource DarkButton}" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenAv1Mobile_Click"/>
+            </StackPanel>
+            <TextBlock Grid.Row="5" x:Name="StatusLabel"
                        Text="Ready — open a video to begin"
                        Margin="0,8,0,0" Foreground="#666" FontSize="11"/>
         </Grid>

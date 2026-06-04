@@ -4,6 +4,7 @@ import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../utils/difficulty_tier.dart';
+import '../video/offline_video_service.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
@@ -29,7 +30,17 @@ class TrickCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (listMode) return _buildListTile(context);
+    return ValueListenableBuilder<Set<int>>(
+      valueListenable: OfflineVideoService.savedTrickIds,
+      builder: (context, saved, _) {
+        final videoSaved = trick.hasTrainingVideo && saved.contains(trick.id);
+        if (listMode) return _buildListTile(context, videoSaved: videoSaved);
+        return _buildGridCard(context, videoSaved: videoSaved);
+      },
+    );
+  }
+
+  Widget _buildGridCard(BuildContext context, {bool videoSaved = false}) {
     final theme = Theme.of(context);
 
     final card = Card(
@@ -120,15 +131,37 @@ class TrickCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (videoSaved) _buildSaveIcon(theme),
           ],
         ),
+      );
+    }
+
+    if (videoSaved) {
+      return Stack(
+        children: [
+          card,
+          _buildSaveIcon(theme),
+        ],
       );
     }
 
     return card;
   }
 
-  Widget _buildListTile(BuildContext context) {
+  Positioned _buildSaveIcon(ThemeData theme) {
+    return Positioned(
+      top: 4,
+      right: 4,
+      child: Icon(
+        Icons.download_done,
+        size: 14,
+        color: theme.colorScheme.primary,
+      ),
+    );
+  }
+
+  Widget _buildListTile(BuildContext context, {bool videoSaved = false}) {
     final theme = Theme.of(context);
     final hasSubtitle = trick.technicalName != null &&
         trick.technicalName!.isNotEmpty &&
@@ -157,7 +190,7 @@ class TrickCard extends StatelessWidget {
                   fontStyle: FontStyle.italic,
                 ))
             : null,
-        trailing: _buildListTrailing(theme),
+        trailing: _buildListTrailing(theme, videoSaved: videoSaved),
         onTap: () async {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
@@ -200,9 +233,9 @@ class TrickCard extends StatelessWidget {
     );
   }
 
-  Widget? _buildListTrailing(ThemeData theme) {
+  Widget? _buildListTrailing(ThemeData theme, {bool videoSaved = false}) {
     final hasPosition = trick.startPositionName != null || trick.endPositionName != null;
-    if (!hasPosition && !showDifficulty && !editorMode) return null;
+    if (!hasPosition && !showDifficulty && !editorMode && !videoSaved) return null;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -219,6 +252,10 @@ class TrickCard extends StatelessWidget {
           ),
         if (hasPosition && showDifficulty) const SizedBox(width: 8),
         if (showDifficulty) _DifficultyBadge(trick: trick, modifierOnly: difficultyModifierOnly),
+        if (videoSaved) ...[
+          const SizedBox(width: 6),
+          Icon(Icons.download_done, size: 14, color: theme.colorScheme.primary),
+        ],
       ],
     );
   }

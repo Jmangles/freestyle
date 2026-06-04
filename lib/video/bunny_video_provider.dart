@@ -1,4 +1,6 @@
+import 'offline_video_service.dart';
 import 'video_provider.dart';
+import '../constants/layout_constants.dart';
 
 class BunnyVideoProvider implements VideoProvider {
   final String baseUrl;
@@ -6,14 +8,8 @@ class BunnyVideoProvider implements VideoProvider {
   const BunnyVideoProvider({required this.baseUrl});
 
   @override
-  Uri forwardUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/forward.mp4');
+  Uri forwardUrl(int trickId) => Uri.parse('$baseUrl/$kTricksDirectory/$trickId/$kForwardVideo');
 
   @override
-  Uri reversedUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/reversed.mp4');
-
-  @override
-  Uri forwardMobileUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/forward_mobile.mp4');
-
-  @override
-  Uri reversedMobileUrl(int trickId) => Uri.parse('$baseUrl/tricks/$trickId/reversed_mobile.mp4');
+  Uri forwardMobileUrl(int trickId) => Uri.parse('$baseUrl/$kTricksDirectory/$trickId/$kForwardMobileVideo');
 }

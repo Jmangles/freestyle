@@ -315,5 +315,58 @@
   "editorModeSubtitle": "Highlight missing content on trick cards",
   "editorMissingPrefix": "Missing:",
   "editorAllPresent": "All fields present",
-  "editorShowOnlyMissing": "Show only tricks missing:"
+  "editorShowOnlyMissing": "Show only tricks missing:",
+
+  "trainingStudioTitle": "Training Studio",
+  "removeFromDevice": "Remove from device",
+  "saveToDeviceTooltip": "Save to device",
+
+  "couldNotDeleteAnnotation": "Could not delete annotation: {error}",
+  "@couldNotDeleteAnnotation": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "couldNotSaveAnnotation": "Could not save annotation: {error}",
+  "@couldNotSaveAnnotation": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "noSavedVideoOffline": "No saved video available offline.",
+  "cachedVideoCleared": "Cached video was cleared — reopen the training studio to re-download",
+  "couldNotSaveVideo": "Could not save video: {error}",
+  "@couldNotSaveVideo": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "couldNotDeleteVideo": "Could not delete video: {error}",
+  "@couldNotDeleteVideo": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "annotationsTitle": "Annotations",
+  "addAtTime": "Add at {time}",
+  "@addAtTime": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "noAnnotationsYet": "No annotations yet",
+  "addAnnotationTitle": "Add Annotation",
+  "editAnnotationTitle": "Edit Annotation",
+  "annotationTextLabel": "Text",
+  "annotationStartLabel": "Start (s)",
+  "annotationEndLabel": "End (s)",
+  "annotationLanguageLabel": "Language",
+  "saveButton": "Save",
+
+  "lowStorageTitle": "Low storage",
+  "lowStorageMessage": "Less than 1 GB of storage is available. Continue anyway?",
+  "continueButton": "Continue",
+  "deleteVideoMessage": "Delete the saved video from your device?"
 }

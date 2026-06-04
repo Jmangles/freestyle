@@ -1389,6 +1389,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show only tricks missing:'**
   String get editorShowOnlyMissing;
+
+  /// No description provided for @trainingStudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Training Studio'**
+  String get trainingStudioTitle;
+
+  /// No description provided for @removeFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from device'**
+  String get removeFromDevice;
+
+  /// No description provided for @saveToDeviceTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to device'**
+  String get saveToDeviceTooltip;
+
+  /// No description provided for @couldNotDeleteAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete annotation: {error}'**
+  String couldNotDeleteAnnotation(String error);
+
+  /// No description provided for @couldNotSaveAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save annotation: {error}'**
+  String couldNotSaveAnnotation(String error);
+
+  /// No description provided for @noSavedVideoOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved video available offline.'**
+  String get noSavedVideoOffline;
+
+  /// No description provided for @cachedVideoCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached video was cleared — reopen the training studio to re-download'**
+  String get cachedVideoCleared;
+
+  /// No description provided for @couldNotSaveVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save video: {error}'**
+  String couldNotSaveVideo(String error);
+
+  /// No description provided for @couldNotDeleteVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete video: {error}'**
+  String couldNotDeleteVideo(String error);
+
+  /// No description provided for @annotationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotations'**
+  String get annotationsTitle;
+
+  /// No description provided for @addAtTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at {time}'**
+  String addAtTime(String time);
+
+  /// No description provided for @noAnnotationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No annotations yet'**
+  String get noAnnotationsYet;
+
+  /// No description provided for @addAnnotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Annotation'**
+  String get addAnnotationTitle;
+
+  /// No description provided for @editAnnotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Annotation'**
+  String get editAnnotationTitle;
+
+  /// No description provided for @annotationTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get annotationTextLabel;
+
+  /// No description provided for @annotationStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start (s)'**
+  String get annotationStartLabel;
+
+  /// No description provided for @annotationEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End (s)'**
+  String get annotationEndLabel;
+
+  /// No description provided for @annotationLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get annotationLanguageLabel;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// No description provided for @lowStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Low storage'**
+  String get lowStorageTitle;
+
+  /// No description provided for @lowStorageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than 1 GB of storage is available. Continue anyway?'**
+  String get lowStorageMessage;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @deleteVideoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the saved video from your device?'**
+  String get deleteVideoMessage;
 }
 
 class _AppLocalizationsDelegate

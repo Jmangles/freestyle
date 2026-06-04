@@ -3,30 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
-import '../widgets/back_home_leading.dart';
 import '../models/user_trick.dart';
-import '../services/auth_service.dart';
-import '../services/tricks_service.dart';
-import '../services/user_tricks_service.dart';
+import '../widgets/back_home_leading.dart';
 import '../utils/difficulty_tier.dart';
-
-// ─── Data model ──────────────────────────────────────────────────────────────
-
-class _GraphData {
-  final int focalId;
-  final Map<int, Trick> tricks;
-  final Map<int, int> layers;     // trickId → layer (0 = focal, neg = prereqs, pos = unlocks)
-  final List<(int, int)> edges;   // (prereqId, trickId)
-  final Map<int, UserTrick> userProgress;
-
-  const _GraphData({
-    required this.focalId,
-    required this.tricks,
-    required this.layers,
-    required this.edges,
-    required this.userProgress,
-  });
-}
+import '../utils/trick_progression_graph.dart';
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
@@ -40,108 +20,12 @@ class TrickProgressionScreen extends StatefulWidget {
 }
 
 class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
-  late Future<_GraphData> _future;
+  late Future<TrickProgressionGraphData> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _load();
-  }
-
-  Future<_GraphData> _load() async {
-    const maxPrereqDepth = 4;
-    const maxUnlockDepth = 3;
-
-    final focal = await TricksService.getTrickById(widget.trickId);
-    final Map<int, Trick> tricks = {focal.id: focal};
-
-    // BFS upward through prerequisites
-    Set<int> frontier = {focal.id};
-    for (int d = 0; d < maxPrereqDepth && frontier.isNotEmpty; d++) {
-      final next = <int>{};
-      for (final id in frontier) {
-        for (final pid in tricks[id]!.prerequisiteTrickIds) {
-          if (!tricks.containsKey(pid)) next.add(pid);
-        }
-      }
-      if (next.isNotEmpty) {
-        final fetched = await TricksService.getTricksByIds(next.toList());
-        for (final t in fetched) { tricks[t.id] = t; }
-      }
-      frontier = next;
-    }
-
-    // BFS downward through unlocks
-    frontier = {focal.id};
-    for (int d = 0; d < maxUnlockDepth && frontier.isNotEmpty; d++) {
-      final next = <int>{};
-      for (final id in frontier) {
-        final unlocked = await TricksService.getTricksRequiring(id);
-        for (final t in unlocked) {
-          if (!tricks.containsKey(t.id)) {
-            tricks[t.id] = t;
-            next.add(t.id);
-          }
-        }
-      }
-      frontier = next;
-    }
-
-    // Build edge list within the graph
-    final edges = <(int, int)>[];
-    for (final trick in tricks.values) {
-      for (final pid in trick.prerequisiteTrickIds) {
-        if (tricks.containsKey(pid)) edges.add((pid, trick.id));
-      }
-    }
-
-    // Build reverse map for downward layer assignment
-    final Map<int, List<int>> unlockMap = {};
-    for (final (pid, tid) in edges) {
-      unlockMap.putIfAbsent(pid, () => []).add(tid);
-    }
-
-    // Assign layers via BFS from focal
-    final layers = <int, int>{focal.id: 0};
-
-    // Upward: prereqs get lower layers
-    final upQueue = [focal.id];
-    while (upQueue.isNotEmpty) {
-      final id = upQueue.removeAt(0);
-      for (final pid in tricks[id]!.prerequisiteTrickIds) {
-        if (!tricks.containsKey(pid)) continue;
-        final nl = layers[id]! - 1;
-        if (!layers.containsKey(pid) || layers[pid]! > nl) {
-          layers[pid] = nl;
-          upQueue.add(pid);
-        }
-      }
-    }
-
-    // Downward: unlocks get higher layers
-    final downQueue = [focal.id];
-    while (downQueue.isNotEmpty) {
-      final id = downQueue.removeAt(0);
-      for (final uid in unlockMap[id] ?? <int>[]) {
-        final nl = layers[id]! + 1;
-        if (!layers.containsKey(uid) || layers[uid]! < nl) {
-          layers[uid] = nl;
-          downQueue.add(uid);
-        }
-      }
-    }
-
-    final userProgress = AuthService.isLoggedIn
-        ? await UserTricksService.getUserTricksForTrickIds(tricks.keys.toList())
-        : <int, UserTrick>{};
-
-    return _GraphData(
-      focalId: focal.id,
-      tricks: tricks,
-      layers: layers,
-      edges: edges,
-      userProgress: userProgress,
-    );
+    _future = loadTrickProgressionGraph(widget.trickId);
   }
 
   @override
@@ -153,7 +37,7 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
         leading: const BackHomeLeading(showHome: true),
         title: Text(context.l10n.trickProgressionTitle),
       ),
-      body: FutureBuilder<_GraphData>(
+      body: FutureBuilder<TrickProgressionGraphData>(
         future: _future,
         builder: (ctx, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
@@ -172,7 +56,7 @@ class _TrickProgressionScreenState extends State<TrickProgressionScreen> {
 // ─── Graph view ──────────────────────────────────────────────────────────────
 
 class _GraphView extends StatefulWidget {
-  final _GraphData data;
+  final TrickProgressionGraphData data;
 
   const _GraphView({required this.data});
 
@@ -218,7 +102,7 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
     if (_hoveredId != id) {
       setState(() {
         _hoveredId = id;
-        _relevantIds = _computeRelevantIds(id);
+        _relevantIds = computeRelevantIds(widget.data.edges, id);
       });
     }
     _fadeController.forward();
@@ -234,32 +118,6 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
         });
       }
     });
-  }
-
-  Set<int> _computeRelevantIds(int id) {
-    final ids = <int>{id};
-
-    // BFS upward through all prerequisites
-    var frontier = <int>{id};
-    while (frontier.isNotEmpty) {
-      final next = <int>{};
-      for (final (pid, tid) in widget.data.edges) {
-        if (frontier.contains(tid) && ids.add(pid)) next.add(pid);
-      }
-      frontier = next;
-    }
-
-    // BFS downward through all unlocks
-    frontier = {id};
-    while (frontier.isNotEmpty) {
-      final next = <int>{};
-      for (final (pid, tid) in widget.data.edges) {
-        if (frontier.contains(pid) && ids.add(tid)) next.add(tid);
-      }
-      frontier = next;
-    }
-
-    return ids;
   }
 
   @override
@@ -288,70 +146,17 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
       );
     }
 
-    // Group tricks by layer
-    final byLayer = <int, List<int>>{};
-    for (final entry in data.layers.entries) {
-      byLayer.putIfAbsent(entry.value, () => []).add(entry.key);
-    }
-
-    final sortedLayers = byLayer.keys.toList()..sort();
-    final minLayer = sortedLayers.first;
-    final maxLayer = sortedLayers.last;
-
-    final maxCount = byLayer.values.map((l) => l.length).reduce(math.max);
-    final canvasW =
-        math.max(maxCount * (_cardW + _hGap) - _hGap + _pad * 2, 300.0);
-    final canvasH =
-        (maxLayer - minLayer + 1) * (_cardH + _vGap) - _vGap + _pad * 2;
-
-    // Barycenter layout: sort each layer by the average x-position of its
-    // already-positioned neighbors, processing outward from the focal node.
-    // This minimises edge crossings compared to plain alphabetical ordering.
-    final xCenters = <int, double>{};
-
-    double barycenter(int id) {
-      final xs = <double>[];
-      for (final (pid, tid) in data.edges) {
-        if (pid == id) { final x = xCenters[tid]; if (x != null) xs.add(x); }
-        if (tid == id) { final x = xCenters[pid]; if (x != null) xs.add(x); }
-      }
-      return xs.isEmpty
-          ? double.infinity
-          : xs.reduce((a, b) => a + b) / xs.length;
-    }
-
-    void sortAndRecord(List<int> ids) {
-      ids.sort((a, b) {
-        if (a == data.focalId) return -1;
-        if (b == data.focalId) return 1;
-        final cmp = barycenter(a).compareTo(barycenter(b));
-        return cmp != 0
-            ? cmp
-            : data.tricks[a]!.givenName.compareTo(data.tricks[b]!.givenName);
-      });
-      final rowW = ids.length * _cardW + (ids.length - 1) * _hGap;
-      final startX = (canvasW - rowW) / 2;
-      for (int i = 0; i < ids.length; i++) {
-        xCenters[ids[i]] = startX + i * (_cardW + _hGap) + _cardW / 2;
-      }
-    }
-
-    sortAndRecord(byLayer[0]!);
-    for (int L = 1; L <= maxLayer; L++) {
-      if (byLayer.containsKey(L)) sortAndRecord(byLayer[L]!);
-    }
-    for (int L = -1; L >= minLayer; L--) {
-      if (byLayer.containsKey(L)) sortAndRecord(byLayer[L]!);
-    }
-
-    final positions = <int, Offset>{};
-    for (final id in data.tricks.keys) {
-      final layer = data.layers[id]!;
-      positions[id] = Offset(
-        xCenters[id]! - _cardW / 2,
-        (layer - minLayer) * (_cardH + _vGap) + _pad,
-      );
-    }
+    final layout = computeGraphLayout(
+      data,
+      cardW: _cardW,
+      cardH: _cardH,
+      hGap: _hGap,
+      vGap: _vGap,
+      pad: _pad,
+    );
+    final positions = layout.positions;
+    final canvasW = layout.canvasW;
+    final canvasH = layout.canvasH;
 
     final isMobile = switch (Theme.of(context).platform) {
       TargetPlatform.android || TargetPlatform.iOS => true,

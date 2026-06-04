@@ -692,4 +692,87 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editorShowOnlyMissing => 'Mostrar solo trucos con falta de:';
+
+  @override
+  String get trainingStudioTitle => 'Estudio de Entrenamiento';
+
+  @override
+  String get removeFromDevice => 'Eliminar del dispositivo';
+
+  @override
+  String get saveToDeviceTooltip => 'Guardar en dispositivo';
+
+  @override
+  String couldNotDeleteAnnotation(String error) {
+    return 'No se pudo eliminar la anotación: $error';
+  }
+
+  @override
+  String couldNotSaveAnnotation(String error) {
+    return 'No se pudo guardar la anotación: $error';
+  }
+
+  @override
+  String get noSavedVideoOffline =>
+      'No hay video guardado disponible sin conexión.';
+
+  @override
+  String get cachedVideoCleared =>
+      'El video en caché fue eliminado — vuelve a abrir el estudio de entrenamiento para descargarlo';
+
+  @override
+  String couldNotSaveVideo(String error) {
+    return 'No se pudo guardar el video: $error';
+  }
+
+  @override
+  String couldNotDeleteVideo(String error) {
+    return 'No se pudo eliminar el video: $error';
+  }
+
+  @override
+  String get annotationsTitle => 'Anotaciones';
+
+  @override
+  String addAtTime(String time) {
+    return 'Agregar en $time';
+  }
+
+  @override
+  String get noAnnotationsYet => 'Sin anotaciones aún';
+
+  @override
+  String get addAnnotationTitle => 'Agregar Anotación';
+
+  @override
+  String get editAnnotationTitle => 'Editar Anotación';
+
+  @override
+  String get annotationTextLabel => 'Texto';
+
+  @override
+  String get annotationStartLabel => 'Inicio (s)';
+
+  @override
+  String get annotationEndLabel => 'Fin (s)';
+
+  @override
+  String get annotationLanguageLabel => 'Idioma';
+
+  @override
+  String get saveButton => 'Guardar';
+
+  @override
+  String get lowStorageTitle => 'Almacenamiento bajo';
+
+  @override
+  String get lowStorageMessage =>
+      'Hay menos de 1 GB de almacenamiento disponible. ¿Continuar de todas formas?';
+
+  @override
+  String get continueButton => 'Continuar';
+
+  @override
+  String get deleteVideoMessage =>
+      '¿Eliminar el video guardado de tu dispositivo?';
 }
