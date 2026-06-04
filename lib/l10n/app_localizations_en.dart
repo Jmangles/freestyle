@@ -697,12 +697,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveToDeviceTooltip => 'Save to device';
 
   @override
-  String couldNotDeleteAnnotation(String error) =>
-      'Could not delete annotation: $error';
+  String couldNotDeleteAnnotation(String error) {
+    return 'Could not delete annotation: $error';
+  }
 
   @override
-  String couldNotSaveAnnotation(String error) =>
-      'Could not save annotation: $error';
+  String couldNotSaveAnnotation(String error) {
+    return 'Could not save annotation: $error';
+  }
 
   @override
   String get noSavedVideoOffline => 'No saved video available offline.';
@@ -712,16 +714,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cached video was cleared — reopen the training studio to re-download';
 
   @override
-  String couldNotSaveVideo(String error) => 'Could not save video: $error';
+  String couldNotSaveVideo(String error) {
+    return 'Could not save video: $error';
+  }
 
   @override
-  String couldNotDeleteVideo(String error) => 'Could not delete video: $error';
+  String couldNotDeleteVideo(String error) {
+    return 'Could not delete video: $error';
+  }
 
   @override
   String get annotationsTitle => 'Annotations';
 
   @override
-  String addAtTime(String time) => 'Add at $time';
+  String addAtTime(String time) {
+    return 'Add at $time';
+  }
 
   @override
   String get noAnnotationsYet => 'No annotations yet';

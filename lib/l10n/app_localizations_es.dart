@@ -703,12 +703,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveToDeviceTooltip => 'Guardar en dispositivo';
 
   @override
-  String couldNotDeleteAnnotation(String error) =>
-      'No se pudo eliminar la anotación: $error';
+  String couldNotDeleteAnnotation(String error) {
+    return 'No se pudo eliminar la anotación: $error';
+  }
 
   @override
-  String couldNotSaveAnnotation(String error) =>
-      'No se pudo guardar la anotación: $error';
+  String couldNotSaveAnnotation(String error) {
+    return 'No se pudo guardar la anotación: $error';
+  }
 
   @override
   String get noSavedVideoOffline =>
@@ -719,18 +721,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'El video en caché fue eliminado — vuelve a abrir el estudio de entrenamiento para descargarlo';
 
   @override
-  String couldNotSaveVideo(String error) =>
-      'No se pudo guardar el video: $error';
+  String couldNotSaveVideo(String error) {
+    return 'No se pudo guardar el video: $error';
+  }
 
   @override
-  String couldNotDeleteVideo(String error) =>
-      'No se pudo eliminar el video: $error';
+  String couldNotDeleteVideo(String error) {
+    return 'No se pudo eliminar el video: $error';
+  }
 
   @override
   String get annotationsTitle => 'Anotaciones';
 
   @override
-  String addAtTime(String time) => 'Agregar en $time';
+  String addAtTime(String time) {
+    return 'Agregar en $time';
+  }
 
   @override
   String get noAnnotationsYet => 'Sin anotaciones aún';
