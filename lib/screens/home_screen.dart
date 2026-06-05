@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/layout_constants.dart';
@@ -17,6 +18,7 @@ import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../widgets/filter_sheet.dart';
 import '../widgets/sort_sheet.dart';
+import '../video/offline_video_service.dart';
 import '../widgets/trick_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -37,7 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
   TrickFilter _filter = const TrickFilter();
   TrickSorter _sorter = const TrickSorter();
   late TextEditingController _nameSearchController;
-  List<(String, List<Trick>)> _groups = [];
+  List<(String, List<Trick>, int?)> _groups = [];
+  Set<int> _savedTrickIds = {};
+  Timer? _searchDebounce;
   late final StreamSubscription _authSub;
   late final RealtimeChannel _tricksChannel;
   bool _loadInProgress = false;
@@ -46,6 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _nameSearchController = TextEditingController();
+    _savedTrickIds = OfflineVideoService.savedTrickIds.value;
+    OfflineVideoService.savedTrickIds.addListener(_onSavedIdsChanged);
     _load(initial: true);
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       _load(); // guard inside _load() prevents concurrent runs
@@ -63,11 +69,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    OfflineVideoService.savedTrickIds.removeListener(_onSavedIdsChanged);
     _authSub.cancel();
     Supabase.instance.client.removeChannel(_tricksChannel);
     _nameSearchController.dispose();
     super.dispose();
   }
+
+  void _onSavedIdsChanged() =>
+      setState(() => _savedTrickIds = OfflineVideoService.savedTrickIds.value);
 
   Future<void> _load({bool initial = false}) async {
     if (_loadInProgress) return;
@@ -121,7 +132,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 t.givenName.toLowerCase().contains(nameQ) ||
                 (t.technicalName?.toLowerCase().contains(nameQ) ?? false))
             .toList();
-    _groups = _sorter.buildGroups(tricks, _consistencyMap);
+    final rawGroups = _sorter.buildGroups(tricks, _consistencyMap);
+    final showLanded = AuthService.isLoggedIn &&
+        (_filter.statuses.isEmpty ||
+            (_filter.statuses.contains(TrickStatus.landed) &&
+                _filter.statuses.any((s) => s != TrickStatus.landed)));
+    _groups = rawGroups.map((g) {
+      final landedCount = showLanded
+          ? g.$2.where((t) => _consistencyMap[t.id]?.isLanded == true).length
+          : null;
+      return (g.$1, g.$2, landedCount);
+    }).toList();
   }
 
   void _refresh() => _load();
@@ -138,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
         difficultyModifierOnly: _sorter.primary == PrimarySort.difficulty,
         compact: compact,
         editorMode: _editorMode,
+        videoSaved: trick.hasTrainingVideo && _savedTrickIds.contains(trick.id),
       ),
     );
   }
@@ -249,7 +271,12 @@ class _HomeScreenState extends State<HomeScreen> {
           onSortTap: _showSortSheet,
           onGridSizeChanged: (v) => setState(() => _gridSize = v),
           nameSearchController: _nameSearchController,
-          onNameChanged: () => setState(() => _recompute()),
+          onNameChanged: () {
+            _searchDebounce?.cancel();
+            _searchDebounce = Timer(const Duration(milliseconds: 150), () {
+              if (mounted) setState(() => _recompute());
+            });
+          },
         ),
         Expanded(
           child: LayoutBuilder(
@@ -261,23 +288,14 @@ class _HomeScreenState extends State<HomeScreen> {
               return RefreshIndicator(
                 onRefresh: () async => _refresh(),
                 child: CustomScrollView(
+                  scrollCacheExtent: const ScrollCacheExtent.viewport(1.5),
                   slivers: [
-                    for (final (label, groupTricks) in _groups) ...[
+                    for (final (label, groupTricks, landedCount) in _groups) ...[
                       SliverToBoxAdapter(
                         child: _GroupHeader(
                           label: translateGroupLabel(label, l10n),
                           totalCount: groupTricks.length,
-                          landedCount: AuthService.isLoggedIn &&
-                                  (_filter.statuses.isEmpty ||
-                                      (_filter.statuses
-                                              .contains(TrickStatus.landed) &&
-                                          _filter.statuses.any(
-                                              (s) => s != TrickStatus.landed)))
-                              ? groupTricks
-                                  .where((t) =>
-                                      _consistencyMap[t.id]?.isLanded == true)
-                                  .length
-                              : null,
+                          landedCount: landedCount,
                         ),
                       ),
                       if (isListMode)
