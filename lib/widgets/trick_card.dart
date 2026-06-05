@@ -4,7 +4,6 @@ import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
 import '../utils/difficulty_tier.dart';
-import '../video/offline_video_service.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
@@ -15,6 +14,7 @@ class TrickCard extends StatelessWidget {
   final bool compact;
   final bool difficultyModifierOnly;
   final bool editorMode;
+  final bool videoSaved;
 
   const TrickCard({
     super.key,
@@ -26,18 +26,13 @@ class TrickCard extends StatelessWidget {
     this.compact = false,
     this.difficultyModifierOnly = false,
     this.editorMode = false,
+    this.videoSaved = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Set<int>>(
-      valueListenable: OfflineVideoService.savedTrickIds,
-      builder: (context, saved, _) {
-        final videoSaved = trick.hasTrainingVideo && saved.contains(trick.id);
-        if (listMode) return _buildListTile(context, videoSaved: videoSaved);
-        return _buildGridCard(context, videoSaved: videoSaved);
-      },
-    );
+    if (listMode) return _buildListTile(context, videoSaved: videoSaved);
+    return _buildGridCard(context, videoSaved: videoSaved);
   }
 
   Widget _buildGridCard(BuildContext context, {bool videoSaved = false}) {
