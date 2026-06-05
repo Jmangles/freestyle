@@ -303,6 +303,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => _buildTrickCard(groupTricks[i], listMode: true),
                             childCount: groupTricks.length,
+                            addRepaintBoundaries: false,
+                            addAutomaticKeepAlives: false,
                           ),
                         )
                       else
@@ -317,6 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => _buildTrickCard(groupTricks[i], compact: compact),
                             childCount: groupTricks.length,
+                            addRepaintBoundaries: false,
+                            addAutomaticKeepAlives: false,
                           ),
                         ),
                     ],
@@ -452,8 +456,9 @@ class _GroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labelStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
+    final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
         );
@@ -469,8 +474,8 @@ class _GroupHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             countText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
+            style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
                 ),
           ),
         ],
