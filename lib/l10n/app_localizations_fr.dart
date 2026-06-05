@@ -574,6 +574,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pas encore de conseils. Soyez le premier à en soumettre un !';
 
   @override
+  String get noMatchingTricks => 'Aucun trick ne correspond à votre recherche.';
+
+  @override
+  String get pageNotFound => 'Page introuvable.';
+
+  @override
+  String get goHomeButton => 'Accueil';
+
+  @override
   String get tipBodyLabel => 'Contenu';
 
   @override
