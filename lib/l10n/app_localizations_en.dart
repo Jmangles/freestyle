@@ -567,6 +567,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTipsYet => 'No tips yet. Be the first to submit one!';
 
   @override
+  String get noMatchingTricks => 'No tricks match your search.';
+
+  @override
+  String get pageNotFound => 'We couldn\'t find that page.';
+
+  @override
+  String get goHomeButton => 'Go home';
+
+  @override
   String get tipBodyLabel => 'Body';
 
   @override

@@ -12,6 +12,7 @@ import '../models/trick.dart';
 import '../models/trick_filter.dart';
 import '../models/trick_sort.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/empty_state.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -260,7 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (_tricks.isEmpty) {
-      return Center(child: Text(l10n.noTricksYet));
+      return EmptyState(
+        asset: 'assets/img/arms_crossed.svg',
+        message: l10n.noTricksYet,
+      );
     }
 
     return Column(
@@ -281,6 +285,13 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
+              if (_groups.isEmpty) {
+                return EmptyState(
+                  asset: 'assets/img/arms_crossed.svg',
+                  message: l10n.noMatchingTricks,
+                  
+                );
+              }
               final isListMode = _gridSize == 0;
               final crossAxisCount =
                   isListMode ? 1 : _crossAxisCount(constraints.maxWidth);

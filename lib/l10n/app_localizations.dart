@@ -1168,6 +1168,24 @@ abstract class AppLocalizations {
   /// **'No tips yet. Be the first to submit one!'**
   String get noTipsYet;
 
+  /// No description provided for @noMatchingTricks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tricks match your search.'**
+  String get noMatchingTricks;
+
+  /// No description provided for @pageNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find that page.'**
+  String get pageNotFound;
+
+  /// No description provided for @goHomeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go home'**
+  String get goHomeButton;
+
   /// No description provided for @tipBodyLabel.
   ///
   /// In en, this message translates to:

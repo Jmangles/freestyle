@@ -14,6 +14,7 @@ import 'screens/submit_trick_screen.dart';
 import 'screens/submit_tip_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/not_found_screen.dart';
 import 'video/bunny_video_provider.dart';
 import 'widgets/main_shell.dart';
 
@@ -23,6 +24,7 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     refreshListenable: _authNotifier,
+    errorBuilder: (_, __) => const NotFoundScreen(),
     redirect: (context, state) {
       final loggedIn = Supabase.instance.client.auth.currentSession != null;
       final loc = state.matchedLocation;

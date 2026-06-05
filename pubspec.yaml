@@ -44,6 +44,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logos/
+    - assets/img/
 
 # Native app icons, generated from the padded HF monogram master.
 # Regenerate with: dart run flutter_launcher_icons

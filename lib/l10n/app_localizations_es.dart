@@ -570,6 +570,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noTipsYet => 'Sin consejos aún. ¡Sé el primero en enviar uno!';
 
   @override
+  String get noMatchingTricks => 'Ningún truco coincide con tu búsqueda.';
+
+  @override
+  String get pageNotFound => 'No pudimos encontrar esa página.';
+
+  @override
+  String get goHomeButton => 'Ir al inicio';
+
+  @override
   String get tipBodyLabel => 'Contenido';
 
   @override
