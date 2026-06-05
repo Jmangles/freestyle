@@ -93,7 +93,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
-                        <Grid>
+                        <Grid Background="Transparent">
                             <Track x:Name="PART_Track">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Command="Slider.DecreaseLarge">
@@ -162,8 +162,10 @@
                           LoadedBehavior="Manual"
                           UnloadedBehavior="Stop"
                           Stretch="Uniform"
+                          IsMuted="True"
                           MediaOpened="VideoPlayer_MediaOpened"
-                          MediaEnded="VideoPlayer_MediaEnded"/>
+                          MediaEnded="VideoPlayer_MediaEnded"
+                          MediaFailed="VideoPlayer_MediaFailed"/>
         </Border>
 
         <!-- Timeline scrubber with trim overlay -->
@@ -180,6 +182,7 @@
                         Minimum="0" Maximum="1"
                         LargeChange="0.00001" SmallChange="0.00001"
                         VerticalAlignment="Center"
+                        Height="32"
                         ValueChanged="TimelineSlider_ValueChanged"
                         PreviewMouseDown="TimelineSlider_PreviewMouseDown"
                         PreviewMouseUp="TimelineSlider_PreviewMouseUp"/>
@@ -195,7 +198,7 @@
         </Grid>
 
         <!-- Playback controls -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,14">
+        <StackPanel x:Name="PlaybackControls" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,14">
             <Button Content="⏮"  Style="{StaticResource DarkButton}" Width="36" Height="36"
                     FontSize="14" Click="Restart_Click" ToolTip="Go to start"/>
             <Button Content="◀|" Style="{StaticResource DarkButton}" Width="36" Height="36"
@@ -210,7 +213,7 @@
         <Rectangle Grid.Row="4" Fill="#333" Margin="0,0,0,14"/>
 
         <!-- Trim controls -->
-        <Grid Grid.Row="5" Margin="0,0,0,12">
+        <Grid x:Name="TrimControls" Grid.Row="5" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="90"/>

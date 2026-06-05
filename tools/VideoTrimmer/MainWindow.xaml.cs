@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private double _trimEnd;
     private const double FrameStep = 1.0 / 60.0;
     private CancellationTokenSource? _regenerateCts;
+    private string? _tempPreviewFile;
 
     public MainWindow()
     {
@@ -27,6 +28,7 @@ public partial class MainWindow : Window
         _positionTimer.Tick += PositionTimer_Tick;
 
         TrimOverlay.SizeChanged += (_, _) => UpdateTrimMarkers();
+        Closed += (_, _) => CleanupTempPreview();
 
         OutputDirBox.Text = @"O:\Footage\Highline\Website";
     }
@@ -58,6 +60,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(OutputDirBox.Text))
             OutputDirBox.Text = Path.GetDirectoryName(dlg.FileName) ?? "";
 
+        CleanupTempPreview();
         VideoPlayer.Source = new Uri(dlg.FileName);
         VideoPlayer.Play();
         VideoPlayer.Pause();
@@ -73,6 +76,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(OutputDirBox.Text))
             OutputDirBox.Text = Path.GetDirectoryName(path) ?? "";
 
+        CleanupTempPreview();
         VideoPlayer.Source = new Uri(path);
         VideoPlayer.Play();
         VideoPlayer.Pause();
@@ -499,6 +503,50 @@ public partial class MainWindow : Window
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async void VideoPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
+    {
+        var sourcePath = VideoPathBox.Text.Trim();
+        if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+        {
+            SetStatus($"Error loading video: {e.ErrorException?.Message ?? "unknown error"}");
+            return;
+        }
+
+        PlaybackControls.IsEnabled = false;
+        TrimControls.IsEnabled     = false;
+        SetStatus("Transcoding .mov to preview proxy…");
+        try
+        {
+            CleanupTempPreview();
+            _tempPreviewFile = Path.Combine(Path.GetTempPath(), $"vt_preview_{Guid.NewGuid():N}.mp4");
+            await RunFfmpegAsync($"-y -i \"{sourcePath}\" -c:v libx264 -crf 30 -preset ultrafast -vf scale=-2:360 -an \"{_tempPreviewFile}\"");
+            VideoPlayer.Source = new Uri(_tempPreviewFile);
+            VideoPlayer.Play();
+            VideoPlayer.Pause();
+            SetStatus("Preview ready — set trim points and trick ID, then Generate.");
+        }
+        catch (FfmpegNotFoundException)
+        {
+            SetStatus("Preview unavailable (ffmpeg not found) — trim by seconds and Generate.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Preview unavailable ({ex.Message}) — trim by seconds and Generate.");
+        }
+        finally
+        {
+            PlaybackControls.IsEnabled = true;
+            TrimControls.IsEnabled     = true;
+        }
+    }
+
+    private void CleanupTempPreview()
+    {
+        if (_tempPreviewFile is not { } tmp) return;
+        _tempPreviewFile = null;
+        try { File.Delete(tmp); } catch { }
+    }
 
     private void SetStatus(string message) => StatusLabel.Text = message;
 
