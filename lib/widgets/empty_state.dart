@@ -28,9 +28,6 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bound BOTH dimensions: with only a height set, SvgPicture's
-            // width collapses to 0 under the Column's loose constraints and
-            // nothing paints. BoxFit.contain keeps the art's aspect ratio.
             SizedBox(
               height: illustrationHeight,
               width: illustrationHeight,
@@ -38,6 +35,10 @@ class EmptyState extends StatelessWidget {
                 asset,
                 fit: BoxFit.contain,
                 semanticsLabel: message,
+                colorMapper: _EmptyStateColorMapper(
+                  outline: Theme.of(context).colorScheme.onSurface,
+                  accent: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -55,4 +56,40 @@ class EmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Remaps the illustrations' two hard-coded source colors to theme colors.
+@immutable
+class _EmptyStateColorMapper extends ColorMapper {
+  const _EmptyStateColorMapper({required this.outline, required this.accent});
+
+  /// Outline slot — pure green (#00FF00) in the source SVGs.
+  static const Color _sourceOutline = Color(0xFF00FF00);
+
+  /// Accent slot — pure magenta (#FF00FF) in the source SVGs.
+  static const Color _sourceAccent = Color(0xFFFF00FF);
+
+  final Color outline;
+  final Color accent;
+
+  @override
+  Color substitute(
+    String? id,
+    String elementName,
+    String attributeName,
+    Color color,
+  ) {
+    if (color == _sourceOutline) return outline;
+    if (color == _sourceAccent) return accent;
+    return color;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is _EmptyStateColorMapper &&
+      other.outline == outline &&
+      other.accent == accent;
+
+  @override
+  int get hashCode => Object.hash(outline, accent);
 }
