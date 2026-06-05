@@ -10,6 +10,7 @@ import '../models/profile.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
 import '../models/trick_sort.dart';
+import '../widgets/app_logo.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/tricks_service.dart';
@@ -181,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        title: const AppLogo.big(height: 36),
         actions: [
           if (_profile?.canEditTricks == true)
             IconButton(
