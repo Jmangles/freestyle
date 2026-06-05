@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations_extension.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -115,13 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      l10n.appTitle,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                    const Center(child: AppLogo.big()),
                     const SizedBox(height: 8),
                     Text(
                       l10n.signInToYourAccount,
