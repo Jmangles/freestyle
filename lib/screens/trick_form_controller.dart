@@ -19,6 +19,7 @@ class TrickFormController {
   int? startPositionId;
   int? endPositionId;
   List<int> prerequisiteIds;
+  List<int> baseIds;
   bool isCore;
 
   TrickFormController.fromTrick(Trick? t)
@@ -37,6 +38,7 @@ class TrickFormController {
         startPositionId = t?.startPositionId,
         endPositionId = t?.endPositionId,
         prerequisiteIds = t != null ? List.from(t.prerequisiteTrickIds) : [],
+        baseIds = t != null ? List.from(t.baseTrickIds) : [],
         isCore = false;
 
   Map<String, dynamic> get formFields => {
@@ -46,6 +48,7 @@ class TrickFormController {
         'date_performed': datePerformed?.toIso8601String().split('T').first,
         'original_performer': trimToNull(originalPerformer.text),
         'prerequisite_trick_ids': prerequisiteIds,
+        'base_trick_ids': baseIds,
         'description': trimToNull(description.text),
         'tips': trimToNull(tips.text),
         'video_link': trimToNull(videoLink.text),
@@ -79,6 +82,11 @@ class TrickFormController {
         prerequisiteIds.length != original.prerequisiteTrickIds.length ||
         !prerequisiteIds.toSet().containsAll(original.prerequisiteTrickIds);
     if (prereqsChanged) fields['prerequisite_trick_ids'] = prerequisiteIds;
+
+    final baseChanged =
+        baseIds.length != original.baseTrickIds.length ||
+        !baseIds.toSet().containsAll(original.baseTrickIds);
+    if (baseChanged) fields['base_trick_ids'] = baseIds;
 
     final desc = trimToNull(description.text);
     if (desc != null && desc != original.description) fields['description'] = desc;

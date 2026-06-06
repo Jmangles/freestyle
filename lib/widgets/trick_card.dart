@@ -15,6 +15,7 @@ class TrickCard extends StatelessWidget {
   final bool difficultyModifierOnly;
   final bool editorMode;
   final bool videoSaved;
+  final int variationCount;
 
   const TrickCard({
     super.key,
@@ -27,6 +28,7 @@ class TrickCard extends StatelessWidget {
     this.difficultyModifierOnly = false,
     this.editorMode = false,
     this.videoSaved = false,
+    this.variationCount = 0,
   });
 
   @override
@@ -111,6 +113,24 @@ class TrickCard extends StatelessWidget {
       ),
     );
 
+    final overlays = [
+      if (variationCount > 0 || videoSaved)
+        Positioned(
+          top: 14,
+          right: 14,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            spacing: 3,
+            children: [
+              if (variationCount > 0)
+                _VariationBadge(count: variationCount, theme: theme),
+              if (videoSaved)
+                Icon(Icons.download_done, size: 14, color: theme.colorScheme.primary),
+            ],
+          ),
+        ),
+    ];
+
     if (consistency == Consistency.never) {
       return Padding(
         padding: const EdgeInsets.all(4),
@@ -126,34 +146,17 @@ class TrickCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (videoSaved) _buildSaveIcon(theme),
+            ...overlays,
           ],
         ),
       );
     }
 
-    if (videoSaved) {
-      return Stack(
-        children: [
-          card,
-          _buildSaveIcon(theme),
-        ],
-      );
+    if (overlays.isNotEmpty) {
+      return Stack(children: [card, ...overlays]);
     }
 
     return card;
-  }
-
-  Positioned _buildSaveIcon(ThemeData theme) {
-    return Positioned(
-      top: 4,
-      right: 4,
-      child: Icon(
-        Icons.download_done,
-        size: 14,
-        color: theme.colorScheme.primary,
-      ),
-    );
   }
 
   Widget _buildListTile(BuildContext context, {bool videoSaved = false}) {
@@ -261,6 +264,35 @@ class TrickCard extends StatelessWidget {
     }
     if (trick.startPositionName != null) return trick.startPositionName!;
     return trick.endPositionName ?? '';
+  }
+}
+
+class _VariationBadge extends StatelessWidget {
+  final int count;
+  final ThemeData theme;
+  const _VariationBadge({required this.count, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = theme.colorScheme.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          Icon(Icons.alt_route, size: 10, color: color),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(color: color, fontSize: 9),
+          ),
+        ],
+      ),
+    );
   }
 }
 

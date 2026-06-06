@@ -23,6 +23,7 @@ class TrickFilter {
   final String performerQuery;
   final String nameQuery;
   final bool coreOnly;
+  final bool hideVariations;
   final Set<MissingField> missingFields;
 
   const TrickFilter({
@@ -36,6 +37,7 @@ class TrickFilter {
     this.performerQuery = '',
     this.nameQuery = '',
     this.coreOnly = false,
+    this.hideVariations = true,
     this.missingFields = const {},
   });
 
@@ -50,6 +52,7 @@ class TrickFilter {
       performerQuery.isNotEmpty ||
       nameQuery.isNotEmpty ||
       coreOnly ||
+      !hideVariations ||
       missingFields.isNotEmpty;
 
   int get activeCount =>
@@ -62,11 +65,13 @@ class TrickFilter {
       (performerQuery.isNotEmpty ? 1 : 0) +
       (nameQuery.isNotEmpty ? 1 : 0) +
       (coreOnly ? 1 : 0) +
+      (!hideVariations ? 1 : 0) +
       (missingFields.isNotEmpty ? 1 : 0);
 
   List<Trick> apply(List<Trick> tricks, Map<int, Consistency> consistencyMap) {
     return tricks.where((t) {
       if (coreOnly && !t.isCore) return false;
+      if (hideVariations && t.baseTrickIds.isNotEmpty) return false;
       if (t.difficultyTier == -1) {
         if (!includeTbd) return false;
       } else {
