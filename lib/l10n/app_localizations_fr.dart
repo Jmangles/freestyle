@@ -221,6 +221,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectPrerequisiteTitle => 'Sélectionner un prérequis';
 
   @override
+  String get selectBaseTrickTitle => 'Sélectionner le trick de base';
+
+  @override
+  String get variationOfLabel => 'Variation de';
+
+  @override
+  String get variationsLabel => 'Variations';
+
+  @override
   String get profileTitle => 'Profil';
 
   @override
@@ -675,6 +684,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get coreOnlyFilter => 'Tricks fondamentaux uniquement';
 
   @override
+  String get hideVariationsFilter => 'Masquer les variations';
+
+  @override
   String get pointScoreLabel => 'Points totaux';
 
   @override
@@ -702,6 +714,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get editorAllPresent => 'Tous les champs présents';
+
+  @override
+  String get editorVariationBaseNotPrereq =>
+      'Le trick de base n\'est pas listé comme prérequis';
 
   @override
   String get editorShowOnlyMissing =>

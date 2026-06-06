@@ -75,6 +75,24 @@ class TricksService {
     );
   }
 
+  static Future<List<Trick>> getVariationsOf(int trickId) {
+    return withOfflineFallback(
+      caller: 'TricksService.getVariationsOf($trickId)',
+      online: () async {
+        final data = await _client
+            .from('tricks')
+            .select(_select)
+            .eq('status', ApprovalStatus.approved.index)
+            .contains('base_trick_ids', [trickId]);
+        return (data as List).map((e) => Trick.fromJson(e)).toList();
+      },
+      offline: () async {
+        final all = await LocalDatabase.getTricks();
+        return all.where((t) => t.baseTrickIds.contains(trickId)).toList();
+      },
+    );
+  }
+
   static Future<List<Trick>> getTricksRequiring(int trickId) {
     return withOfflineFallback(
       caller: 'TricksService.getTricksRequiring($trickId)',

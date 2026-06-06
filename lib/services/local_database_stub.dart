@@ -13,7 +13,7 @@ import '../models/user_trick.dart';
 class LocalDatabase {
   LocalDatabase._();
 
-  static const int _kVersion = 2;
+  static const int _kVersion = 3;
   static Database? _db;
 
   static Database get _instance {
@@ -76,6 +76,7 @@ class LocalDatabase {
         date_performed TEXT,
         original_performer TEXT,
         prerequisite_trick_ids BLOB NOT NULL,
+        base_trick_ids BLOB NOT NULL,
         description TEXT,
         tips TEXT,
         video_link TEXT,
@@ -168,6 +169,7 @@ class LocalDatabase {
         'date_performed': trick.datePerformed?.toIso8601String().split('T').first,
         'original_performer': trick.originalPerformer,
         'prerequisite_trick_ids': encodePrerequisiteIds(trick.prerequisiteTrickIds),
+        'base_trick_ids': encodePrerequisiteIds(trick.baseTrickIds),
         'description': trick.description,
         'tips': trick.tips,
         'video_link': trick.videoLink,
@@ -182,16 +184,14 @@ class LocalDatabase {
         'flags': trick.flags,
       };
 
+  static Uint8List _readBlob(Map<String, dynamic> row, String key) {
+    final raw = row[key];
+    if (raw is Uint8List) return raw;
+    if (raw is List) return Uint8List.fromList(raw.cast<int>());
+    return Uint8List(0);
+  }
+
   static Trick _trickFromRow(Map<String, dynamic> row) {
-    final raw = row['prerequisite_trick_ids'];
-    final Uint8List bytes;
-    if (raw is Uint8List) {
-      bytes = raw;
-    } else if (raw is List) {
-      bytes = Uint8List.fromList(raw.cast<int>());
-    } else {
-      bytes = Uint8List(0);
-    }
     return Trick(
       id: row['id'] as int,
       givenName: row['given_name'] as String,
@@ -202,7 +202,8 @@ class LocalDatabase {
           ? DateTime.parse(row['date_performed'] as String)
           : null,
       originalPerformer: row['original_performer'] as String?,
-      prerequisiteTrickIds: decodePrerequisiteIds(bytes),
+      prerequisiteTrickIds: decodePrerequisiteIds(_readBlob(row, 'prerequisite_trick_ids')),
+      baseTrickIds: decodePrerequisiteIds(_readBlob(row, 'base_trick_ids')),
       description: row['description'] as String?,
       tips: row['tips'] as String?,
       videoLink: row['video_link'] as String?,

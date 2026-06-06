@@ -34,6 +34,7 @@ class _FilterSheetState extends State<FilterSheet> {
   late Set<TrickStatus> _statuses;
   late int? _yearLanded;
   late bool _coreOnly;
+  late bool _hideVariations;
   late bool _editorMode;
   late Set<MissingField> _missingFields;
   late TextEditingController _performerController;
@@ -66,6 +67,7 @@ class _FilterSheetState extends State<FilterSheet> {
     _statuses = Set.from(widget.current.statuses);
     _yearLanded = widget.current.yearLanded;
     _coreOnly = widget.current.coreOnly;
+    _hideVariations = widget.current.hideVariations;
     _editorMode = widget.editorMode;
     _missingFields = Set.from(widget.current.missingFields);
     _performerController = TextEditingController(text: widget.current.performerQuery);
@@ -96,6 +98,7 @@ class _FilterSheetState extends State<FilterSheet> {
         _statuses = {};
         _yearLanded = null;
         _coreOnly = false;
+        _hideVariations = true;
         _missingFields = {};
         _performerController.clear();
         _dropdownResetKey++;
@@ -110,6 +113,7 @@ class _FilterSheetState extends State<FilterSheet> {
         statuses: Set.unmodifiable(_statuses),
         yearLanded: _yearLanded,
         coreOnly: _coreOnly,
+        hideVariations: _hideVariations,
         performerQuery: _performerController.text.trim(),
         missingFields: Set.unmodifiable(_missingFields),
       );
@@ -256,6 +260,11 @@ class _FilterSheetState extends State<FilterSheet> {
                           label: Text(context.l10n.coreOnlyFilter),
                           selected: _coreOnly,
                           onSelected: (v) => setState(() => _coreOnly = v),
+                        ),
+                        FilterChip(
+                          label: Text(l10n.hideVariationsFilter),
+                          selected: _hideVariations,
+                          onSelected: (v) => setState(() => _hideVariations = v),
                         ),
                       ],
                     ),

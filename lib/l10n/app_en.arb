@@ -89,6 +89,9 @@
   "trickSubmittedForReview": "Trick submitted for review!",
   "similarTricksWarning": "Tricks with similar names:",
   "selectPrerequisiteTitle": "Select Prerequisite",
+  "selectBaseTrickTitle": "Select Base Trick",
+  "variationOfLabel": "Variation of",
+  "variationsLabel": "Variations",
 
   "profileTitle": "Profile",
   "signOutTooltip": "Sign Out",
@@ -295,6 +298,7 @@
   "coreTrickLabel": "Core trick",
   "coreTrickSubtitle": "Shown in the foundational tricks filter",
   "coreOnlyFilter": "Core tricks only",
+  "hideVariationsFilter": "Hide Variations",
 
   "pointScoreLabel": "Total Points",
 
@@ -318,6 +322,7 @@
   "editorModeSubtitle": "Highlight missing content on trick cards",
   "editorMissingPrefix": "Missing:",
   "editorAllPresent": "All fields present",
+  "editorVariationBaseNotPrereq": "Variation base not listed as prerequisite",
   "editorShowOnlyMissing": "Show only tricks missing:",
 
   "trainingStudioTitle": "Training Studio",
