@@ -10,6 +10,8 @@
 .claude
 .svn/
 
+*.code-workspace
+
 # IntelliJ related
 *.iml
 *.ipr
