@@ -369,7 +369,7 @@ class _EditorFieldsRow extends StatelessWidget {
       if (missing.isNotEmpty)
         '${l10n.editorMissingPrefix}\n${missing.map((f) => '  • ${f.$2}').join('\n')}',
       if (variationWarning)
-        '  • Variation base not listed as prerequisite',
+        '  • ${l10n.editorVariationBaseNotPrereq}',
       if (missing.isEmpty && !variationWarning)
         l10n.editorAllPresent,
     ];

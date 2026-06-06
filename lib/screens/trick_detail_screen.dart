@@ -388,7 +388,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
 
           if (baseTricks.where((t) => !prereqs.any((p) => p.id == t.id)).isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Variation of',
+            Text(l10n.variationOfLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -407,7 +407,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
 
           if (variations.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Variations',
+            Text(l10n.variationsLabel,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),

@@ -461,7 +461,7 @@ class _PendingSuggestionCard extends StatelessWidget {
     }
     if (s.baseTrickIds != null) {
       rows.add(_diffRow(
-        'Variation of',
+        l10n.variationOfLabel,
         '${orig?.baseTrickIds.length ?? 0}',
         '${s.baseTrickIds!.length}',
       ));

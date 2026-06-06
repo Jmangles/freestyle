@@ -262,7 +262,7 @@ class _FilterSheetState extends State<FilterSheet> {
                           onSelected: (v) => setState(() => _coreOnly = v),
                         ),
                         FilterChip(
-                          label: const Text('Hide Variations'),
+                          label: Text(l10n.hideVariationsFilter),
                           selected: _hideVariations,
                           onSelected: (v) => setState(() => _hideVariations = v),
                         ),
