@@ -273,3 +273,23 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- ============================================================
+-- Trigger: clean up array references when a trick is deleted
+-- ============================================================
+
+create or replace function remove_deleted_trick_refs()
+returns trigger language plpgsql as $$
+begin
+  update tricks
+  set prerequisite_trick_ids = array_remove(prerequisite_trick_ids, old.id),
+      base_trick_ids          = array_remove(base_trick_ids, old.id)
+  where old.id = any(prerequisite_trick_ids)
+     or old.id = any(base_trick_ids);
+  return old;
+end;
+$$;
+
+create trigger on_trick_deleted
+  before delete on tricks
+  for each row execute function remove_deleted_trick_refs();

@@ -355,21 +355,26 @@ class _EditorFieldsRow extends StatelessWidget {
           (Icons.tips_and_updates_outlined, l10n.tipsLabel),
       ];
 
+  bool get _hasVariationWarning => trick.baseTrickIds
+      .any((id) => !trick.prerequisiteTrickIds.contains(id));
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final missing = _missingFields(l10n);
+    final variationWarning = _hasVariationWarning;
 
-    final String tooltipMessage;
-    if (missing.isEmpty) {
-      tooltipMessage = l10n.editorAllPresent;
-    } else {
-      final bullets = missing.map((f) => '  • ${f.$2}').join('\n');
-      tooltipMessage = '${l10n.editorMissingPrefix}\n$bullets';
-    }
+    final tooltipParts = [
+      if (missing.isNotEmpty)
+        '${l10n.editorMissingPrefix}\n${missing.map((f) => '  • ${f.$2}').join('\n')}',
+      if (variationWarning)
+        '  • Variation base not listed as prerequisite',
+      if (missing.isEmpty && !variationWarning)
+        l10n.editorAllPresent,
+    ];
 
-    final indicator = missing.isEmpty
+    final indicator = (missing.isEmpty && !variationWarning)
         ? Icon(Icons.check_circle_outline, size: 11, color: Colors.green.shade600)
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -379,11 +384,13 @@ class _EditorFieldsRow extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 2),
                   child: Icon(icon, size: 11, color: Colors.amber.shade700),
                 ),
+              if (variationWarning)
+                Icon(Icons.alt_route, size: 11, color: Colors.red.shade600),
             ],
           );
 
     return Tooltip(
-      message: tooltipMessage,
+      message: tooltipParts.join('\n'),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
