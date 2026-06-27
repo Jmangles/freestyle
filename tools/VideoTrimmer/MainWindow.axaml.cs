@@ -1,10 +1,12 @@
 using System.Diagnostics;
 using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Threading;
-using Microsoft.Win32;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using LibVLCSharp.Shared;
 
 namespace VideoTrimmer;
 
@@ -19,167 +21,251 @@ public partial class MainWindow : Window
     private const double FrameStep = 1.0 / 60.0;
     private CancellationTokenSource? _regenerateCts;
     private string? _tempPreviewFile;
+    private long _seekCooldownUntil;
+
+    private LibVLC? _libVlc;
+    private MediaPlayer? _mediaPlayer;
 
     public MainWindow()
     {
         InitializeComponent();
 
+        Core.Initialize();
+        _libVlc = new LibVLC();
+        _mediaPlayer = new MediaPlayer(_libVlc) { Mute = true };
+
+        _mediaPlayer.LengthChanged    += OnMediaLengthChanged;
+        _mediaPlayer.EndReached       += OnMediaEndReached;
+        _mediaPlayer.EncounteredError += OnMediaError;
+
         _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
         _positionTimer.Tick += PositionTimer_Tick;
 
         TrimOverlay.SizeChanged += (_, _) => UpdateTrimMarkers();
-        Closed += (_, _) => CleanupTempPreview();
+        Closed += (_, _) => OnWindowClosed();
 
-        OutputDirBox.Text = @"O:\Footage\Highline\Website";
+        // VideoView needs a live HWND before MediaPlayer is assigned; defer to Loaded.
+        Loaded += (_, _) => VideoView.MediaPlayer = _mediaPlayer;
+
+        // Use tunnel routing so we intercept pointer events before the Slider consumes them,
+        // mirroring WPF's PreviewMouseDown/Up behaviour.
+        TimelineSlider.AddHandler(PointerPressedEvent,  TimelineSlider_PointerPressed,  RoutingStrategies.Tunnel);
+        TimelineSlider.AddHandler(PointerReleasedEvent, TimelineSlider_PointerReleased, RoutingStrategies.Tunnel);
+    }
+
+    private void OnWindowClosed()
+    {
+        CleanupTempPreview();
+        _mediaPlayer?.Dispose();
+        _libVlc?.Dispose();
+    }
+
+    // ── LibVLC events (fire on VLC thread — must dispatch to UI) ─────────────
+
+    private void OnMediaLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _duration = TimeSpan.FromMilliseconds(e.Length);
+            DurationLabel.Text = FormatTime(_duration);
+            _trimStart = 0;
+            _trimEnd = _duration.TotalSeconds;
+            TrimStartBox.Text = "0.000";
+            TrimEndBox.Text = _trimEnd.ToString("F3");
+            UpdateTrimMarkers();
+        });
+    }
+
+    private void OnMediaEndReached(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isPlaying = false;
+            PlayPauseBtn.Content = "▶";
+            _mediaPlayer!.Time = 0;
+        });
+    }
+
+    private void OnMediaError(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(async () =>
+        {
+            var sourcePath = VideoPathBox.Text?.Trim() ?? "";
+            if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+            {
+                SetStatus("Error loading video.");
+                return;
+            }
+
+            PlaybackControls.IsEnabled = false;
+            TrimControls.IsEnabled = false;
+            SetStatus("Transcoding to preview proxy…");
+            try
+            {
+                CleanupTempPreview();
+                _tempPreviewFile = Path.Combine(Path.GetTempPath(), $"vt_preview_{Guid.NewGuid():N}.mp4");
+                await RunFfmpegAsync($"-y -i \"{sourcePath}\" -c:v libx264 -crf 30 -preset ultrafast -vf scale=-2:360 -an \"{_tempPreviewFile}\"");
+                LoadVideo(_tempPreviewFile);
+                SetStatus("Preview ready — set trim points and trick ID, then Generate.");
+            }
+            catch (FfmpegNotFoundException)
+            {
+                SetStatus("Preview unavailable (ffmpeg not found) — trim by seconds and Generate.");
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Preview unavailable ({ex.Message}) — trim by seconds and Generate.");
+            }
+            finally
+            {
+                PlaybackControls.IsEnabled = true;
+                TrimControls.IsEnabled = true;
+            }
+        });
     }
 
     // ── Timer ─────────────────────────────────────────────────────────────────
 
     private void PositionTimer_Tick(object? sender, EventArgs e)
     {
-        if (_isDragging || _duration.TotalSeconds <= 0) return;
-        var frac = VideoPlayer.Position.TotalSeconds / _duration.TotalSeconds;
+        if (_isDragging || _duration.TotalSeconds <= 0 || _mediaPlayer == null) return;
+        if (Environment.TickCount64 < _seekCooldownUntil) return;
+        var ms = _mediaPlayer.Time;
+        if (ms < 0) return;
+        var frac = ms / _duration.TotalMilliseconds;
         TimelineSlider.Value = Math.Clamp(frac, 0, 1);
-        CurrentTimeLabel.Text = FormatTime(VideoPlayer.Position);
+        CurrentTimeLabel.Text = FormatTime(TimeSpan.FromMilliseconds(ms));
     }
 
     // ── File browsing ─────────────────────────────────────────────────────────
 
-    private void BrowseVideo_Click(object sender, RoutedEventArgs e)
+    private async void BrowseVideo_Click(object? sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFileDialog
+        var topLevel = TopLevel.GetTopLevel(this)!;
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Select source video",
-            Filter = "Video files|*.mp4;*.mov;*.avi;*.mkv;*.webm;*.m4v|All files|*.*",
-            InitialDirectory = @"O:\Footage\Highline\Tricks",
-        };
-        if (dlg.ShowDialog() != true) return;
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Video files") { Patterns = ["*.mp4", "*.mov", "*.avi", "*.mkv", "*.webm", "*.m4v"] },
+                new FilePickerFileType("All files")   { Patterns = ["*"] },
+            ]
+        });
+        if (files.Count == 0) return;
 
-        VideoPathBox.Text = dlg.FileName;
+        var path = files[0].Path.LocalPath;
+        VideoPathBox.Text = path;
 
         if (string.IsNullOrWhiteSpace(OutputDirBox.Text))
-            OutputDirBox.Text = Path.GetDirectoryName(dlg.FileName) ?? "";
+            OutputDirBox.Text = Path.GetDirectoryName(path) ?? "";
 
         CleanupTempPreview();
-        VideoPlayer.Source = new Uri(dlg.FileName);
-        VideoPlayer.Play();
-        VideoPlayer.Pause();
-        _positionTimer.Start();
+        LoadVideo(path);
         SetStatus("Video loaded — set trim points and trick ID, then Generate.");
     }
 
-    private void VideoPathBox_LostFocus(object sender, RoutedEventArgs e)
+    private void VideoPathBox_LostFocus(object? sender, RoutedEventArgs e)
     {
-        var path = VideoPathBox.Text.Trim();
+        var path = VideoPathBox.Text?.Trim() ?? "";
         if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
 
         if (string.IsNullOrWhiteSpace(OutputDirBox.Text))
             OutputDirBox.Text = Path.GetDirectoryName(path) ?? "";
 
         CleanupTempPreview();
-        VideoPlayer.Source = new Uri(path);
-        VideoPlayer.Play();
-        VideoPlayer.Pause();
-        _positionTimer.Start();
+        LoadVideo(path);
         SetStatus("Video loaded — set trim points and trick ID, then Generate.");
     }
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFolderDialog { Title = "Select output directory", InitialDirectory = @"O:\Footage\Highline\Website" };
-        if (dlg.ShowDialog() == true)
-            OutputDirBox.Text = dlg.FolderName;
+        var topLevel = TopLevel.GetTopLevel(this)!;
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select output directory"
+        });
+        if (folders.Count > 0)
+            OutputDirBox.Text = folders[0].Path.LocalPath;
     }
 
-    // ── Media events ──────────────────────────────────────────────────────────
-
-    private void VideoPlayer_MediaOpened(object sender, RoutedEventArgs e)
+    private void LoadVideo(string path)
     {
-        if (!VideoPlayer.NaturalDuration.HasTimeSpan) return;
+        if (_mediaPlayer == null || _libVlc == null) return;
 
-        _duration = VideoPlayer.NaturalDuration.TimeSpan;
-        DurationLabel.Text = FormatTime(_duration);
-        _trimStart = 0;
-        _trimEnd = _duration.TotalSeconds;
-        TrimStartBox.Text = "0.000";
-        TrimEndBox.Text = _trimEnd.ToString("F3");
-        UpdateTrimMarkers();
-    }
+        void OnPlaying(object? s, EventArgs _)
+        {
+            _mediaPlayer.Playing -= OnPlaying;
+            _mediaPlayer.Pause();
+        }
+        _mediaPlayer.Playing += OnPlaying;
 
-    private void VideoPlayer_MediaEnded(object sender, RoutedEventArgs e)
-    {
-        _isPlaying = false;
-        PlayPauseBtn.Content = "▶";
-        VideoPlayer.Position = TimeSpan.Zero;
+        using var media = new Media(_libVlc, new Uri(path));
+        media.AddOption(":input-fast-seek"); // snap to nearest keyframe — prevents backwards-seek freeze
+        _mediaPlayer.Play(media);
+        _positionTimer.Start();
     }
 
     // ── Playback controls ─────────────────────────────────────────────────────
 
-    private void PlayPause_Click(object sender, RoutedEventArgs e)
+    private void PlayPause_Click(object? sender, RoutedEventArgs e)
     {
+        if (_mediaPlayer == null) return;
         if (_isPlaying)
         {
-            VideoPlayer.Pause();
+            _mediaPlayer.Pause();
             _isPlaying = false;
             PlayPauseBtn.Content = "▶";
         }
         else
         {
-            VideoPlayer.Play();
+            _mediaPlayer.Play();
             _isPlaying = true;
             PlayPauseBtn.Content = "⏸";
         }
     }
 
-    private void Restart_Click(object sender, RoutedEventArgs e)
+    private void Restart_Click(object? sender, RoutedEventArgs e)
     {
-        VideoPlayer.Position = TimeSpan.Zero;
+        if (_mediaPlayer == null) return;
+        SeekTo(0);
         TimelineSlider.Value = 0;
-        CurrentTimeLabel.Text = FormatTime(TimeSpan.Zero);
     }
 
-    private void StepBack_Click(object sender, RoutedEventArgs e)
+    private void StepBack_Click(object? sender, RoutedEventArgs e)
     {
-        var pos = TimeSpan.FromSeconds(Math.Max(0, VideoPlayer.Position.TotalSeconds - FrameStep));
-        VideoPlayer.Position = pos;
-        CurrentTimeLabel.Text = FormatTime(pos);
+        if (_mediaPlayer == null) return;
+        SeekTo(Math.Max(0, _mediaPlayer.Time - (long)(FrameStep * 1000)));
     }
 
-    private void StepForward_Click(object sender, RoutedEventArgs e)
+    private void StepForward_Click(object? sender, RoutedEventArgs e)
     {
-        var pos = TimeSpan.FromSeconds(Math.Min(_duration.TotalSeconds, VideoPlayer.Position.TotalSeconds + FrameStep));
-        VideoPlayer.Position = pos;
-        CurrentTimeLabel.Text = FormatTime(pos);
+        if (_mediaPlayer == null) return;
+        SeekTo(Math.Min((long)_duration.TotalMilliseconds, _mediaPlayer.Time + (long)(FrameStep * 1000)));
     }
 
     // ── Timeline scrubber ─────────────────────────────────────────────────────
 
-    private void TimelineSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private void TimelineSlider_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         _isDragging = true;
-        // Jump immediately to the clicked position. LargeChange is set to near-zero
-        // so the RepeatButton command that fires afterwards is harmless.
-        if (TimelineSlider.ActualWidth > 0)
+        if (TimelineSlider.Bounds.Width > 0)
         {
-            const double pad = 7.0; // thumb radius — matches the TrimOverlay margin
+            const double pad = 7.0;
             TimelineSlider.Value = Math.Clamp(
-                (e.GetPosition(TimelineSlider).X - pad) / (TimelineSlider.ActualWidth - pad * 2),
+                (e.GetPosition(TimelineSlider).X - pad) / (TimelineSlider.Bounds.Width - pad * 2),
                 0, 1);
         }
     }
 
-    private void TimelineSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    private void TimelineSlider_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         _isDragging = false;
-        if (_duration.TotalSeconds > 0)
-        {
-            var pos = TimeSpan.FromSeconds(TimelineSlider.Value * _duration.TotalSeconds);
-            VideoPlayer.Position = pos;
-            CurrentTimeLabel.Text = FormatTime(pos);
-        }
+        if (_mediaPlayer != null && _duration.TotalSeconds > 0)
+            SeekTo((long)(TimelineSlider.Value * _duration.TotalMilliseconds));
     }
 
-    private void TimelineSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private void TimelineSlider_ValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         if (_isDragging && _duration.TotalSeconds > 0)
             CurrentTimeLabel.Text = FormatTime(TimeSpan.FromSeconds(e.NewValue * _duration.TotalSeconds));
@@ -187,41 +273,43 @@ public partial class MainWindow : Window
 
     // ── Trim controls ─────────────────────────────────────────────────────────
 
-    private void SetStart_Click(object sender, RoutedEventArgs e)
+    private void SetStart_Click(object? sender, RoutedEventArgs e)
     {
-        _trimStart = VideoPlayer.Position.TotalSeconds;
+        if (_mediaPlayer == null) return;
+        _trimStart = _mediaPlayer.Time / 1000.0;
         TrimStartBox.Text = _trimStart.ToString("F3");
         UpdateTrimMarkers();
     }
 
-    private void SetEnd_Click(object sender, RoutedEventArgs e)
+    private void SetEnd_Click(object? sender, RoutedEventArgs e)
     {
-        _trimEnd = VideoPlayer.Position.TotalSeconds;
+        if (_mediaPlayer == null) return;
+        _trimEnd = _mediaPlayer.Time / 1000.0;
         TrimEndBox.Text = _trimEnd.ToString("F3");
         UpdateTrimMarkers();
     }
 
-    private void PlayFromStart_Click(object sender, RoutedEventArgs e)
+    private void PlayFromStart_Click(object? sender, RoutedEventArgs e)
     {
-        if (_duration.TotalSeconds <= 0) return;
-        VideoPlayer.Position = TimeSpan.FromSeconds(_trimStart);
+        if (_mediaPlayer == null || _duration.TotalSeconds <= 0) return;
+        SeekTo((long)(_trimStart * 1000));
         TimelineSlider.Value = _trimStart / _duration.TotalSeconds;
-        VideoPlayer.Play();
+        _mediaPlayer.Play();
         _isPlaying = true;
         PlayPauseBtn.Content = "⏸";
     }
 
-    private void PlayFromEnd_Click(object sender, RoutedEventArgs e)
+    private void PlayFromEnd_Click(object? sender, RoutedEventArgs e)
     {
-        if (_duration.TotalSeconds <= 0) return;
-        VideoPlayer.Position = TimeSpan.FromSeconds(_trimEnd);
+        if (_mediaPlayer == null || _duration.TotalSeconds <= 0) return;
+        SeekTo((long)(_trimEnd * 1000));
         TimelineSlider.Value = _trimEnd / _duration.TotalSeconds;
-        VideoPlayer.Play();
+        _mediaPlayer.Play();
         _isPlaying = true;
         PlayPauseBtn.Content = "⏸";
     }
 
-    private void TrimBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void TrimBox_TextChanged(object? sender, TextChangedEventArgs e)
     {
         if (double.TryParse(TrimStartBox?.Text, out var start)) _trimStart = start;
         if (double.TryParse(TrimEndBox?.Text,   out var end))   _trimEnd   = end;
@@ -230,9 +318,9 @@ public partial class MainWindow : Window
 
     private void UpdateTrimMarkers()
     {
-        if (_duration.TotalSeconds <= 0 || TrimOverlay.ActualWidth <= 0) return;
+        if (_duration.TotalSeconds <= 0 || TrimOverlay.Bounds.Width <= 0) return;
 
-        var w      = TrimOverlay.ActualWidth;
+        var w      = TrimOverlay.Bounds.Width;
         var startX = Math.Clamp(_trimStart / _duration.TotalSeconds, 0, 1) * w;
         var endX   = Math.Clamp(_trimEnd   / _duration.TotalSeconds, 0, 1) * w;
 
@@ -244,15 +332,15 @@ public partial class MainWindow : Window
 
     // ── Generate ──────────────────────────────────────────────────────────────
 
-    private async void Generate_Click(object sender, RoutedEventArgs e)
+    private async void Generate_Click(object? sender, RoutedEventArgs e)
     {
-        var inputPath  = VideoPathBox.Text.Trim();
-        var trickId    = TrickIdBox.Text.Trim();
-        var outputBase = OutputDirBox.Text.Trim();
+        var inputPath  = VideoPathBox.Text?.Trim() ?? "";
+        var trickId    = TrickIdBox.Text?.Trim() ?? "";
+        var outputBase = OutputDirBox.Text?.Trim() ?? "";
 
-        if (string.IsNullOrEmpty(inputPath))  { SetStatus("Error: select a source video first.");    return; }
-        if (string.IsNullOrEmpty(trickId))    { SetStatus("Error: enter a Trick ID.");               return; }
-        if (string.IsNullOrEmpty(outputBase)) { SetStatus("Error: select an output directory.");     return; }
+        if (string.IsNullOrEmpty(inputPath))  { SetStatus("Error: select a source video first.");        return; }
+        if (string.IsNullOrEmpty(trickId))    { SetStatus("Error: enter a Trick ID.");                   return; }
+        if (string.IsNullOrEmpty(outputBase)) { SetStatus("Error: select an output directory.");         return; }
         if (_trimStart >= _trimEnd)           { SetStatus("Error: trim start must be before trim end."); return; }
 
         GenerateBtn.IsEnabled    = false;
@@ -261,7 +349,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var outDir      = Path.Combine(outputBase, trickId);
+            var outDir = Path.Combine(outputBase, trickId);
             Directory.CreateDirectory(outDir);
 
             var forwardPath          = Path.Combine(outDir, "forward.mp4");
@@ -304,41 +392,40 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Stop_Click(object sender, RoutedEventArgs e) => _regenerateCts?.Cancel();
+    private void Stop_Click(object? sender, RoutedEventArgs e) => _regenerateCts?.Cancel();
 
-    private async void RegenerateAll_Click(object sender, RoutedEventArgs e) =>
+    private async void RegenerateAll_Click(object? sender, RoutedEventArgs e) =>
         await StartRegenerateAsync(h264Full: true, h264Mobile: true, av1Full: true, av1Mobile: true);
 
-    private async void RegenH264Full_Click(object sender, RoutedEventArgs e) =>
-        await StartRegenerateAsync(h264Full: true);
-
-    private async void RegenH264Mobile_Click(object sender, RoutedEventArgs e) =>
-        await StartRegenerateAsync(h264Mobile: true);
-
-    private async void RegenAv1Full_Click(object sender, RoutedEventArgs e) =>
-        await StartRegenerateAsync(av1Full: true);
-
-    private async void RegenAv1Mobile_Click(object sender, RoutedEventArgs e) =>
-        await StartRegenerateAsync(av1Mobile: true);
+    private async void RegenH264Full_Click(object? sender, RoutedEventArgs e)   => await StartRegenerateAsync(h264Full: true);
+    private async void RegenH264Mobile_Click(object? sender, RoutedEventArgs e) => await StartRegenerateAsync(h264Mobile: true);
+    private async void RegenAv1Full_Click(object? sender, RoutedEventArgs e)    => await StartRegenerateAsync(av1Full: true);
+    private async void RegenAv1Mobile_Click(object? sender, RoutedEventArgs e)  => await StartRegenerateAsync(av1Mobile: true);
 
     private async Task StartRegenerateAsync(bool h264Full = false, bool h264Mobile = false, bool av1Full = false, bool av1Mobile = false)
     {
-        var outputBase = OutputDirBox.Text.Trim();
-        var defaultManifest = string.IsNullOrEmpty(outputBase) ? "" : Path.Combine(outputBase, "manifest.csv");
+        var outputBase = OutputDirBox.Text?.Trim() ?? "";
 
-        var dlg = new OpenFileDialog
+        var topLevel = TopLevel.GetTopLevel(this)!;
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Select manifest.csv",
-            Filter = "CSV files|*.csv|All files|*.*",
-            InitialDirectory = File.Exists(defaultManifest) ? outputBase : @"O:\Footage\Highline\Website",
-            FileName = File.Exists(defaultManifest) ? defaultManifest : "",
-        };
-        if (dlg.ShowDialog() != true) return;
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("CSV files") { Patterns = ["*.csv"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
+            SuggestedStartLocation = !string.IsNullOrEmpty(outputBase)
+                ? await topLevel.StorageProvider.TryGetFolderFromPathAsync(outputBase)
+                : null,
+        });
+        if (files.Count == 0) return;
 
         List<(string trickId, string sourceFile, double trimStart, double trimEnd)> entries;
         try
         {
-            entries = ParseManifest(dlg.FileName);
+            entries = ParseManifest(files[0].Path.LocalPath);
         }
         catch (Exception ex)
         {
@@ -375,7 +462,7 @@ public partial class MainWindow : Window
                 }
 
                 var outDir = Path.Combine(
-                    string.IsNullOrEmpty(outputBase) ? Path.GetDirectoryName(dlg.FileName)! : outputBase,
+                    string.IsNullOrEmpty(outputBase) ? Path.GetDirectoryName(files[0].Path.LocalPath)! : outputBase,
                     trickId);
                 Directory.CreateDirectory(outDir);
 
@@ -409,7 +496,7 @@ public partial class MainWindow : Window
         string? line;
         while ((line = reader.ReadLine()) != null)
         {
-            if (firstLine) { firstLine = false; continue; } // skip header
+            if (firstLine) { firstLine = false; continue; }
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             var parts = SplitCsvLine(line);
@@ -451,8 +538,7 @@ public partial class MainWindow : Window
         string codecArgs;
         if (av1)
         {
-            var crf = "30";
-            codecArgs = $"-c:v libsvtav1 -crf {crf} -preset 4 -g 30 -keyint_min 30 -sc_threshold 0";
+            codecArgs = "-c:v libsvtav1 -crf 30 -preset 4 -g 30 -keyint_min 30 -sc_threshold 0";
         }
         else
         {
@@ -504,41 +590,12 @@ public partial class MainWindow : Window
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private async void VideoPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
+    private void SeekTo(long ms)
     {
-        var sourcePath = VideoPathBox.Text.Trim();
-        if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
-        {
-            SetStatus($"Error loading video: {e.ErrorException?.Message ?? "unknown error"}");
-            return;
-        }
-
-        PlaybackControls.IsEnabled = false;
-        TrimControls.IsEnabled     = false;
-        SetStatus("Transcoding .mov to preview proxy…");
-        try
-        {
-            CleanupTempPreview();
-            _tempPreviewFile = Path.Combine(Path.GetTempPath(), $"vt_preview_{Guid.NewGuid():N}.mp4");
-            await RunFfmpegAsync($"-y -i \"{sourcePath}\" -c:v libx264 -crf 30 -preset ultrafast -vf scale=-2:360 -an \"{_tempPreviewFile}\"");
-            VideoPlayer.Source = new Uri(_tempPreviewFile);
-            VideoPlayer.Play();
-            VideoPlayer.Pause();
-            SetStatus("Preview ready — set trim points and trick ID, then Generate.");
-        }
-        catch (FfmpegNotFoundException)
-        {
-            SetStatus("Preview unavailable (ffmpeg not found) — trim by seconds and Generate.");
-        }
-        catch (Exception ex)
-        {
-            SetStatus($"Preview unavailable ({ex.Message}) — trim by seconds and Generate.");
-        }
-        finally
-        {
-            PlaybackControls.IsEnabled = true;
-            TrimControls.IsEnabled     = true;
-        }
+        if (_mediaPlayer == null) return;
+        _mediaPlayer.Time = ms;
+        _seekCooldownUntil = Environment.TickCount64 + 250;
+        CurrentTimeLabel.Text = FormatTime(TimeSpan.FromMilliseconds(ms));
     }
 
     private void CleanupTempPreview()

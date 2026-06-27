@@ -1,0 +1,298 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
+        x:Class="VideoTrimmer.MainWindow"
+        Title="Highline Video Trimmer"
+        Width="960" Height="760"
+        MinWidth="800" MinHeight="620"
+        Background="#1e1e1e">
+
+    <Window.Styles>
+
+        <!-- Dark Button -->
+        <Style Selector="Button.dark">
+            <Setter Property="Background" Value="#2d2d2d"/>
+            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.dark:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#3d3d3d"/>
+        </Style>
+        <Style Selector="Button.dark:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#505050"/>
+        </Style>
+        <Style Selector="Button.dark:disabled">
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+
+        <!-- Accent Button -->
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="#1a56a0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#2166c0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2166c0"/>
+        </Style>
+        <Style Selector="Button.accent:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#0d4080"/>
+        </Style>
+        <Style Selector="Button.accent:disabled">
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+
+        <!-- TextBox -->
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#2a2a2a"/>
+            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox:focus-within">
+            <Setter Property="BorderBrush" Value="#2166c0"/>
+        </Style>
+
+        <!-- TextBlock -->
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="#b0b0b0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Slider: custom dark track + fixed 14px thumb so it never clips -->
+        <Style Selector="Slider">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent">
+                        <Track Name="PART_Track"
+                               Minimum="{TemplateBinding Minimum}"
+                               Maximum="{TemplateBinding Maximum}"
+                               Value="{TemplateBinding Value,Mode=TwoWay}">
+                            <Track.DecreaseButton>
+                                <RepeatButton Name="PART_DecreaseButton" Focusable="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Border Background="#2166c0" Height="4" VerticalAlignment="Center" CornerRadius="2,0,0,2"/>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseButton>
+                            <Track.Thumb>
+                                <Thumb Focusable="False">
+                                    <Thumb.Template>
+                                        <ControlTemplate>
+                                            <Ellipse Width="14" Height="14" Fill="#4499ff" Stroke="#2166c0" StrokeThickness="1"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                            <Track.IncreaseButton>
+                                <RepeatButton Name="PART_IncreaseButton" Focusable="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Border Background="#404040" Height="4" VerticalAlignment="Center" CornerRadius="0,2,2,0"/>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseButton>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+    </Window.Styles>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Source file row -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Source:"/>
+            <TextBox Grid.Column="1" x:Name="VideoPathBox" LostFocus="VideoPathBox_LostFocus"/>
+            <Button Grid.Column="2" x:Name="BrowseVideoBtn" Content="Browse…"
+                    Classes="dark" Margin="8,0,0,0" Width="80"
+                    Click="BrowseVideo_Click"/>
+        </Grid>
+
+        <!-- Video player -->
+        <Border Grid.Row="1" Background="Black" CornerRadius="6" Margin="0,0,0,8" ClipToBounds="True">
+            <vlc:VideoView x:Name="VideoView"/>
+        </Border>
+
+        <!-- Timeline scrubber with trim overlay -->
+        <Grid Grid.Row="2" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="64"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="64"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" x:Name="CurrentTimeLabel" Text="0:00.000"
+                       FontSize="11" FontFamily="Consolas" Foreground="#888"/>
+            <Grid Grid.Column="1">
+                <Slider x:Name="TimelineSlider"
+                        Minimum="0" Maximum="1"
+                        LargeChange="0.00001" SmallChange="0.00001"
+                        VerticalAlignment="Center" Height="20"
+                        ValueChanged="TimelineSlider_ValueChanged"/>
+                <Canvas x:Name="TrimOverlay" IsHitTestVisible="False"
+                        VerticalAlignment="Center" Height="12" Margin="7,0,7,0">
+                    <Rectangle x:Name="TrimRegion" Fill="#44cc88" Opacity="0.35" Height="4" Canvas.Top="4"/>
+                    <Line x:Name="TrimStartLine" Stroke="#44ff88" StrokeThickness="2" StartPoint="0,0" EndPoint="0,12"/>
+                    <Line x:Name="TrimEndLine"   Stroke="#ff6644" StrokeThickness="2" StartPoint="0,0" EndPoint="0,12"/>
+                </Canvas>
+            </Grid>
+            <TextBlock Grid.Column="2" x:Name="DurationLabel" Text="0:00.000"
+                       TextAlignment="Right" FontSize="11" FontFamily="Consolas" Foreground="#888"/>
+        </Grid>
+
+        <!-- Playback controls -->
+        <StackPanel x:Name="PlaybackControls" Grid.Row="3" Orientation="Horizontal"
+                    HorizontalAlignment="Center" Margin="0,0,0,14">
+            <Button Content="⏮" Classes="dark" Width="36" Height="36" Padding="0"
+                    FontSize="14" Click="Restart_Click" ToolTip.Tip="Go to start"/>
+            <Button Content="◀|" Classes="dark" Width="36" Height="36" Padding="0"
+                    FontSize="12" Margin="4,0,0,0" Click="StepBack_Click"
+                    ToolTip.Tip="Step back 1 frame (1/60s)"/>
+            <Button x:Name="PlayPauseBtn" Content="▶" Classes="dark"
+                    Width="48" Height="36" Padding="0" FontSize="16" Margin="4,0,0,0"
+                    Click="PlayPause_Click"/>
+            <Button Content="|▶" Classes="dark" Width="36" Height="36" Padding="0"
+                    FontSize="12" Margin="4,0,0,0" Click="StepForward_Click"
+                    ToolTip.Tip="Step forward 1 frame (1/60s)"/>
+        </StackPanel>
+
+        <!-- Divider -->
+        <Rectangle Grid.Row="4" Fill="#333" Margin="0,0,0,14"/>
+
+        <!-- Trim controls -->
+        <Grid x:Name="TrimControls" Grid.Row="5" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="30"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Trim Start:"/>
+            <TextBox    Grid.Column="1" x:Name="TrimStartBox" Text="0.000"
+                        TextChanged="TrimBox_TextChanged"/>
+            <Button     Grid.Column="2" Content="Set Start" Classes="dark"
+                        Margin="6,0,0,0" Foreground="#44ff88" Click="SetStart_Click"/>
+            <Button     Grid.Column="3" Content="▶" Classes="dark" Padding="0"
+                        Margin="4,0,0,0" Width="28" ToolTip.Tip="Play from trim start"
+                        Click="PlayFromStart_Click"/>
+
+            <TextBlock  Grid.Column="5" Text="Trim End:"/>
+            <TextBox    Grid.Column="6" x:Name="TrimEndBox" Text="0.000"
+                        TextChanged="TrimBox_TextChanged"/>
+            <Button     Grid.Column="7" Content="Set End" Classes="dark"
+                        Margin="6,0,0,0" Foreground="#ff8855" Click="SetEnd_Click"/>
+            <Button     Grid.Column="8" Content="▶" Classes="dark" Padding="0"
+                        Margin="4,0,0,0" Width="28" ToolTip.Tip="Play from trim end"
+                        Click="PlayFromEnd_Click"/>
+        </Grid>
+
+        <!-- Trick ID + output directory -->
+        <Grid Grid.Row="6" Margin="0,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34"/>
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="34"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Trick ID:"/>
+            <TextBox   Grid.Row="0" Grid.Column="1" x:Name="TrickIdBox" Height="32"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Output Dir:"/>
+            <TextBox   Grid.Row="2" Grid.Column="1" x:Name="OutputDirBox" Height="32"/>
+            <Button    Grid.Row="2" Grid.Column="2" Content="Browse…"
+                       Classes="dark" Margin="8,0,0,0" Width="80"
+                       Click="BrowseOutput_Click"/>
+        </Grid>
+
+        <!-- Generate button + status -->
+        <Grid Grid.Row="7">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="6"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" x:Name="GenerateBtn"
+                    Content="Generate  H.264 + AV1  ×  Full + Mobile  (4 files)"
+                    Classes="accent" Height="44" FontSize="14" FontWeight="SemiBold"
+                    Click="Generate_Click"/>
+            <StackPanel Grid.Row="2" Orientation="Horizontal">
+                <Button x:Name="RegenerateBtn"
+                        Content="Regenerate All from Manifest…"
+                        Classes="dark" Height="32"
+                        Click="RegenerateAll_Click"/>
+                <Button x:Name="StopBtn" Content="Stop"
+                        Classes="dark" Height="32" Foreground="#ff6644"
+                        IsEnabled="False" Margin="8,0,0,0" Width="60"
+                        Click="Stop_Click"/>
+            </StackPanel>
+            <StackPanel Grid.Row="4" Orientation="Horizontal">
+                <TextBlock Text="Regen variant:" Margin="0,0,8,0" Foreground="#888" FontSize="11"/>
+                <Button x:Name="RegenH264FullBtn" Content="H.264 Full"
+                        Classes="dark" Height="28" FontSize="11"
+                        Click="RegenH264Full_Click"/>
+                <Button x:Name="RegenH264MobileBtn" Content="H.264 Mobile"
+                        Classes="dark" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenH264Mobile_Click"/>
+                <Button x:Name="RegenAv1FullBtn" Content="AV1 Full"
+                        Classes="dark" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenAv1Full_Click"/>
+                <Button x:Name="RegenAv1MobileBtn" Content="AV1 Mobile"
+                        Classes="dark" Height="28" FontSize="11"
+                        Margin="6,0,0,0" Click="RegenAv1Mobile_Click"/>
+            </StackPanel>
+            <TextBlock Grid.Row="5" x:Name="StatusLabel"
+                       Text="Ready — open a video to begin"
+                       Margin="0,8,0,0" Foreground="#666" FontSize="11"/>
+        </Grid>
+    </Grid>
+</Window>
