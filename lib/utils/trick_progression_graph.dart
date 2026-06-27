@@ -60,17 +60,15 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
     frontier = next;
   }
 
-  // BFS downward through unlocks
+  // BFS downward through unlocks — one batch query per depth level
   frontier = {...bfsRoots};
   for (int d = 0; d < maxUnlockDepth && frontier.isNotEmpty; d++) {
+    final unlocked = await TricksService.getTricksRequiringAny(frontier.toList());
     final next = <int>{};
-    for (final id in frontier) {
-      final unlocked = await TricksService.getTricksRequiring(id);
-      for (final t in unlocked) {
-        if (!tricks.containsKey(t.id)) {
-          tricks[t.id] = t;
-          next.add(t.id);
-        }
+    for (final t in unlocked) {
+      if (!tricks.containsKey(t.id)) {
+        tricks[t.id] = t;
+        next.add(t.id);
       }
     }
     frontier = next;
@@ -95,6 +93,7 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
 
   // Upward: prereqs get lower layers
   final upQueue = [...bfsRoots];
+  final upVisited = <int>{...bfsRoots};
   while (upQueue.isNotEmpty) {
     final id = upQueue.removeAt(0);
     for (final pid in tricks[id]!.prerequisiteTrickIds) {
@@ -102,20 +101,21 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
       final nl = layers[id]! - 1;
       if (!layers.containsKey(pid) || layers[pid]! > nl) {
         layers[pid] = nl;
-        upQueue.add(pid);
+        if (upVisited.add(pid)) upQueue.add(pid);
       }
     }
   }
 
   // Downward: unlocks get higher layers
   final downQueue = [...bfsRoots];
+  final downVisited = <int>{...bfsRoots};
   while (downQueue.isNotEmpty) {
     final id = downQueue.removeAt(0);
     for (final uid in unlockMap[id] ?? <int>[]) {
       final nl = layers[id]! + 1;
       if (!layers.containsKey(uid) || layers[uid]! < nl) {
         layers[uid] = nl;
-        downQueue.add(uid);
+        if (downVisited.add(uid)) downQueue.add(uid);
       }
     }
   }

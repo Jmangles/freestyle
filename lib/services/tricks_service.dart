@@ -130,6 +130,25 @@ class TricksService {
     );
   }
 
+  static Future<List<Trick>> getTricksRequiringAny(List<int> ids) {
+    if (ids.isEmpty) return Future.value([]);
+    return withOfflineFallback(
+      caller: 'TricksService.getTricksRequiringAny',
+      online: () async {
+        final data = await _client
+            .from('tricks')
+            .select(_select)
+            .eq('status', ApprovalStatus.approved.index)
+            .overlaps('prerequisite_trick_ids', ids);
+        return (data as List).map((e) => Trick.fromJson(e)).toList();
+      },
+      offline: () async {
+        final all = await LocalDatabase.getTricks();
+        return all.where((t) => t.prerequisiteTrickIds.any(ids.contains)).toList();
+      },
+    );
+  }
+
   static Future<List<Trick>> getPendingTricks() async {
     try {
       final data = await _client
