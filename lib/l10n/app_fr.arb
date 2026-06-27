@@ -74,6 +74,9 @@
   "trickSubmittedForReview": "Trick soumis pour révision !",
   "similarTricksWarning": "Tricks avec des noms similaires :",
   "selectPrerequisiteTitle": "Sélectionner un prérequis",
+  "selectBaseTrickTitle": "Sélectionner le trick de base",
+  "variationOfLabel": "Variation de",
+  "variationsLabel": "Variations",
 
   "profileTitle": "Profil",
   "signOutTooltip": "Se déconnecter",
@@ -132,6 +135,7 @@
   "thisTrickLegend": "Ce trick",
   "youveLandedThisLegend": "Vous avez réussi ce trick",
   "notYetLandedLegend": "Pas encore réussi",
+  "landedViaVariationLegend": "Réussi via variation",
   "pinchToZoom": "Pincer pour zoomer · Glisser pour déplacer",
 
   "filterTricksTitle": "Filtrer les tricks",
@@ -250,6 +254,7 @@
   "coreTrickLabel": "Trick fondamental",
   "coreTrickSubtitle": "Affiché dans le filtre des tricks fondamentaux",
   "coreOnlyFilter": "Tricks fondamentaux uniquement",
+  "hideVariationsFilter": "Masquer les variations",
 
   "pointScoreLabel": "Points totaux",
 
@@ -273,6 +278,7 @@
   "editorModeSubtitle": "Mettre en évidence le contenu manquant sur les fiches de tricks",
   "editorMissingPrefix": "Manquant :",
   "editorAllPresent": "Tous les champs présents",
+  "editorVariationBaseNotPrereq": "Le trick de base n'est pas listé comme prérequis",
   "editorShowOnlyMissing": "Afficher uniquement les tricks manquant :",
 
   "trainingStudioTitle": "Studio d'entraînement",

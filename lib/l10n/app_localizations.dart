@@ -508,6 +508,24 @@ abstract class AppLocalizations {
   /// **'Select Prerequisite'**
   String get selectPrerequisiteTitle;
 
+  /// No description provided for @selectBaseTrickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Base Trick'**
+  String get selectBaseTrickTitle;
+
+  /// No description provided for @variationOfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation of'**
+  String get variationOfLabel;
+
+  /// No description provided for @variationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variations'**
+  String get variationsLabel;
+
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:
@@ -819,6 +837,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not yet landed'**
   String get notYetLandedLegend;
+
+  /// No description provided for @landedViaVariationLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed via variation'**
+  String get landedViaVariationLegend;
 
   /// No description provided for @pinchToZoom.
   ///
@@ -1354,6 +1378,12 @@ abstract class AppLocalizations {
   /// **'Core tricks only'**
   String get coreOnlyFilter;
 
+  /// No description provided for @hideVariationsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Variations'**
+  String get hideVariationsFilter;
+
   /// No description provided for @pointScoreLabel.
   ///
   /// In en, this message translates to:
@@ -1401,6 +1431,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All fields present'**
   String get editorAllPresent;
+
+  /// No description provided for @editorVariationBaseNotPrereq.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation base not listed as prerequisite'**
+  String get editorVariationBaseNotPrereq;
 
   /// No description provided for @editorShowOnlyMissing.
   ///

@@ -32,6 +32,9 @@ class TrickDetailData {
   final Trick trick;
   final List<Trick> prerequisites;
   final Map<int, UserTrick> prerequisiteUserTricks;
+  final List<Trick> baseTricks;
+  final List<Trick> variations;
+  final Map<int, UserTrick> variationUserTricks;
   final UserTrick? userTrick;
   final bool canEditTricks;
   final TrickVoteStats voteStats;
@@ -40,6 +43,9 @@ class TrickDetailData {
     required this.trick,
     required this.prerequisites,
     this.prerequisiteUserTricks = const {},
+    this.baseTricks = const [],
+    this.variations = const [],
+    this.variationUserTricks = const {},
     this.userTrick,
     required this.canEditTricks,
     required this.voteStats,

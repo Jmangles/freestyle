@@ -89,6 +89,7 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen>
           datePerformed: _form.datePerformed,
           originalPerformer: _form.formFields['original_performer'] as String?,
           prerequisiteTrickIds: _form.prerequisiteIds,
+          baseTrickIds: _form.baseIds,
           description: _form.formFields['description'] as String?,
           tips: _form.formFields['tips'] as String?,
           videoLink: _form.formFields['video_link'] as String?,
@@ -233,6 +234,17 @@ class _SubmitTrickScreenState extends State<SubmitTrickScreen>
                   .toList(),
               selectedIds: _form.prerequisiteIds,
               onChanged: (ids) => setState(() => _form.prerequisiteIds = ids),
+            ),
+            const SizedBox(height: 12),
+            _PrerequisiteSelector(
+              allTricks: allTricks
+                  .where((t) =>
+                      !_isEditing || t.id != widget.existingTrick!.id)
+                  .toList(),
+              selectedIds: _form.baseIds,
+              onChanged: (ids) => setState(() => _form.baseIds = ids),
+              label: context.l10n.variationOfLabel,
+              dialogTitle: context.l10n.selectBaseTrickTitle,
             ),
             const SizedBox(height: 12),
             _field(context, _form.description, l10n.descriptionLabel, maxLines: 4),
@@ -404,11 +416,15 @@ class _PrerequisiteSelector extends StatelessWidget {
   final List<Trick> allTricks;
   final List<int> selectedIds;
   final ValueChanged<List<int>> onChanged;
+  final String? label;
+  final String? dialogTitle;
 
   const _PrerequisiteSelector({
     required this.allTricks,
     required this.selectedIds,
     required this.onChanged,
+    this.label,
+    this.dialogTitle,
   });
 
   @override
@@ -422,7 +438,7 @@ class _PrerequisiteSelector extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(l10n.prerequisitesLabel,
+            Text(label ?? l10n.prerequisitesLabel,
                 style: Theme.of(context).textTheme.titleSmall),
             const Spacer(),
             TextButton.icon(
@@ -479,7 +495,7 @@ class _PrerequisiteSelector extends StatelessWidget {
                   .where((t) => t.givenName.toLowerCase().contains(query))
                   .toList();
           return AlertDialog(
-            title: Text(l10n.selectPrerequisiteTitle),
+            title: Text(dialogTitle ?? l10n.selectPrerequisiteTitle),
             content: SizedBox(
               width: double.maxFinite,
               child: Column(

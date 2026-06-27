@@ -459,6 +459,13 @@ class _PendingSuggestionCard extends StatelessWidget {
         '${s.prerequisiteTrickIds!.length}',
       ));
     }
+    if (s.baseTrickIds != null) {
+      rows.add(_diffRow(
+        l10n.variationOfLabel,
+        '${orig?.baseTrickIds.length ?? 0}',
+        '${s.baseTrickIds!.length}',
+      ));
+    }
 
     return rows;
   }

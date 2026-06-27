@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Trick> _tricks = [];
   Profile? _profile;
   Map<int, Consistency> _consistencyMap = {};
+  Map<int, int> _variationCounts = {};
   bool _initialLoading = true;
   bool _hasError = false;
   bool _editorMode = false;
@@ -100,11 +101,18 @@ class _HomeScreenState extends State<HomeScreen> {
       final consistencyMap = {
         for (final ut in userTricks) ut.trickId: ut.consistency
       };
+      final variationCounts = <int, int>{};
+      for (final t in tricks) {
+        for (final baseId in t.baseTrickIds) {
+          variationCounts[baseId] = (variationCounts[baseId] ?? 0) + 1;
+        }
+      }
       if (mounted) {
         setState(() {
           _tricks = tricks;
           _profile = profile;
           _consistencyMap = consistencyMap;
+          _variationCounts = variationCounts;
           _initialLoading = false;
           _hasError = false;
           _recompute();
@@ -161,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
         compact: compact,
         editorMode: _editorMode,
         videoSaved: trick.hasTrainingVideo && _savedTrickIds.contains(trick.id),
+        variationCount: _variationCounts[trick.id] ?? 0,
       ),
     );
   }

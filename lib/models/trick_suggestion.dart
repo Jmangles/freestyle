@@ -11,6 +11,7 @@ class TrickSuggestion {
   final DateTime? datePerformed;
   final String? originalPerformer;
   final List<int>? prerequisiteTrickIds;
+  final List<int>? baseTrickIds;
   final String? description;
   final String? tips;
   final String? videoLink;
@@ -36,6 +37,7 @@ class TrickSuggestion {
     this.datePerformed,
     this.originalPerformer,
     this.prerequisiteTrickIds,
+    this.baseTrickIds,
     this.description,
     this.tips,
     this.videoLink,
@@ -66,6 +68,10 @@ class TrickSuggestion {
           (json['prerequisite_trick_ids'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList(),
+      baseTrickIds:
+          (json['base_trick_ids'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList(),
       description: json['description'] as String?,
       tips: json['tips'] as String?,
       videoLink: json['video_link'] as String?,
@@ -92,6 +98,7 @@ class TrickSuggestion {
         if (originalPerformer != null) 'original_performer': originalPerformer,
         if (prerequisiteTrickIds != null)
           'prerequisite_trick_ids': prerequisiteTrickIds,
+        if (baseTrickIds != null) 'base_trick_ids': baseTrickIds,
         if (description != null) 'description': description,
         if (tips != null) 'tips': tips,
         if (videoLink != null) 'video_link': videoLink,

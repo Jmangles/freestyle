@@ -220,6 +220,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectPrerequisiteTitle => 'Seleccionar prerrequisito';
 
   @override
+  String get selectBaseTrickTitle => 'Seleccionar truco base';
+
+  @override
+  String get variationOfLabel => 'Variación de';
+
+  @override
+  String get variationsLabel => 'Variaciones';
+
+  @override
   String get profileTitle => 'Perfil';
 
   @override
@@ -386,6 +395,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notYetLandedLegend => 'Aún no aterrizado';
+
+  @override
+  String get landedViaVariationLegend => 'Aterrizado mediante variación';
 
   @override
   String get pinchToZoom => 'Pellizca para acercar · Arrastra para mover';
@@ -671,6 +683,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coreOnlyFilter => 'Solo trucos fundamentales';
 
   @override
+  String get hideVariationsFilter => 'Ocultar variaciones';
+
+  @override
   String get pointScoreLabel => 'Puntos totales';
 
   @override
@@ -698,6 +713,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editorAllPresent => 'Todos los campos presentes';
+
+  @override
+  String get editorVariationBaseNotPrereq =>
+      'El truco base no está listado como prerrequisito';
 
   @override
   String get editorShowOnlyMissing => 'Mostrar solo trucos con falta de:';

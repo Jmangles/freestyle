@@ -10,6 +10,7 @@ class Trick {
   final DateTime? datePerformed;
   final String? originalPerformer;
   final List<int> prerequisiteTrickIds;
+  final List<int> baseTrickIds;
   final String? description;
   final String? tips;
   final String? videoLink;
@@ -43,6 +44,7 @@ class Trick {
     this.datePerformed,
     this.originalPerformer,
     required this.prerequisiteTrickIds,
+    required this.baseTrickIds,
     this.description,
     this.tips,
     this.videoLink,
@@ -75,6 +77,11 @@ class Trick {
                   ?.map((e) => e as int)
                   .toList() ??
               [],
+      baseTrickIds:
+          (json['base_trick_ids'] as List<dynamic>?)
+                  ?.map((e) => e as int)
+                  .toList() ??
+              [],
       description: json['description'] as String?,
       tips: json['tips'] as String?,
       videoLink: json['video_link'] as String?,
@@ -97,6 +104,7 @@ class Trick {
         'date_performed': datePerformed?.toIso8601String().split('T').first,
         'original_performer': originalPerformer,
         'prerequisite_trick_ids': prerequisiteTrickIds,
+        'base_trick_ids': baseTrickIds,
         'description': description,
         'tips': tips,
         'video_link': videoLink,
@@ -113,6 +121,7 @@ class Trick {
     DateTime? datePerformed,
     String? originalPerformer,
     List<int>? prerequisiteTrickIds,
+    List<int>? baseTrickIds,
     String? description,
     String? tips,
     String? videoLink,
@@ -132,6 +141,7 @@ class Trick {
         originalPerformer: originalPerformer ?? this.originalPerformer,
         prerequisiteTrickIds:
             prerequisiteTrickIds ?? this.prerequisiteTrickIds,
+        baseTrickIds: baseTrickIds ?? this.baseTrickIds,
         description: description ?? this.description,
         tips: tips ?? this.tips,
         videoLink: videoLink ?? this.videoLink,
