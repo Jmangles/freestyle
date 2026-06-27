@@ -387,7 +387,11 @@ class _TrickCard extends StatelessWidget {
       bgColor = theme.colorScheme.primaryContainer;
       borderColor = theme.colorScheme.primary;
       textColor = theme.colorScheme.onPrimaryContainer;
-    } else if (isLanded || isViaVariation) {
+    } else if (isLanded) {
+      bgColor = theme.colorScheme.primaryContainer;
+      borderColor = theme.colorScheme.onPrimaryContainer;
+      textColor = theme.colorScheme.onPrimaryContainer;
+    } else if (isViaVariation) {
       bgColor = theme.colorScheme.tertiaryContainer;
       borderColor = theme.colorScheme.tertiary;
       textColor = theme.colorScheme.onTertiaryContainer;
@@ -419,12 +423,11 @@ class _TrickCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (!isFocal && (isLanded || isViaVariation)) ...[
-                  Icon(
-                    isLanded ? Icons.check_circle : Icons.check_circle_outline,
-                    size: 12,
-                    color: theme.colorScheme.tertiary,
-                  ),
+                if (!isFocal && isLanded) ...[
+                  Icon(Icons.check_circle, size: 12, color: Colors.white),
+                  const SizedBox(width: 3),
+                ] else if (!isFocal && isViaVariation) ...[
+                  Icon(Icons.check_circle_outline, size: 12, color: theme.colorScheme.tertiary),
                   const SizedBox(width: 3),
                 ],
                 Flexible(
@@ -498,11 +501,11 @@ class _Legend extends StatelessWidget {
           ),
           if (showProgress)
             _LegendItem(
-              color: theme.colorScheme.tertiaryContainer,
-              borderColor: theme.colorScheme.tertiary,
+              color: theme.colorScheme.primaryContainer,
+              borderColor: theme.colorScheme.onPrimaryContainer,
               label: context.l10n.youveLandedThisLegend,
               icon: Icons.check_circle,
-              iconColor: theme.colorScheme.tertiary,
+              iconColor: Colors.white,
             ),
           if (showViaVariation)
             _LegendItem(
