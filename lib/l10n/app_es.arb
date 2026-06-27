@@ -135,6 +135,7 @@
   "thisTrickLegend": "Este truco",
   "youveLandedThisLegend": "Has aterrizado este truco",
   "notYetLandedLegend": "Aún no aterrizado",
+  "landedViaVariationLegend": "Aterrizado mediante variación",
   "pinchToZoom": "Pellizca para acercar · Arrastra para mover",
 
   "filterTricksTitle": "Filtrar trucos",

@@ -165,6 +165,7 @@
   "thisTrickLegend": "This trick",
   "youveLandedThisLegend": "You've landed this",
   "notYetLandedLegend": "Not yet landed",
+  "landedViaVariationLegend": "Landed via variation",
   "pinchToZoom": "Pinch to zoom · Drag to pan",
 
   "filterTricksTitle": "Filter Tricks",

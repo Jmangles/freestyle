@@ -135,6 +135,7 @@
   "thisTrickLegend": "Ce trick",
   "youveLandedThisLegend": "Vous avez réussi ce trick",
   "notYetLandedLegend": "Pas encore réussi",
+  "landedViaVariationLegend": "Réussi via variation",
   "pinchToZoom": "Pincer pour zoomer · Glisser pour déplacer",
 
   "filterTricksTitle": "Filtrer les tricks",

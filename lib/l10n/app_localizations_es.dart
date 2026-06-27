@@ -397,6 +397,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notYetLandedLegend => 'Aún no aterrizado';
 
   @override
+  String get landedViaVariationLegend => 'Aterrizado mediante variación';
+
+  @override
   String get pinchToZoom => 'Pellizca para acercar · Arrastra para mover';
 
   @override

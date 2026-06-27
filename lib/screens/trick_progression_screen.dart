@@ -234,6 +234,7 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
                                 trick: data.tricks[entry.key]!,
                                 isFocal: entry.key == data.focalId,
                                 userTrick: data.userProgress[entry.key],
+                                landedViaVariation: data.satisfiedViaVariation.contains(entry.key),
                                 onTap: isMobile
                                     ? () {
                                         if (_hoveredId == entry.key) {
@@ -260,7 +261,10 @@ class _GraphViewState extends State<_GraphView> with SingleTickerProviderStateMi
             },
           ),
         ),
-        _Legend(showProgress: data.userProgress.isNotEmpty),
+        _Legend(
+          showProgress: data.userProgress.isNotEmpty,
+          showViaVariation: data.satisfiedViaVariation.isNotEmpty,
+        ),
       ],
     );
   }
@@ -357,12 +361,14 @@ class _TrickCard extends StatelessWidget {
   final Trick trick;
   final bool isFocal;
   final UserTrick? userTrick;
+  final bool landedViaVariation;
   final VoidCallback? onTap;
 
   const _TrickCard({
     required this.trick,
     required this.isFocal,
     this.userTrick,
+    this.landedViaVariation = false,
     this.onTap,
   });
 
@@ -371,6 +377,7 @@ class _TrickCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = DifficultyTier.badgeColors(trick.difficultyTier);
     final isLanded = userTrick?.consistency.isLanded ?? false;
+    final isViaVariation = !isLanded && landedViaVariation;
 
     final Color bgColor;
     final Color borderColor;
@@ -380,7 +387,7 @@ class _TrickCard extends StatelessWidget {
       bgColor = theme.colorScheme.primaryContainer;
       borderColor = theme.colorScheme.primary;
       textColor = theme.colorScheme.onPrimaryContainer;
-    } else if (isLanded) {
+    } else if (isLanded || isViaVariation) {
       bgColor = theme.colorScheme.tertiaryContainer;
       borderColor = theme.colorScheme.tertiary;
       textColor = theme.colorScheme.onTertiaryContainer;
@@ -412,9 +419,12 @@ class _TrickCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isLanded && !isFocal) ...[
-                  Icon(Icons.check_circle,
-                      size: 12, color: theme.colorScheme.tertiary),
+                if (!isFocal && (isLanded || isViaVariation)) ...[
+                  Icon(
+                    isLanded ? Icons.check_circle : Icons.check_circle_outline,
+                    size: 12,
+                    color: theme.colorScheme.tertiary,
+                  ),
                   const SizedBox(width: 3),
                 ],
                 Flexible(
@@ -462,8 +472,9 @@ class _TrickCard extends StatelessWidget {
 
 class _Legend extends StatelessWidget {
   final bool showProgress;
+  final bool showViaVariation;
 
-  const _Legend({required this.showProgress});
+  const _Legend({required this.showProgress, this.showViaVariation = false});
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +502,14 @@ class _Legend extends StatelessWidget {
               borderColor: theme.colorScheme.tertiary,
               label: context.l10n.youveLandedThisLegend,
               icon: Icons.check_circle,
+              iconColor: theme.colorScheme.tertiary,
+            ),
+          if (showViaVariation)
+            _LegendItem(
+              color: theme.colorScheme.tertiaryContainer,
+              borderColor: theme.colorScheme.tertiary,
+              label: context.l10n.landedViaVariationLegend,
+              icon: Icons.check_circle_outline,
               iconColor: theme.colorScheme.tertiary,
             ),
           _LegendItem(

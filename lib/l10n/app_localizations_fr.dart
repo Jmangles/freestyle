@@ -400,6 +400,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notYetLandedLegend => 'Pas encore réussi';
 
   @override
+  String get landedViaVariationLegend => 'Réussi via variation';
+
+  @override
   String get pinchToZoom => 'Pincer pour zoomer · Glisser pour déplacer';
 
   @override

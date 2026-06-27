@@ -395,6 +395,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notYetLandedLegend => 'Not yet landed';
 
   @override
+  String get landedViaVariationLegend => 'Landed via variation';
+
+  @override
   String get pinchToZoom => 'Pinch to zoom · Drag to pan';
 
   @override

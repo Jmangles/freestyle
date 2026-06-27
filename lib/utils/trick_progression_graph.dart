@@ -12,6 +12,9 @@ class TrickProgressionGraphData {
   final Map<int, int> layers;     // trickId → layer (0 = focal, neg = prereqs, pos = unlocks)
   final List<(int, int)> edges;   // (prereqId, trickId)
   final Map<int, UserTrick> userProgress;
+  // Trick IDs whose prerequisite role is satisfied by a qualifying variation the user has landed.
+  // A variation qualifies when its difficultyTier >= baseTrick.difficultyTier and both are > 0.
+  final Set<int> satisfiedViaVariation;
 
   const TrickProgressionGraphData({
     required this.focalId,
@@ -19,6 +22,7 @@ class TrickProgressionGraphData {
     required this.layers,
     required this.edges,
     required this.userProgress,
+    this.satisfiedViaVariation = const {},
   });
 }
 
@@ -29,8 +33,19 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
   final focal = await TricksService.getTrickById(trickId);
   final Map<int, Trick> tricks = {focal.id: focal};
 
+  // If the focal trick is a variation, seed the BFS from its base tricks too so that
+  // the base tricks' prerequisites and downstream are included in the graph.
+  final bfsRoots = <int>{focal.id};
+  if (focal.baseTrickIds.isNotEmpty) {
+    final baseTricks = await TricksService.getTricksByIds(focal.baseTrickIds);
+    for (final t in baseTricks) {
+      tricks[t.id] = t;
+      bfsRoots.add(t.id);
+    }
+  }
+
   // BFS upward through prerequisites
-  Set<int> frontier = {focal.id};
+  Set<int> frontier = {...bfsRoots};
   for (int d = 0; d < maxPrereqDepth && frontier.isNotEmpty; d++) {
     final next = <int>{};
     for (final id in frontier) {
@@ -46,7 +61,7 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
   }
 
   // BFS downward through unlocks
-  frontier = {focal.id};
+  frontier = {...bfsRoots};
   for (int d = 0; d < maxUnlockDepth && frontier.isNotEmpty; d++) {
     final next = <int>{};
     for (final id in frontier) {
@@ -75,11 +90,11 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
     unlockMap.putIfAbsent(pid, () => []).add(tid);
   }
 
-  // Assign layers via BFS from focal
-  final layers = <int, int>{focal.id: 0};
+  // Assign layers — all BFS roots start at layer 0
+  final layers = <int, int>{for (final id in bfsRoots) id: 0};
 
   // Upward: prereqs get lower layers
-  final upQueue = [focal.id];
+  final upQueue = [...bfsRoots];
   while (upQueue.isNotEmpty) {
     final id = upQueue.removeAt(0);
     for (final pid in tricks[id]!.prerequisiteTrickIds) {
@@ -93,7 +108,7 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
   }
 
   // Downward: unlocks get higher layers
-  final downQueue = [focal.id];
+  final downQueue = [...bfsRoots];
   while (downQueue.isNotEmpty) {
     final id = downQueue.removeAt(0);
     for (final uid in unlockMap[id] ?? <int>[]) {
@@ -109,12 +124,34 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
       ? await UserTricksService.getUserTricksForTrickIds(tricks.keys.toList())
       : <int, UserTrick>{};
 
+  final satisfiedViaVariation = <int>{};
+  if (userProgress.isNotEmpty) {
+    final variations = await TricksService.getVariationsForBaseIds(tricks.keys.toList());
+    if (variations.isNotEmpty) {
+      final variationProgress = await UserTricksService.getUserTricksForTrickIds(
+        variations.map((v) => v.id).toList(),
+      );
+      for (final variation in variations) {
+        final ut = variationProgress[variation.id];
+        if (ut == null || !ut.consistency.isLanded) continue;
+        if (variation.difficultyTier <= 0) continue;
+        for (final baseId in variation.baseTrickIds) {
+          final base = tricks[baseId];
+          if (base != null && base.difficultyTier > 0 && variation.difficultyTier >= base.difficultyTier) {
+            satisfiedViaVariation.add(baseId);
+          }
+        }
+      }
+    }
+  }
+
   return TrickProgressionGraphData(
     focalId: focal.id,
     tricks: tricks,
     layers: layers,
     edges: edges,
     userProgress: userProgress,
+    satisfiedViaVariation: satisfiedViaVariation,
   );
 }
 

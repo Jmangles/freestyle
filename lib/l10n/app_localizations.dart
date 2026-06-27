@@ -838,6 +838,12 @@ abstract class AppLocalizations {
   /// **'Not yet landed'**
   String get notYetLandedLegend;
 
+  /// No description provided for @landedViaVariationLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed via variation'**
+  String get landedViaVariationLegend;
+
   /// No description provided for @pinchToZoom.
   ///
   /// In en, this message translates to:
