@@ -43,10 +43,20 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
   TrickDetailData? _data;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
+  // Only the still-current load may assign _data, so stale results can never
+  // clobber a newer optimistic update.
+  void _startLoad() {
+    final future = _load();
+    _future = future;
+    future.then((d) {
+      if (mounted && identical(_future, future)) setState(() => _data = d);
+    }, onError: (Object _) {}); // FutureBuilder surfaces the error
+  }
+
   @override
   void initState() {
     super.initState();
-    _future = _load();
+    _startLoad();
     if (!kIsWeb) {
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         setDeviceConnectivity(results);
@@ -121,9 +131,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
       context,
       MaterialPageRoute(builder: (_) => SubmitTrickScreen(existingTrick: trick)),
     );
-    setState(() {
-      _future = _load();
-    });
+    setState(_startLoad);
   }
 
   Future<void> _openSuggestEdit(Trick trick) async {
@@ -137,31 +145,22 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
   Future<void> _setConsistency(Consistency c) async {
     if (_data != null) {
       final existing = _data!.userTrick;
-      final optimistic = existing != null
-          ? UserTrick(
-              id: existing.id,
-              userId: existing.userId,
-              trickId: existing.trickId,
-              consistency: c,
-              difficultyVote: existing.difficultyVote,
-              leashPosition: existing.leashPosition,
-              videoLink: existing.videoLink,
-              videoStart: existing.videoStart,
-              videoEnd: existing.videoEnd,
-              updatedAt: existing.updatedAt,
-            )
-          : UserTrick(
-              id: -1,
-              userId: -1,
-              trickId: widget.trickId,
-              consistency: c,
-              updatedAt: DateTime.now(),
-            );
+      final optimistic = existing?.withConsistency(c) ??
+          UserTrick(
+            id: -1,
+            userId: -1,
+            trickId: widget.trickId,
+            consistency: c,
+            updatedAt: DateTime.now(),
+          );
       setState(() {
         _data = TrickDetailData(
           trick: _data!.trick,
           prerequisites: _data!.prerequisites,
           prerequisiteUserTricks: _data!.prerequisiteUserTricks,
+          baseTricks: _data!.baseTricks,
+          variations: _data!.variations,
+          variationUserTricks: _data!.variationUserTricks,
           userTrick: optimistic,
           canEditTricks: _data!.canEditTricks,
           voteStats: _data!.voteStats,
@@ -169,9 +168,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
       });
     }
     await UserTricksService.setConsistency(widget.trickId, c);
-    setState(() {
-      _future = _load();
-    });
+    setState(_startLoad);
   }
 
   Future<void> _copyLink() async {
@@ -278,8 +275,6 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
   }
 
   Widget _buildBody(AsyncSnapshot<TrickDetailData> snap) {
-    if (snap.hasData) _data = snap.data;
-
     if (_data == null) {
       if (snap.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
@@ -415,9 +410,9 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
               spacing: 8,
               runSpacing: 4,
               children: variations.map((t) {
-                final consistency = variationUserTricks[t.id]?.consistency;
-                final bg = consistency?.cardColor(theme.brightness);
-                final border = consistency != null
+                final consistency = variationUserTricks[t.id].effectiveConsistency;
+                final bg = consistency.cardColor(theme.brightness);
+                final border = consistency != Consistency.neverTried
                     ? BorderSide(
                         color: consistency.borderColor(theme.brightness),
                         width: consistency.borderWidth,
@@ -427,9 +422,9 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
                   label: Text(t.givenName),
                   backgroundColor: bg,
                   side: border,
-                  elevation: consistency?.hasGlow == true ? 6 : null,
-                  shadowColor: consistency?.hasGlow == true
-                      ? consistency!
+                  elevation: consistency.hasGlow ? 6 : null,
+                  shadowColor: consistency.hasGlow
+                      ? consistency
                           .borderColor(theme.brightness)
                           .withValues(alpha: 0.7)
                       : null,
@@ -449,9 +444,9 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
               spacing: 8,
               runSpacing: 4,
               children: prereqs.map((p) {
-                final consistency = prereqUserTricks[p.id]?.consistency;
-                final bg = consistency?.cardColor(theme.brightness);
-                final border = consistency != null
+                final consistency = prereqUserTricks[p.id].effectiveConsistency;
+                final bg = consistency.cardColor(theme.brightness);
+                final border = consistency != Consistency.neverTried
                     ? BorderSide(
                         color: consistency.borderColor(theme.brightness),
                         width: consistency.borderWidth,
@@ -461,9 +456,9 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
                   label: Text(p.givenName),
                   backgroundColor: bg,
                   side: border,
-                  elevation: consistency?.hasGlow == true ? 6 : null,
-                  shadowColor: consistency?.hasGlow == true
-                      ? consistency!
+                  elevation: consistency.hasGlow ? 6 : null,
+                  shadowColor: consistency.hasGlow
+                      ? consistency
                           .borderColor(theme.brightness)
                           .withValues(alpha: 0.7)
                       : null,
@@ -570,7 +565,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ConsistencySelector(
-              selected: userTrick?.consistency,
+              selected: userTrick.effectiveConsistency,
               onChanged: _setConsistency,
             ),
             if (userTrick != null && userTrick.consistency.isLanded) ...[
@@ -588,9 +583,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
                     '${userTrick.difficultyVote}-${userTrick.leashPosition?.index}-${userTrick.videoLink}'),
                 trickId: widget.trickId,
                 userTrick: userTrick,
-                onSaved: () => setState(() {
-                  _future = _load();
-                }),
+                onSaved: () => setState(_startLoad),
               ),
             ],
           ],

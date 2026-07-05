@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 enum Consistency {
-  never('Attempting'),
+  // Stored in the DB as the enum index (0..6). Changing the order or adding
+  // values anywhere but the end requires a server + local-cache migration —
+  // see supabase/migrate_consistency_never_tried.sql.
+  neverTried('Never tried'),
+  attempting('Attempting'),
   once('Once'),
   sometimes('Sometimes'),
   often('Often'),
@@ -11,10 +15,11 @@ enum Consistency {
   const Consistency(this.label);
   final String label;
 
-  bool get isLanded => this != Consistency.never;
+  bool get isLanded => index >= Consistency.once.index;
 
   double get borderWidth => switch (this) {
-    Consistency.never => 1.5,
+    Consistency.neverTried => 1.5,
+    Consistency.attempting => 1.5,
     Consistency.once => 1.5,
     Consistency.sometimes => 2.0,
     Consistency.often => 2.0,
@@ -27,7 +32,8 @@ enum Consistency {
   Color borderColor(Brightness brightness) {
     if (brightness == Brightness.dark) {
       return switch (this) {
-        Consistency.never =>   const Color(0xFF9E9E9E),   // gray
+        Consistency.neverTried => const Color(0xFF757575), // grey-600
+        Consistency.attempting =>   const Color(0xFF9E9E9E),   // gray
         Consistency.once =>    const Color(0xFFFF7043),   // deep-orange-400
         Consistency.sometimes => const Color(0xFFFFD54F), // amber-300
         Consistency.often =>   const Color(0xFF8BC34A),   // light-green-500
@@ -36,7 +42,8 @@ enum Consistency {
       };
     }
     return switch (this) {
-      Consistency.never =>   const Color(0xFF9E9E9E),   // gray
+      Consistency.neverTried => const Color(0xFFBDBDBD), // grey-400
+      Consistency.attempting =>   const Color(0xFF9E9E9E),   // gray
       Consistency.once =>    const Color(0xFFE65100),   // orange
       Consistency.sometimes => const Color(0xFFF9A825), // yellow/amber
       Consistency.often =>   const Color(0xFF558B2F),   // green
@@ -45,10 +52,12 @@ enum Consistency {
     };
   }
 
-  Color cardColor(Brightness brightness) {
+  // Null means no override: the card keeps the theme's default surface color.
+  Color? cardColor(Brightness brightness) {
     if (brightness == Brightness.dark) {
       return switch (this) {
-        Consistency.never =>   const Color(0xFF1C1C1C),   // dark gray
+        Consistency.neverTried => null,
+        Consistency.attempting =>   const Color(0xFF1C1C1C),   // dark gray
         Consistency.once =>    const Color(0xFF1E1A16),   // subtle orange tint
         Consistency.sometimes => const Color(0xFF1E1D17), // subtle yellow tint
         Consistency.often =>   const Color(0xFF191D16),   // subtle green tint
@@ -57,7 +66,8 @@ enum Consistency {
       };
     }
     return switch (this) {
-      Consistency.never =>   const Color(0xFFEEEEEE),   // light gray
+      Consistency.neverTried => null,
+      Consistency.attempting =>   const Color(0xFFEEEEEE),   // light gray
       Consistency.once =>    const Color(0xFFFFF3E0),   // light orange
       Consistency.sometimes => const Color(0xFFFFFDE7), // light yellow
       Consistency.often =>   const Color(0xFFF1F8E9),   // light green
@@ -70,7 +80,8 @@ enum Consistency {
   Color? textColor(Brightness brightness) {
     if (brightness == Brightness.light) return null;
     return switch (this) {
-      Consistency.never =>   null,
+      Consistency.neverTried => null,
+      Consistency.attempting =>   null,
       Consistency.once =>    const Color(0xFF94A3B8), // slate-400
       Consistency.sometimes => const Color(0xFF94A3B8), // slate-400
       Consistency.often =>   const Color(0xFFE2E8F0), // slate-200
@@ -78,11 +89,17 @@ enum Consistency {
       Consistency.always =>  const Color(0xFFFFFFFF),
     };
   }
+}
 
-  static Consistency fromString(String value) => Consistency.values.firstWhere(
-        (e) => e.name == value,
-        orElse: () => Consistency.never,
-      );
+// Absence of a user_tricks row means the trick was never tried; these helpers
+// make that rule total so callers never handle a nullable Consistency.
+extension ConsistencyMapLookup on Map<int, Consistency> {
+  Consistency forTrick(int trickId) => this[trickId] ?? Consistency.neverTried;
+}
+
+extension UserTrickConsistency on UserTrick? {
+  Consistency get effectiveConsistency =>
+      this?.consistency ?? Consistency.neverTried;
 }
 
 enum LeashPosition {
@@ -119,13 +136,26 @@ class UserTrick {
     required this.updatedAt,
   });
 
+  UserTrick withConsistency(Consistency c) => UserTrick(
+        id: id,
+        userId: userId,
+        trickId: trickId,
+        consistency: c,
+        difficultyVote: difficultyVote,
+        leashPosition: leashPosition,
+        videoLink: videoLink,
+        videoStart: videoStart,
+        videoEnd: videoEnd,
+        updatedAt: updatedAt,
+      );
+
   factory UserTrick.fromJson(Map<String, dynamic> json) => UserTrick(
         id: json['id'] as int,
         userId: json['user_id'] as int,
         trickId: json['trick_id'] as int,
-        consistency: Consistency.values.elementAtOrNull(
-                json['consistency'] as int) ??
-            Consistency.never,
+        consistency: Consistency.values
+                .elementAtOrNull(json['consistency'] as int) ??
+            Consistency.neverTried,
         difficultyVote: json['difficulty_vote'] as int?,
         leashPosition: json['leash_position'] != null
             ? LeashPosition.values.elementAtOrNull(

@@ -1006,6 +1006,12 @@ abstract class AppLocalizations {
   /// **'Landed at least once'**
   String get statusLandedAtLeastOnce;
 
+  /// No description provided for @consistencyNeverTried.
+  ///
+  /// In en, this message translates to:
+  /// **'Never tried'**
+  String get consistencyNeverTried;
+
   /// No description provided for @consistencyOnce.
   ///
   /// In en, this message translates to:

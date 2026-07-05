@@ -54,6 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _nameSearchController = TextEditingController();
     _savedTrickIds = OfflineVideoService.savedTrickIds.value;
     OfflineVideoService.savedTrickIds.addListener(_onSavedIdsChanged);
+    UserTricksService.consistencyOverrides
+        .addListener(_onConsistencyOverridesChanged);
     _load(initial: true);
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       _load(); // guard inside _load() prevents concurrent runs
@@ -73,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchDebounce?.cancel();
     OfflineVideoService.savedTrickIds.removeListener(_onSavedIdsChanged);
+    UserTricksService.consistencyOverrides
+        .removeListener(_onConsistencyOverridesChanged);
     _authSub.cancel();
     Supabase.instance.client.removeChannel(_tricksChannel);
     _nameSearchController.dispose();
@@ -81,6 +85,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSavedIdsChanged() =>
       setState(() => _savedTrickIds = OfflineVideoService.savedTrickIds.value);
+
+  // Applies optimistic consistency writes immediately so returning from a
+  // trick detail never shows the old color while the refetch is in flight.
+  void _onConsistencyOverridesChanged() {
+    final overrides = UserTricksService.consistencyOverrides.value;
+    if (overrides.isEmpty || !mounted) return;
+    setState(() {
+      _consistencyMap = {..._consistencyMap, ...overrides};
+      _recompute();
+    });
+  }
 
   Future<void> _load({bool initial = false}) async {
     if (_loadInProgress) return;
@@ -148,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _filter.statuses.any((s) => s != TrickStatus.landed)));
     _groups = rawGroups.map((g) {
       final landedCount = showLanded
-          ? g.$2.where((t) => _consistencyMap[t.id]?.isLanded == true).length
+          ? g.$2.where((t) => _consistencyMap.forTrick(t.id).isLanded).length
           : null;
       return (g.$1, g.$2, landedCount);
     }).toList();
@@ -161,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
       key: ValueKey(trick.id),
       child: TrickCard(
         trick: trick,
-        consistency: _consistencyMap[trick.id],
+        consistency: _consistencyMap.forTrick(trick.id),
         onReturn: _refresh,
         listMode: listMode,
         showDifficulty: true,

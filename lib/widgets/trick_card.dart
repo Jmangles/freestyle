@@ -7,7 +7,7 @@ import '../utils/difficulty_tier.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
-  final Consistency? consistency;
+  final Consistency consistency;
   final VoidCallback? onReturn;
   final bool listMode;
   final bool showDifficulty;
@@ -20,7 +20,7 @@ class TrickCard extends StatelessWidget {
   const TrickCard({
     super.key,
     required this.trick,
-    this.consistency,
+    this.consistency = Consistency.neverTried,
     this.onReturn,
     this.listMode = false,
     this.showDifficulty = false,
@@ -42,11 +42,11 @@ class TrickCard extends StatelessWidget {
 
     final card = Card(
       clipBehavior: Clip.antiAlias,
-      margin: consistency == Consistency.never ? EdgeInsets.zero : null,
-      color: consistency?.cardColor(theme.brightness),
-      elevation: consistency?.hasGlow == true ? 8 : null,
-      shadowColor: consistency?.hasGlow == true
-          ? consistency!.borderColor(theme.brightness).withValues(alpha: 0.7)
+      margin: consistency == Consistency.attempting ? EdgeInsets.zero : null,
+      color: consistency.cardColor(theme.brightness),
+      elevation: consistency.hasGlow ? 8 : null,
+      shadowColor: consistency.hasGlow
+          ? consistency.borderColor(theme.brightness).withValues(alpha: 0.7)
           : null,
       shape: _cardShape(theme),
       child: InkWell(
@@ -131,7 +131,7 @@ class TrickCard extends StatelessWidget {
         ),
     ];
 
-    if (consistency == Consistency.never) {
+    if (consistency == Consistency.attempting) {
       return Padding(
         padding: const EdgeInsets.all(4),
         child: Stack(
@@ -141,7 +141,7 @@ class TrickCard extends StatelessWidget {
               child: IgnorePointer(
                 child: CustomPaint(
                   painter: _DashedBorderPainter(
-                    color: consistency!.borderColor(theme.brightness),
+                    color: consistency.borderColor(theme.brightness),
                   ),
                 ),
               ),
@@ -168,10 +168,10 @@ class TrickCard extends StatelessWidget {
     final card = Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      color: consistency?.cardColor(theme.brightness),
-      elevation: consistency?.hasGlow == true ? 8 : null,
-      shadowColor: consistency?.hasGlow == true
-          ? consistency!.borderColor(theme.brightness).withValues(alpha: 0.7)
+      color: consistency.cardColor(theme.brightness),
+      elevation: consistency.hasGlow ? 8 : null,
+      shadowColor: consistency.hasGlow
+          ? consistency.borderColor(theme.brightness).withValues(alpha: 0.7)
           : null,
       shape: _cardShape(theme),
       child: ListTile(
@@ -197,7 +197,7 @@ class TrickCard extends StatelessWidget {
     );
 
     Widget result = card;
-    if (consistency == Consistency.never) {
+    if (consistency == Consistency.attempting) {
       result = Stack(
         children: [
           card,
@@ -205,7 +205,7 @@ class TrickCard extends StatelessWidget {
             child: IgnorePointer(
               child: CustomPaint(
                 painter: _DashedBorderPainter(
-                  color: consistency!.borderColor(theme.brightness),
+                  color: consistency.borderColor(theme.brightness),
                 ),
               ),
             ),
@@ -221,12 +221,15 @@ class TrickCard extends StatelessWidget {
   }
 
   ShapeBorder? _cardShape(ThemeData theme) {
-    if (consistency == null || consistency == Consistency.never) return null;
+    if (consistency == Consistency.neverTried ||
+        consistency == Consistency.attempting) {
+      return null;
+    }
     return RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
       side: BorderSide(
-        color: consistency!.borderColor(theme.brightness),
-        width: consistency!.borderWidth,
+        color: consistency.borderColor(theme.brightness),
+        width: consistency.borderWidth,
       ),
     );
   }

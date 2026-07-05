@@ -79,10 +79,10 @@ class TrickSorter {
         if (year == null) return ('Unknown', _kUnknownLast);
         return (year.toString(), year);
       case PrimarySort.consistency:
-        final c = consistencyMap[t.id];
+        final c = consistencyMap.forTrick(t.id);
         // Sort order: Landed(0) first, Attempting(1), Never Attempted(2) last when ascending.
-        if (c == null) return ('Never Attempted', 2);
-        if (c == Consistency.never) return ('Attempting', 1);
+        if (c == Consistency.neverTried) return ('Never Attempted', 2);
+        if (c == Consistency.attempting) return ('Attempting', 1);
         return ('Landed', 0);
     }
   }
@@ -116,9 +116,9 @@ class TrickSorter {
   }
 
   int _consistencyRank(int trickId, Map<int, Consistency> consistencyMap) {
-    final c = consistencyMap[trickId];
-    if (c == null) return 0;
-    if (c == Consistency.never) return 1;
+    final c = consistencyMap.forTrick(trickId);
+    if (c == Consistency.neverTried) return 0;
+    if (c == Consistency.attempting) return 1;
     return 2;
   }
 }

@@ -33,7 +33,8 @@ extension TrickStatusL10n on TrickStatus {
 
 extension ConsistencyL10n on Consistency {
   String localizedLabel(AppLocalizations l10n) => switch (this) {
-        Consistency.never => l10n.statusAttempting,
+        Consistency.neverTried => l10n.consistencyNeverTried,
+        Consistency.attempting => l10n.statusAttempting,
         Consistency.once => l10n.consistencyOnce,
         Consistency.sometimes => l10n.consistencySometimes,
         Consistency.often => l10n.consistencyOften,

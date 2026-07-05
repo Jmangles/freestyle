@@ -168,6 +168,7 @@
   "statusAttempting": "En aprendizaje",
   "statusLandedAtLeastOnce": "Aterrizado al menos una vez",
 
+  "consistencyNeverTried": "Nunca intentado",
   "consistencyOnce": "Una vez",
   "consistencySometimes": "A veces",
   "consistencyOften": "Con frecuencia",
