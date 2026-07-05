@@ -89,6 +89,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signInTooltip => 'Se connecter';
 
   @override
+  String get feedbackTooltip => 'Retours';
+
+  @override
   String get submitTrickButton => 'Soumettre un trick';
 
   @override
@@ -625,6 +628,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get declineButton => 'Refuser';
 
   @override
+  String get noPendingFeedback => 'Aucun retour en attente.';
+
+  @override
+  String get pendingFeedbackSection => 'Retours en attente';
+
+  @override
+  String get markReviewedButton => 'Marquer comme examiné';
+
+  @override
+  String get dismissButton => 'Rejeter';
+
+  @override
+  String get viewAttachmentButton => 'Voir la pièce jointe';
+
+  @override
   String submittedOnLabel(String date) {
     return 'Soumis le $date';
   }
@@ -811,4 +829,26 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteVideoMessage =>
       'Supprimer la vidéo enregistrée de votre appareil ?';
+
+  @override
+  String get submitFeedbackTitle => 'Envoyer des retours';
+
+  @override
+  String get submitFeedbackButton => 'Envoyer des retours';
+
+  @override
+  String get feedbackMessageLabel =>
+      'Aidez-nous à améliorer l\'appli ! Envoyez-nous vos retours, idées ou bugs :)';
+
+  @override
+  String get feedbackMessageHint => 'Rendez cette appli géniale !';
+
+  @override
+  String get attachFileButton => 'Joindre une photo ou une vidéo';
+
+  @override
+  String get removeAttachmentTooltip => 'Retirer la pièce jointe';
+
+  @override
+  String get feedbackSubmitted => 'Retours envoyés. Merci !';
 }

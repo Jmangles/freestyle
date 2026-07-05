@@ -1,3 +1,4 @@
+import 'feedback_item.dart';
 import 'position.dart';
 import 'profile.dart';
 import 'tip.dart';
@@ -83,6 +84,8 @@ class AdminData {
   final List<TrickSuggestion> pendingSuggestions;
   final Map<int, Trick> originalTricks;
   final List<Tip> pendingTips;
+  final List<FeedbackItem> pendingFeedback;
+  final Map<int, String> feedbackAttachmentUrls;
   final Profile? profile;
 
   const AdminData({
@@ -90,6 +93,8 @@ class AdminData {
     required this.pendingSuggestions,
     required this.originalTricks,
     required this.pendingTips,
+    this.pendingFeedback = const [],
+    this.feedbackAttachmentUrls = const {},
     this.profile,
   });
 }

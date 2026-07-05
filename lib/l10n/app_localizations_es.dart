@@ -89,6 +89,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signInTooltip => 'Iniciar sesión';
 
   @override
+  String get feedbackTooltip => 'Comentarios';
+
+  @override
   String get submitTrickButton => 'Enviar truco';
 
   @override
@@ -621,6 +624,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get declineButton => 'Rechazar';
 
   @override
+  String get noPendingFeedback => 'No hay comentarios pendientes.';
+
+  @override
+  String get pendingFeedbackSection => 'Comentarios pendientes';
+
+  @override
+  String get markReviewedButton => 'Marcar como revisado';
+
+  @override
+  String get dismissButton => 'Descartar';
+
+  @override
+  String get viewAttachmentButton => 'Ver adjunto';
+
+  @override
   String submittedOnLabel(String date) {
     return 'Enviado el $date';
   }
@@ -806,4 +824,26 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteVideoMessage =>
       '¿Eliminar el video guardado de tu dispositivo?';
+
+  @override
+  String get submitFeedbackTitle => 'Enviar comentarios';
+
+  @override
+  String get submitFeedbackButton => 'Enviar comentarios';
+
+  @override
+  String get feedbackMessageLabel =>
+      '¡Ayúdanos a mejorar la app! Envíanos comentarios, ideas o reportes de errores :)';
+
+  @override
+  String get feedbackMessageHint => '¡Haz que esta app sea increíble!';
+
+  @override
+  String get attachFileButton => 'Adjuntar foto o video';
+
+  @override
+  String get removeAttachmentTooltip => 'Quitar adjunto';
+
+  @override
+  String get feedbackSubmitted => '¡Comentarios enviados. Gracias!';
 }

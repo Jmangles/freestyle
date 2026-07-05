@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/approval_status.dart';
+import '../models/feedback_item.dart';
 import '../models/screen_data.dart';
 import '../models/tip.dart';
 import '../models/trick.dart';
 import '../models/trick_suggestion.dart';
 import '../services/auth_service.dart';
+import '../services/feedback_service.dart';
 import '../services/tips_service.dart';
 import '../services/tricks_service.dart';
 import '../utils/date_formatters.dart';
@@ -68,17 +71,28 @@ class _AdminScreenState extends State<AdminScreen> {
     final tricksFuture = TricksService.getPendingTricks();
     final suggestionsFuture = TricksService.getPendingSuggestions();
     final tipsFuture = TipsService.getPendingTips();
+    final feedbackFuture = FeedbackService.getPendingFeedback();
     final tricks = await tricksFuture;
     final suggestions = await suggestionsFuture;
     final tips = await tipsFuture;
+    final feedback = await feedbackFuture;
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
+    final feedbackAttachmentUrls = <int, String>{};
+    for (final f in feedback) {
+      final path = f.attachmentPath;
+      if (path != null) {
+        feedbackAttachmentUrls[f.id] = await FeedbackService.getAttachmentUrl(path);
+      }
+    }
     return AdminData(
       pendingTricks: tricks,
       pendingSuggestions: suggestions,
       originalTricks: originalTricks,
       pendingTips: tips,
+      pendingFeedback: feedback,
+      feedbackAttachmentUrls: feedbackAttachmentUrls,
       profile: profile,
     );
   }
@@ -107,6 +121,11 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _declineTip(int id) async {
     await TipsService.deleteTip(id);
+    _refresh();
+  }
+
+  Future<void> _resolveFeedback(FeedbackItem item, String status) async {
+    await FeedbackService.resolveFeedback(item, status);
     _refresh();
   }
 
@@ -195,8 +214,10 @@ class _AdminScreenState extends State<AdminScreen> {
     final tricks = snap.data!.pendingTricks;
     final suggestions = snap.data!.pendingSuggestions;
     final tips = snap.data!.pendingTips;
+    final feedback = snap.data!.pendingFeedback;
+    final feedbackAttachmentUrls = snap.data!.feedbackAttachmentUrls;
 
-    if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty) {
+    if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty && feedback.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: ListView(
@@ -207,6 +228,8 @@ class _AdminScreenState extends State<AdminScreen> {
             Center(child: Text(l10n.noPendingSuggestions)),
             const SizedBox(height: 8),
             Center(child: Text(l10n.noPendingTips)),
+            const SizedBox(height: 8),
+            Center(child: Text(l10n.noPendingFeedback)),
           ],
         ),
       );
@@ -273,6 +296,24 @@ class _AdminScreenState extends State<AdminScreen> {
               );
               _refresh();
             },
+          ),
+        ],
+      ],
+      if (feedback.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Text(l10n.pendingFeedbackSection,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        for (int i = 0; i < feedback.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _PendingFeedbackCard(
+            item: feedback[i],
+            attachmentUrl: feedbackAttachmentUrls[feedback[i].id],
+            onMarkReviewed: () => _resolveFeedback(feedback[i], 'reviewed'),
+            onDismiss: () => _resolveFeedback(feedback[i], 'dismissed'),
           ),
         ],
       ],
@@ -554,6 +595,76 @@ class _PendingTipCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PendingFeedbackCard extends StatelessWidget {
+  final FeedbackItem item;
+  final String? attachmentUrl;
+  final VoidCallback onMarkReviewed;
+  final VoidCallback onDismiss;
+
+  const _PendingFeedbackCard({
+    required this.item,
+    required this.attachmentUrl,
+    required this.onMarkReviewed,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.message),
+            const SizedBox(height: 8),
+            Text(
+              l10n.submittedDate(formatShortDate(item.createdAt)),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.outline),
+            ),
+            if (attachmentUrl != null) ...[
+              const SizedBox(height: 12),
+              if (item.isImageAttachment)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(attachmentUrl!, height: 160, fit: BoxFit.cover),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => launchUrl(Uri.parse(attachmentUrl!),
+                      mode: LaunchMode.externalApplication),
+                  icon: const Icon(Icons.play_circle_outline, size: 18),
+                  label: Text(l10n.viewAttachmentButton),
+                ),
+            ],
+            const SizedBox(height: 12),
+            OverflowBar(
+              spacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: onMarkReviewed,
+                  icon: const Icon(Icons.check, size: 18),
+                  label: Text(l10n.markReviewedButton),
+                  style: _approveButtonStyle(theme),
+                ),
+                FilledButton.icon(
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.close, size: 18),
+                  label: Text(l10n.dismissButton),
+                  style: _rejectButtonStyle(theme),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

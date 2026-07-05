@@ -30,6 +30,7 @@
   "filterTooltip": "Filtrar",
   "profileTooltip": "Perfil",
   "signInTooltip": "Iniciar sesión",
+  "feedbackTooltip": "Comentarios",
   "submitTrickButton": "Enviar truco",
   "failedToLoadTricks": "Error al cargar los trucos",
   "retryButton": "Reintentar",
@@ -220,6 +221,12 @@
   "pendingTipsSection": "Consejos pendientes",
   "declineButton": "Rechazar",
 
+  "noPendingFeedback": "No hay comentarios pendientes.",
+  "pendingFeedbackSection": "Comentarios pendientes",
+  "markReviewedButton": "Marcar como revisado",
+  "dismissButton": "Descartar",
+  "viewAttachmentButton": "Ver adjunto",
+
   "submittedOnLabel": "Enviado el {date}",
   "@submittedOnLabel": {
     "placeholders": {
@@ -308,5 +315,13 @@
   "lowStorageTitle": "Almacenamiento bajo",
   "lowStorageMessage": "Hay menos de 1 GB de almacenamiento disponible. ¿Continuar de todas formas?",
   "continueButton": "Continuar",
-  "deleteVideoMessage": "¿Eliminar el video guardado de tu dispositivo?"
+  "deleteVideoMessage": "¿Eliminar el video guardado de tu dispositivo?",
+
+  "submitFeedbackTitle": "Enviar comentarios",
+  "submitFeedbackButton": "Enviar comentarios",
+  "feedbackMessageLabel": "¡Ayúdanos a mejorar la app! Envíanos comentarios, ideas o reportes de errores :)",
+  "feedbackMessageHint": "¡Haz que esta app sea increíble!",
+  "attachFileButton": "Adjuntar foto o video",
+  "removeAttachmentTooltip": "Quitar adjunto",
+  "feedbackSubmitted": "¡Comentarios enviados. Gracias!"
 }
