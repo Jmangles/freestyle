@@ -112,6 +112,8 @@ class _ConsistencySelectorState extends State<ConsistencySelector> {
     );
   }
 
+  static const _edgePadding = 4.0;
+
   Widget _labelRow(
     ThemeData theme,
     Brightness brightness,
@@ -137,19 +139,39 @@ class _ConsistencySelectorState extends State<ConsistencySelector> {
                   mainAxisAlignment: dotBelowLabel
                       ? MainAxisAlignment.end
                       : MainAxisAlignment.start,
-                  children: dotBelowLabel
-                      ? [
-                          _label(theme, brightness, level, displayed),
-                          const SizedBox(height: 4),
-                          _dot(theme, level, displayed),
-                        ]
-                      : [
-                          _dot(theme, level, displayed),
-                          const SizedBox(height: 4),
-                          _label(theme, brightness, level, displayed),
-                        ],
+                  // The first/last labels sit right at the track's edge
+                  // ticks, so centering them here would push the pill past
+                  // the screen edge; they're re-anchored to the container
+                  // edge below instead, and only the dot stays on the tick.
+                  children: level.index == 0 || level.index == _maxLevel
+                      ? [_dot(theme, level, displayed)]
+                      : dotBelowLabel
+                          ? [
+                              _label(theme, brightness, level, displayed),
+                              const SizedBox(height: 4),
+                              _dot(theme, level, displayed),
+                            ]
+                          : [
+                              _dot(theme, level, displayed),
+                              const SizedBox(height: 4),
+                              _label(theme, brightness, level, displayed),
+                            ],
                 ),
               ),
+            ),
+          if (levels.isNotEmpty && levels.first.index == 0)
+            Positioned(
+              left: _edgePadding,
+              top: dotBelowLabel ? 0 : null,
+              bottom: dotBelowLabel ? null : 0,
+              child: _label(theme, brightness, levels.first, displayed),
+            ),
+          if (levels.isNotEmpty && levels.last.index == _maxLevel)
+            Positioned(
+              right: _edgePadding,
+              top: dotBelowLabel ? 0 : null,
+              bottom: dotBelowLabel ? null : 0,
+              child: _label(theme, brightness, levels.last, displayed),
             ),
         ],
       ),
