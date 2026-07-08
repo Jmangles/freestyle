@@ -1,0 +1,52 @@
+# Local Supabase stack config, provider-agnostic. Auth-provider-specific
+# settings (e.g. Cognito third-party auth) are layered on by feature
+# branches, not committed here. Regenerate with `supabase init` if your CLI
+# version rejects any field below.
+project_id = "freestyle"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+# Seed runs through the CLI's SQL driver (not psql), so files must be plain
+# SQL - no `\i` / meta-commands. Point directly at the data files.
+# import_tricks2.sql is the fuller catalog (positions + 391 tricks).
+[db.seed]
+enabled = true
+sql_paths = ["./import_tricks2.sql", "./seed_users.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:8080"
+additional_redirect_urls = ["http://127.0.0.1:8080", "http://localhost:8080"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# Analytics (logflare) + its vector log shipper bind-mount the Docker
+# socket, which Podman can't mount as a volume. Not needed for local dev.
+[analytics]
+enabled = false
