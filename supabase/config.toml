@@ -1,6 +1,4 @@
-# Local Supabase stack config, provider-agnostic. Auth-provider-specific
-# settings (e.g. Cognito third-party auth) are layered on by feature
-# branches, not committed here. Regenerate with `supabase init` if your CLI
+# Local Supabase stack config. Regenerate with `supabase init` if your CLI
 # version rejects any field below.
 project_id = "freestyle"
 
