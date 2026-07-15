@@ -844,7 +844,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get feedbackMessageHint => 'Rendez cette appli géniale !';
 
   @override
-  String get attachFileButton => 'Joindre une image';
+  String get attachFileButton => 'Joindre des images';
+
+  @override
+  String get downloadButton => 'Télécharger';
 
   @override
   String get removeAttachmentTooltip => 'Retirer la pièce jointe';

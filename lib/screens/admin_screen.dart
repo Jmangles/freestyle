@@ -79,16 +79,18 @@ class _AdminScreenState extends State<AdminScreen> {
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
-    final feedbackAttachmentUrls = <int, String>{};
+    final feedbackAttachments = <int, List<FeedbackAttachment>>{};
     for (final f in feedback) {
-      final path = f.attachmentPath;
-      if (path != null) {
+      final list = <FeedbackAttachment>[];
+      for (final path in f.attachmentPaths) {
         try {
-          feedbackAttachmentUrls[f.id] = await FeedbackService.getAttachmentUrl(path);
+          final url = await FeedbackService.getAttachmentUrl(path);
+          list.add(FeedbackAttachment(path: path, signedUrl: url));
         } catch (e) {
           debugPrint('Feedback attachment URL failed for ${f.id}: $e');
         }
       }
+      if (list.isNotEmpty) feedbackAttachments[f.id] = list;
     }
     return AdminData(
       pendingTricks: tricks,
@@ -96,7 +98,7 @@ class _AdminScreenState extends State<AdminScreen> {
       originalTricks: originalTricks,
       pendingTips: tips,
       pendingFeedback: feedback,
-      feedbackAttachmentUrls: feedbackAttachmentUrls,
+      feedbackAttachments: feedbackAttachments,
       profile: profile,
     );
   }
@@ -231,7 +233,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final suggestions = snap.data!.pendingSuggestions;
     final tips = snap.data!.pendingTips;
     final feedback = snap.data!.pendingFeedback;
-    final feedbackAttachmentUrls = snap.data!.feedbackAttachmentUrls;
+    final feedbackAttachments = snap.data!.feedbackAttachments;
 
     if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty && feedback.isEmpty) {
       return RefreshIndicator(
@@ -273,7 +275,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (suggestions.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(l10n.pendingSuggestionsSection,
+        Text('${l10n.pendingSuggestionsSection} (${suggestions.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -291,7 +293,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (tips.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(l10n.pendingTipsSection,
+        Text('${l10n.pendingTipsSection} (${tips.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -317,7 +319,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (feedback.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(l10n.pendingFeedbackSection,
+        Text('${l10n.pendingFeedbackSection} (${feedback.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -327,7 +329,7 @@ class _AdminScreenState extends State<AdminScreen> {
           if (i > 0) const SizedBox(height: 12),
           _PendingFeedbackCard(
             item: feedback[i],
-            attachmentUrl: feedbackAttachmentUrls[feedback[i].id],
+            attachments: feedbackAttachments[feedback[i].id] ?? const [],
             onMarkReviewed: () => _resolveFeedback(feedback[i], 'reviewed'),
             onDismiss: () => _resolveFeedback(feedback[i], 'dismissed'),
           ),
@@ -618,13 +620,13 @@ class _PendingTipCard extends StatelessWidget {
 
 class _PendingFeedbackCard extends StatelessWidget {
   final FeedbackItem item;
-  final String? attachmentUrl;
+  final List<FeedbackAttachment> attachments;
   final VoidCallback onMarkReviewed;
   final VoidCallback onDismiss;
 
   const _PendingFeedbackCard({
     required this.item,
-    required this.attachmentUrl,
+    required this.attachments,
     required this.onMarkReviewed,
     required this.onDismiss,
   });
@@ -634,64 +636,72 @@ class _PendingFeedbackCard extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.message),
-            const SizedBox(height: 8),
-            Text(
-              l10n.submittedDate(formatShortDate(item.createdAt)),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.outline),
-            ),
-            if (attachmentUrl != null) ...[
-              const SizedBox(height: 12),
-              if (item.isImageAttachment)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    attachmentUrl!,
-                    height: 160,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 160,
-                      alignment: Alignment.center,
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(Icons.broken_image_outlined,
-                          color: theme.colorScheme.outline),
+      child: ExpansionTile(
+        title: Text(item.message,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(l10n.submittedDate(formatShortDate(item.createdAt))),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.message),
+                for (final attachment in attachments) ...[
+                  const SizedBox(height: 12),
+                  if (attachment.isImage)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        attachment.signedUrl,
+                        height: 160,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 160,
+                          alignment: Alignment.center,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.broken_image_outlined,
+                              color: theme.colorScheme.outline),
+                        ),
+                      ),
+                    ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse(FeedbackService.downloadUrl(
+                            attachment.signedUrl, attachment.path)),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.download, size: 18),
+                      label: Text(l10n.downloadButton),
                     ),
                   ),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () => launchUrl(Uri.parse(attachmentUrl!),
-                      mode: LaunchMode.externalApplication),
-                  icon: const Icon(Icons.play_circle_outline, size: 18),
-                  label: Text(l10n.viewAttachmentButton),
-                ),
-            ],
-            const SizedBox(height: 12),
-            OverflowBar(
-              spacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: onMarkReviewed,
-                  icon: const Icon(Icons.check, size: 18),
-                  label: Text(l10n.markReviewedButton),
-                  style: _approveButtonStyle(theme),
-                ),
-                FilledButton.icon(
-                  onPressed: onDismiss,
-                  icon: const Icon(Icons.close, size: 18),
-                  label: Text(l10n.dismissButton),
-                  style: _rejectButtonStyle(theme),
+                ],
+                const SizedBox(height: 12),
+                OverflowBar(
+                  spacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: onMarkReviewed,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(l10n.markReviewedButton),
+                      style: _approveButtonStyle(theme),
+                    ),
+                    FilledButton.icon(
+                      onPressed: onDismiss,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: Text(l10n.dismissButton),
+                      style: _rejectButtonStyle(theme),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

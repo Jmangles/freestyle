@@ -1651,8 +1651,14 @@ abstract class AppLocalizations {
   /// No description provided for @attachFileButton.
   ///
   /// In en, this message translates to:
-  /// **'Attach Image'**
+  /// **'Attach Images'**
   String get attachFileButton;
+
+  /// No description provided for @downloadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadButton;
 
   /// No description provided for @removeAttachmentTooltip.
   ///

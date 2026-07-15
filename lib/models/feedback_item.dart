@@ -2,7 +2,7 @@ class FeedbackItem {
   final int id;
   final int? submittedBy;
   final String message;
-  final String? attachmentPath;
+  final List<String> attachmentPaths;
   final String status;
   final DateTime createdAt;
 
@@ -10,14 +10,12 @@ class FeedbackItem {
     required this.id,
     this.submittedBy,
     required this.message,
-    this.attachmentPath,
+    this.attachmentPaths = const [],
     required this.status,
     required this.createdAt,
   });
 
-  bool get isImageAttachment {
-    final path = attachmentPath;
-    if (path == null) return false;
+  static bool isImagePath(String path) {
     final ext = path.toLowerCase();
     return ext.endsWith('.jpg') ||
         ext.endsWith('.jpeg') ||
@@ -31,8 +29,18 @@ class FeedbackItem {
         id: json['id'] as int,
         submittedBy: json['submitted_by'] as int?,
         message: json['message'] as String,
-        attachmentPath: json['attachment_path'] as String?,
+        attachmentPaths:
+            (json['attachment_paths'] as List?)?.cast<String>() ?? const [],
         status: json['status'] as String,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
+}
+
+class FeedbackAttachment {
+  final String path;
+  final String signedUrl;
+
+  const FeedbackAttachment({required this.path, required this.signedUrl});
+
+  bool get isImage => FeedbackItem.isImagePath(path);
 }

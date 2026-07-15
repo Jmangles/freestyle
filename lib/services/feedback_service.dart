@@ -10,29 +10,28 @@ class FeedbackService {
   static Future<void> submitFeedback({
     required String message,
     required int submittedBy,
-    Uint8List? attachmentBytes,
-    String? attachmentExtension,
-    String? attachmentMimeType,
+    List<FeedbackAttachmentUpload> attachments = const [],
   }) async {
-    String? attachmentPath;
-    if (attachmentBytes != null && attachmentExtension != null) {
-      attachmentPath =
-          '$submittedBy/${DateTime.now().millisecondsSinceEpoch}.$attachmentExtension';
-      await _client.storage.from(_bucket).uploadBinary(
-            attachmentPath,
-            attachmentBytes,
-            fileOptions: FileOptions(contentType: attachmentMimeType),
-          );
-    }
+    final uploadedPaths = <String>[];
     try {
+      for (final a in attachments) {
+        final path =
+            '$submittedBy/${DateTime.now().microsecondsSinceEpoch}_${uploadedPaths.length}.${a.extension}';
+        await _client.storage.from(_bucket).uploadBinary(
+              path,
+              a.bytes,
+              fileOptions: FileOptions(contentType: a.mimeType),
+            );
+        uploadedPaths.add(path);
+      }
       await _client.from('feedback').insert({
         'submitted_by': submittedBy,
         'message': message,
-        if (attachmentPath != null) 'attachment_path': attachmentPath,
+        if (uploadedPaths.isNotEmpty) 'attachment_paths': uploadedPaths,
       });
     } catch (_) {
-      if (attachmentPath != null) {
-        await _client.storage.from(_bucket).remove([attachmentPath]);
+      if (uploadedPaths.isNotEmpty) {
+        await _client.storage.from(_bucket).remove(uploadedPaths);
       }
       rethrow;
     }
@@ -51,10 +50,25 @@ class FeedbackService {
     return _client.storage.from(_bucket).createSignedUrl(path, 3600);
   }
 
+  static String downloadUrl(String signedUrl, String path) =>
+      '$signedUrl&download=${Uri.encodeComponent(path.split('/').last)}';
+
   static Future<void> resolveFeedback(FeedbackItem item, String status) async {
-    if (item.attachmentPath != null) {
-      await _client.storage.from(_bucket).remove([item.attachmentPath!]);
+    if (item.attachmentPaths.isNotEmpty) {
+      await _client.storage.from(_bucket).remove(item.attachmentPaths);
     }
     await _client.from('feedback').update({'status': status}).eq('id', item.id);
   }
+}
+
+class FeedbackAttachmentUpload {
+  final Uint8List bytes;
+  final String extension;
+  final String? mimeType;
+
+  const FeedbackAttachmentUpload({
+    required this.bytes,
+    required this.extension,
+    this.mimeType,
+  });
 }

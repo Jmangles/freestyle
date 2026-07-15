@@ -20,10 +20,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
   final _messageCtrl = TextEditingController();
   final _picker = ImagePicker();
 
-  Uint8List? _attachmentBytes;
-  String? _attachmentName;
-  String? _attachmentExtension;
-  String? _attachmentMimeType;
+  final List<_PickedAttachment> _attachments = [];
   bool _saving = false;
 
   @override
@@ -43,37 +40,42 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
 
   static const _maxAttachmentBytes = 10 * 1024 * 1024;
 
-  Future<void> _pickAttachment() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
+  Future<void> _pickAttachments() async {
+    final files = await _picker.pickMultiImage();
+    if (files.isEmpty) return;
+    var skippedTooLarge = false;
+    final picked = <_PickedAttachment>[];
+    for (final file in files) {
+      final bytes = await file.readAsBytes();
+      if (bytes.length > _maxAttachmentBytes) {
+        skippedTooLarge = true;
+        continue;
+      }
+      final extension =
+          file.name.contains('.') ? file.name.split('.').last.toLowerCase() : null;
+      final mimeType =
+          file.mimeType ?? (extension != null ? _mimeTypeFromExtension(extension) : null);
+      picked.add(_PickedAttachment(
+        bytes: bytes,
+        name: file.name,
+        extension: extension ?? 'jpg',
+        mimeType: mimeType,
+      ));
+    }
     if (!mounted) return;
-    if (bytes.length > _maxAttachmentBytes) {
+    setState(() => _attachments.addAll(picked));
+    if (skippedTooLarge) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.attachmentTooLarge),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
-      return;
     }
-    final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : null;
-    final mimeType = file.mimeType ?? (extension != null ? _mimeTypeFromExtension(extension) : null);
-    setState(() {
-      _attachmentBytes = bytes;
-      _attachmentName = file.name;
-      _attachmentExtension = extension ?? 'jpg';
-      _attachmentMimeType = mimeType;
-    });
   }
 
-  void _removeAttachment() {
-    setState(() {
-      _attachmentBytes = null;
-      _attachmentName = null;
-      _attachmentExtension = null;
-      _attachmentMimeType = null;
-    });
+  void _removeAttachment(int index) {
+    setState(() => _attachments.removeAt(index));
   }
 
   Future<void> _submit() async {
@@ -85,21 +87,34 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
       await FeedbackService.submitFeedback(
         message: _messageCtrl.text.trim(),
         submittedBy: profile.intId,
-        attachmentBytes: _attachmentBytes,
-        attachmentExtension: _attachmentExtension,
-        attachmentMimeType: _attachmentMimeType,
+        attachments: _attachments
+            .map((a) => FeedbackAttachmentUpload(
+                  bytes: a.bytes,
+                  extension: a.extension,
+                  mimeType: a.mimeType,
+                ))
+            .toList(),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF1B5E20),
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(child: Text(context.l10n.feedbackSubmitted)),
+                Expanded(
+                  child: Text(
+                    context.l10n.feedbackSubmitted,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ],
             ),
-            backgroundColor: Colors.green.shade700,
           ),
         );
         context.pop();
@@ -144,18 +159,19 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
-            if (_attachmentBytes == null)
-              OutlinedButton.icon(
-                onPressed: _pickAttachment,
-                icon: const Icon(Icons.attach_file),
-                label: Text(l10n.attachFileButton),
-              )
-            else
+            OutlinedButton.icon(
+              onPressed: _pickAttachments,
+              icon: const Icon(Icons.attach_file),
+              label: Text(l10n.attachFileButton),
+            ),
+            for (int i = 0; i < _attachments.length; i++) ...[
+              const SizedBox(height: 8),
               _AttachmentPreview(
-                bytes: _attachmentBytes!,
-                name: _attachmentName ?? '',
-                onRemove: _removeAttachment,
+                bytes: _attachments[i].bytes,
+                name: _attachments[i].name,
+                onRemove: () => _removeAttachment(i),
               ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _submit,
@@ -202,4 +218,18 @@ class _AttachmentPreview extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PickedAttachment {
+  final Uint8List bytes;
+  final String name;
+  final String extension;
+  final String? mimeType;
+
+  const _PickedAttachment({
+    required this.bytes,
+    required this.name,
+    required this.extension,
+    this.mimeType,
+  });
 }

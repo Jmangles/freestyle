@@ -831,7 +831,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackMessageHint => 'Please make this app awesome!';
 
   @override
-  String get attachFileButton => 'Attach Image';
+  String get attachFileButton => 'Attach Images';
+
+  @override
+  String get downloadButton => 'Download';
 
   @override
   String get removeAttachmentTooltip => 'Remove attachment';
