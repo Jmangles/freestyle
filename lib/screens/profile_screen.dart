@@ -49,8 +49,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
   void _refresh() => setState(() => _future = _load());
 
   Future<void> _updateConsistency(int trickId, Consistency consistency) async {
-    await UserTricksService.setConsistency(trickId, consistency);
+    final write = UserTricksService.setConsistency(trickId, consistency);
+    // The optimistic override makes this reload show the new value already.
     _refresh();
+    try {
+      await write;
+    } finally {
+      _refresh();
+    }
   }
 
   Future<void> _signOut() async {

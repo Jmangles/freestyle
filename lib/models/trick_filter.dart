@@ -107,9 +107,9 @@ class TrickFilter {
   }
 
   TrickStatus _statusFor(int trickId, Map<int, Consistency> consistencyMap) {
-    final c = consistencyMap[trickId];
-    if (c == null) return TrickStatus.neverAttempted;
-    if (c == Consistency.never) return TrickStatus.attempting;
+    final c = consistencyMap.forTrick(trickId);
+    if (c == Consistency.neverTried) return TrickStatus.neverAttempted;
+    if (c == Consistency.attempting) return TrickStatus.attempting;
     return TrickStatus.landed;
   }
 }

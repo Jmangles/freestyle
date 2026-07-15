@@ -13,7 +13,9 @@ import '../models/user_trick.dart';
 class LocalDatabase {
   LocalDatabase._();
 
-  static const int _kVersion = 3;
+  // v4: Consistency gained neverTried at index 0, shifting all stored values
+  // +1 (matching supabase/migrate_consistency_never_tried.sql).
+  static const int _kVersion = 4;
   static Database? _db;
 
   static Database get _instance {
@@ -60,9 +62,24 @@ class LocalDatabase {
     for (final row in savedWrites) {
       try {
         // Drop id so AUTOINCREMENT assigns a fresh one.
-        await db.insert('pending_writes', Map<String, dynamic>.from(row)..remove('id'));
+        final write = Map<String, dynamic>.from(row)..remove('id');
+        if (oldV < 4) _shiftConsistencyPayload(write);
+        await db.insert('pending_writes', write);
       } catch (_) {}
     }
+  }
+
+  // Pre-v4 payloads carry consistency ints in the old 0..5 scheme; they must
+  // be shifted +1 before they flush to the migrated server, or every queued
+  // offline write would land one level too low.
+  static void _shiftConsistencyPayload(Map<String, dynamic> write) {
+    if (write['table_name'] != 'user_tricks') return;
+    final payload = jsonDecode(write['payload'] as String);
+    if (payload is! Map<String, dynamic>) return;
+    final consistency = payload['consistency'];
+    if (consistency is! int) return;
+    payload['consistency'] = consistency + 1;
+    write['payload'] = jsonEncode(payload);
   }
 
   static Future<void> _createSchema(Database db) async {

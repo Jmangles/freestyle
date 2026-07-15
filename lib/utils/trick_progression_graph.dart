@@ -133,7 +133,7 @@ Future<TrickProgressionGraphData> loadTrickProgressionGraph(int trickId) async {
       );
       for (final variation in variations) {
         final ut = variationProgress[variation.id];
-        if (ut == null || !ut.consistency.isLanded) continue;
+        if (!ut.effectiveConsistency.isLanded) continue;
         if (variation.difficultyTier <= 0) continue;
         for (final baseId in variation.baseTrickIds) {
           final base = tricks[baseId];

@@ -203,6 +203,7 @@
   "statusAttempting": "Attempting",
   "statusLandedAtLeastOnce": "Landed at least once",
 
+  "consistencyNeverTried": "Never tried",
   "consistencyOnce": "Once",
   "consistencySometimes": "Sometimes",
   "consistencyOften": "Often",

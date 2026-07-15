@@ -31,5 +31,35 @@ void main() {
       expect(ut.leashPosition, isNull);
       expect(ut.videoLink, isNull);
     });
+
+    test('maps the stored int directly to the enum index', () {
+      expect(UserTrick.fromJson(base()).consistency, Consistency.once);
+      expect(UserTrick.fromJson({...base(), 'consistency': 0}).consistency,
+          Consistency.neverTried);
+      expect(UserTrick.fromJson({...base(), 'consistency': 1}).consistency,
+          Consistency.attempting);
+      expect(UserTrick.fromJson({...base(), 'consistency': 6}).consistency,
+          Consistency.always);
+    });
+
+    test('falls back to neverTried for out-of-range values', () {
+      expect(UserTrick.fromJson({...base(), 'consistency': 99}).consistency,
+          Consistency.neverTried);
+    });
+  });
+
+  group('Consistency', () {
+    test('index range matches the db check constraint 0..6', () {
+      expect(Consistency.values.length, 7);
+      expect(Consistency.neverTried.index, 0);
+      expect(Consistency.always.index, 6);
+    });
+
+    test('neverTried and attempting are not landed, once and above are', () {
+      expect(Consistency.neverTried.isLanded, isFalse);
+      expect(Consistency.attempting.isLanded, isFalse);
+      expect(Consistency.once.isLanded, isTrue);
+      expect(Consistency.always.isLanded, isTrue);
+    });
   });
 }

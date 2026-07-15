@@ -20,6 +20,35 @@ class UserTricksService {
   // server row wins on flush — intentional "last writer wins" behaviour.
   static const _noSnapshotAt = '1970-01-01T00:00:00.000Z';
 
+  // Optimistic consistency values, keyed by trick ID. Set synchronously when a
+  // write starts so every screen can reflect it immediately; removed once a
+  // read confirms the stored value matches, or when the write fails hard.
+  static final ValueNotifier<Map<int, Consistency>> consistencyOverrides =
+      ValueNotifier(const {});
+
+  static void _addConsistencyOverride(int trickId, Consistency c) {
+    consistencyOverrides.value = {...consistencyOverrides.value, trickId: c};
+  }
+
+  static void _removeConsistencyOverride(int trickId, Consistency c) {
+    if (consistencyOverrides.value[trickId] != c) return;
+    consistencyOverrides.value = {...consistencyOverrides.value}
+      ..remove(trickId);
+  }
+
+  static UserTrick _withConsistencyOverride(UserTrick ut) {
+    final override = consistencyOverrides.value[ut.trickId];
+    if (override == null) return ut;
+    if (ut.consistency == override) {
+      _removeConsistencyOverride(ut.trickId, override);
+      return ut;
+    }
+    return ut.withConsistency(override);
+  }
+
+  static List<UserTrick> _withConsistencyOverrides(List<UserTrick> list) =>
+      [for (final ut in list) _withConsistencyOverride(ut)];
+
   // Resolves the user's integer profile ID, with an offline fallback stored in
   // the meta table so cold launches without connectivity still work.
   static Future<int?> _getUserIntId() async {
@@ -54,7 +83,9 @@ class UserTricksService {
       }
       return [];
     }
-    if (isDeviceOffline) return LocalDatabase.getUserTricks(intId);
+    if (isDeviceOffline) {
+      return _withConsistencyOverrides(await LocalDatabase.getUserTricks(intId));
+    }
     try {
       final data =
           await _client.from('user_tricks').select().eq('user_id', intId);
@@ -62,13 +93,13 @@ class UserTricksService {
       await LocalDatabase.cacheUserTricks(list);
       await LocalDatabase.setMeta(
           'user_tricks_last_synced', DateTime.now().toUtc().toIso8601String());
-      return list;
+      return _withConsistencyOverrides(list);
     } catch (e, st) {
       if (kIsWeb || !isNetworkError(e)) {
         debugPrint('UserTricksService.getUserTricks: $e\n$st');
         rethrow;
       }
-      return LocalDatabase.getUserTricks(intId);
+      return _withConsistencyOverrides(await LocalDatabase.getUserTricks(intId));
     }
   }
 
@@ -77,7 +108,10 @@ class UserTricksService {
     if (trickIds.isEmpty) return {};
     final intId = await _getUserIntId();
     if (intId == null) return {};
-    if (isDeviceOffline) return LocalDatabase.getUserTricksForTrickIds(intId, trickIds);
+    if (isDeviceOffline) {
+      final map = await LocalDatabase.getUserTricksForTrickIds(intId, trickIds);
+      return map.map((k, v) => MapEntry(k, _withConsistencyOverride(v)));
+    }
     try {
       final data = await _client
           .from('user_tricks')
@@ -86,20 +120,26 @@ class UserTricksService {
           .inFilter('trick_id', trickIds);
       final list = (data as List).map((e) => UserTrick.fromJson(e)).toList();
       await LocalDatabase.cacheUserTricks(list);
-      return {for (final t in list) t.trickId: t};
+      return {
+        for (final t in _withConsistencyOverrides(list)) t.trickId: t
+      };
     } catch (e, st) {
       if (kIsWeb || !isNetworkError(e)) {
         debugPrint('UserTricksService.getUserTricksForTrickIds: $e\n$st');
         rethrow;
       }
-      return LocalDatabase.getUserTricksForTrickIds(intId, trickIds);
+      final map = await LocalDatabase.getUserTricksForTrickIds(intId, trickIds);
+      return map.map((k, v) => MapEntry(k, _withConsistencyOverride(v)));
     }
   }
 
   static Future<UserTrick?> getUserTrickForTrick(int trickId) async {
     final intId = await _getUserIntId();
     if (intId == null) return null;
-    if (isDeviceOffline) return LocalDatabase.getUserTrickForTrick(intId, trickId);
+    if (isDeviceOffline) {
+      final ut = await LocalDatabase.getUserTrickForTrick(intId, trickId);
+      return ut != null ? _withConsistencyOverride(ut) : null;
+    }
     try {
       final data = await _client
           .from('user_tricks')
@@ -110,7 +150,7 @@ class UserTricksService {
       if (data != null) {
         final ut = UserTrick.fromJson(data);
         await LocalDatabase.cacheUserTricks([ut]);
-        return ut;
+        return _withConsistencyOverride(ut);
       }
       return null;
     } catch (e, st) {
@@ -118,7 +158,8 @@ class UserTricksService {
         debugPrint('UserTricksService.getUserTrickForTrick($trickId): $e\n$st');
         rethrow;
       }
-      return LocalDatabase.getUserTrickForTrick(intId, trickId);
+      final ut = await LocalDatabase.getUserTrickForTrick(intId, trickId);
+      return ut != null ? _withConsistencyOverride(ut) : null;
     }
   }
 
@@ -126,8 +167,22 @@ class UserTricksService {
 
   static Future<void> setConsistency(
       int trickId, Consistency consistency) async {
+    _addConsistencyOverride(trickId, consistency);
+    try {
+      await _writeConsistency(trickId, consistency);
+    } catch (e) {
+      _removeConsistencyOverride(trickId, consistency);
+      rethrow;
+    }
+  }
+
+  static Future<void> _writeConsistency(
+      int trickId, Consistency consistency) async {
     final intId = await _getUserIntId();
-    if (intId == null) return;
+    if (intId == null) {
+      _removeConsistencyOverride(trickId, consistency);
+      return;
+    }
 
     if (!isDeviceOffline) {
       try {
@@ -211,10 +266,11 @@ class UserTricksService {
         // Use upsert so the write succeeds even when no user_tricks row exists yet,
         // matching the offline path. Read consistency from the local cache (native)
         // or from the server (web) to avoid overwriting an existing value on conflict.
-        Consistency? existingConsistency;
+        Consistency existingConsistency;
         if (!kIsWeb) {
           existingConsistency =
-              (await LocalDatabase.getUserTrickForTrick(intId, trickId))?.consistency;
+              (await LocalDatabase.getUserTrickForTrick(intId, trickId))
+                  .effectiveConsistency;
         } else {
           final row = await _client
               .from('user_tricks')
@@ -222,15 +278,17 @@ class UserTricksService {
               .eq('user_id', intId)
               .eq('trick_id', trickId)
               .maybeSingle();
-          if (row != null) {
-            existingConsistency = Consistency.values[row['consistency'] as int];
-          }
+          existingConsistency = row != null
+              ? Consistency.values
+                      .elementAtOrNull(row['consistency'] as int) ??
+                  Consistency.neverTried
+              : Consistency.neverTried;
         }
         await _client.from('user_tricks').upsert(
           {
             'user_id': intId,
             'trick_id': trickId,
-            'consistency': (existingConsistency ?? Consistency.never).index,
+            'consistency': existingConsistency.index,
             ...landedFields,
           },
           onConflict: 'user_id,trick_id',
@@ -248,10 +306,9 @@ class UserTricksService {
     // Offline path
     final existing = await LocalDatabase.getUserTrickForTrick(intId, trickId);
     final now = DateTime.now().toUtc().toIso8601String();
-    // Use the existing consistency if available; fall back to never so the
-    // write is not silently dropped when the user sets landed details on a
-    // trick they rated offline moments earlier and the UI has not yet reloaded.
-    final consistency = existing?.consistency ?? Consistency.never;
+    // Keep the existing consistency; a missing row defaults to neverTried so
+    // the landed details are still written rather than silently dropped.
+    final consistency = existing.effectiveConsistency;
     final snapshotAt =
         existing?.updatedAt.toUtc().toIso8601String() ?? _noSnapshotAt;
 
@@ -409,6 +466,11 @@ class UserTricksService {
           await LocalDatabase.cacheUserTricks([UserTrick.fromJson(fresh)]);
         }
         await LocalDatabase.deletePendingWrite(pendingId);
+        // Our write lost — drop its override so the UI shows the server row.
+        final lost = payload['consistency'] is int
+            ? Consistency.values.elementAtOrNull(payload['consistency'] as int)
+            : null;
+        if (lost != null) _removeConsistencyOverride(trickId, lost);
         return null;
       }
     }

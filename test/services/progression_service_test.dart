@@ -105,15 +105,15 @@ void main() {
     });
 
     test('unlanded variation has no effect', () {
-      final never = UserTrick(
+      final attempting = UserTrick(
         id: aPrime.id,
         userId: 1,
         trickId: aPrime.id,
-        consistency: Consistency.never,
+        consistency: Consistency.attempting,
         updatedAt: _epoch,
       );
       final result = ProgressionService.computeWhatsNext(
-        [never],
+        [attempting],
         [a, aPrime, b],
       );
       expect(result.unlocked.map((t) => t.id), isNot(contains(b.id)));

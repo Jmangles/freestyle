@@ -483,6 +483,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statusLandedAtLeastOnce => 'Aterrizado al menos una vez';
 
   @override
+  String get consistencyNeverTried => 'Nunca intentado';
+
+  @override
   String get consistencyOnce => 'Una vez';
 
   @override
