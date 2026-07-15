@@ -61,9 +61,10 @@ plus `functions.sql` and `rls_and_grants.sql`. Edit those directly;
 they're the human-readable source of truth. `supabase/migrations/` is what
 the CLI actually applies (`db reset` / `db push`) and is generated from the
 schemas by `supabase db diff`. Load order comes from `config.toml` →
-`[db.migrations] schema_paths`, not filenames. The older loose `add_*.sql` / `migrate_*.sql`
-files are historical one-offs already folded into the baseline migration;
-kept for reference only.
+`[db.migrations] schema_paths`, not filenames. The older loose `add_*.sql` /
+`migrate_*.sql` scripts and the superseded `import_tricks.sql` catalog now live
+in `supabase/legacy/` — historical one-offs already folded into the baseline
+migration, kept for reference only (never applied). See `supabase/legacy/README.md`.
 
 Adding a schema change:
 

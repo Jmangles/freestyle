@@ -70,3 +70,4 @@ app.*.map.json
 supabase/.branches
 supabase/.temp
 supabase/.env
+supabase/snippets
