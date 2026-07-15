@@ -1,0 +1,66 @@
+# Local Supabase stack config. Regenerate with `supabase init` if your CLI
+# version rejects any field below.
+project_id = "freestyle"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+# Declarative schema: schemas/ is the desired end state. Edit those files,
+# then `supabase db diff -f <name>` generates the migration. This array is the
+# source of load order - a table must be listed before anything referencing it.
+[db.migrations]
+schema_paths = [
+  "./schemas/positions.sql",
+  "./schemas/profiles.sql",
+  "./schemas/tricks.sql",
+  "./schemas/user_tricks.sql",
+  "./schemas/trick_suggestions.sql",
+  "./schemas/tips.sql",
+  "./schemas/trick_annotations.sql",
+  "./schemas/functions.sql",
+  "./schemas/rls_and_grants.sql",
+]
+
+# Seed runs through the CLI's SQL driver (not psql), so files must be plain
+# SQL - no `\i` / meta-commands. Point directly at the data files.
+# import_tricks2.sql is the fuller catalog (positions + 391 tricks).
+[db.seed]
+enabled = true
+sql_paths = ["./import_tricks2.sql", "./seed_users.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:8080"
+additional_redirect_urls = ["http://127.0.0.1:8080", "http://localhost:8080"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# Analytics (logflare) + its vector log shipper bind-mount the Docker
+# socket, which Podman can't mount as a volume. Not needed for local dev.
+[analytics]
+enabled = false

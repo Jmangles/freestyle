@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (Web server, port 8080)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "web-server",
+      "args": ["--web-port=8080"]
+    },
+    {
+      "name": "Flutter (Web server, port 8080, local Supabase)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "web-server",
+      "args": ["--web-port=8080", "--dart-define=USE_LOCAL_SUPABASE=true"]
+    }
+  ]
+}
