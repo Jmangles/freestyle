@@ -831,11 +831,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackMessageHint => 'Please make this app awesome!';
 
   @override
-  String get attachFileButton => 'Attach Photo or Video';
+  String get attachFileButton => 'Attach Image';
 
   @override
   String get removeAttachmentTooltip => 'Remove attachment';
 
   @override
-  String get feedbackSubmitted => 'Feedback sent. Thank you!';
+  String get feedbackSubmitted =>
+      'Thank you so much for your feedback — it really helps us improve!';
+
+  @override
+  String get attachmentTooLarge =>
+      'That image is too large. Please choose one under 10 MB.';
+
+  @override
+  String get feedbackSubmitError =>
+      'Couldn\'t send your feedback. Please check your connection and try again.';
+
+  @override
+  String get feedbackResolveError =>
+      'Couldn\'t update the feedback. Please try again.';
 }

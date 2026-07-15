@@ -844,11 +844,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get feedbackMessageHint => 'Rendez cette appli géniale !';
 
   @override
-  String get attachFileButton => 'Joindre une photo ou une vidéo';
+  String get attachFileButton => 'Joindre une image';
 
   @override
   String get removeAttachmentTooltip => 'Retirer la pièce jointe';
 
   @override
-  String get feedbackSubmitted => 'Retours envoyés. Merci !';
+  String get feedbackSubmitted =>
+      'Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !';
+
+  @override
+  String get attachmentTooLarge =>
+      'Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.';
+
+  @override
+  String get feedbackSubmitError =>
+      'Impossible d\'envoyer vos retours. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get feedbackResolveError =>
+      'Impossible de mettre à jour le retour. Veuillez réessayer.';
 }

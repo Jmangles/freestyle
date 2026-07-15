@@ -391,7 +391,10 @@
   "submitFeedbackButton": "Send Feedback",
   "feedbackMessageLabel": "Help us improve the app! Send us feedback, feature requests, or bug reports :)",
   "feedbackMessageHint": "Please make this app awesome!",
-  "attachFileButton": "Attach Photo or Video",
+  "attachFileButton": "Attach Image",
   "removeAttachmentTooltip": "Remove attachment",
-  "feedbackSubmitted": "Feedback sent. Thank you!"
+  "feedbackSubmitted": "Thank you so much for your feedback — it really helps us improve!",
+  "attachmentTooLarge": "That image is too large. Please choose one under 10 MB.",
+  "feedbackSubmitError": "Couldn't send your feedback. Please check your connection and try again.",
+  "feedbackResolveError": "Couldn't update the feedback. Please try again."
 }

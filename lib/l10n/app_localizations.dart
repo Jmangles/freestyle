@@ -1651,7 +1651,7 @@ abstract class AppLocalizations {
   /// No description provided for @attachFileButton.
   ///
   /// In en, this message translates to:
-  /// **'Attach Photo or Video'**
+  /// **'Attach Image'**
   String get attachFileButton;
 
   /// No description provided for @removeAttachmentTooltip.
@@ -1663,8 +1663,26 @@ abstract class AppLocalizations {
   /// No description provided for @feedbackSubmitted.
   ///
   /// In en, this message translates to:
-  /// **'Feedback sent. Thank you!'**
+  /// **'Thank you so much for your feedback — it really helps us improve!'**
   String get feedbackSubmitted;
+
+  /// No description provided for @attachmentTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That image is too large. Please choose one under 10 MB.'**
+  String get attachmentTooLarge;
+
+  /// No description provided for @feedbackSubmitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your feedback. Please check your connection and try again.'**
+  String get feedbackSubmitError;
+
+  /// No description provided for @feedbackResolveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the feedback. Please try again.'**
+  String get feedbackResolveError;
 }
 
 class _AppLocalizationsDelegate

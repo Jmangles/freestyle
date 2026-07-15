@@ -321,7 +321,10 @@
   "submitFeedbackButton": "Envoyer des retours",
   "feedbackMessageLabel": "Aidez-nous à améliorer l'appli ! Envoyez-nous vos retours, idées ou bugs :)",
   "feedbackMessageHint": "Rendez cette appli géniale !",
-  "attachFileButton": "Joindre une photo ou une vidéo",
+  "attachFileButton": "Joindre une image",
   "removeAttachmentTooltip": "Retirer la pièce jointe",
-  "feedbackSubmitted": "Retours envoyés. Merci !"
+  "feedbackSubmitted": "Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !",
+  "attachmentTooLarge": "Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.",
+  "feedbackSubmitError": "Impossible d'envoyer vos retours. Vérifiez votre connexion et réessayez.",
+  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer."
 }

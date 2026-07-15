@@ -839,11 +839,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackMessageHint => '¡Haz que esta app sea increíble!';
 
   @override
-  String get attachFileButton => 'Adjuntar foto o video';
+  String get attachFileButton => 'Adjuntar imagen';
 
   @override
   String get removeAttachmentTooltip => 'Quitar adjunto';
 
   @override
-  String get feedbackSubmitted => '¡Comentarios enviados. Gracias!';
+  String get feedbackSubmitted =>
+      '¡Muchísimas gracias por tus comentarios! Nos ayudan mucho a mejorar.';
+
+  @override
+  String get attachmentTooLarge =>
+      'Esa imagen es demasiado grande. Elige una de menos de 10 MB.';
+
+  @override
+  String get feedbackSubmitError =>
+      'No se pudo enviar tu comentario. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get feedbackResolveError =>
+      'No se pudo actualizar el comentario. Inténtalo de nuevo.';
 }

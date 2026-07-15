@@ -83,7 +83,11 @@ class _AdminScreenState extends State<AdminScreen> {
     for (final f in feedback) {
       final path = f.attachmentPath;
       if (path != null) {
-        feedbackAttachmentUrls[f.id] = await FeedbackService.getAttachmentUrl(path);
+        try {
+          feedbackAttachmentUrls[f.id] = await FeedbackService.getAttachmentUrl(path);
+        } catch (e) {
+          debugPrint('Feedback attachment URL failed for ${f.id}: $e');
+        }
       }
     }
     return AdminData(
@@ -125,8 +129,20 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _resolveFeedback(FeedbackItem item, String status) async {
-    await FeedbackService.resolveFeedback(item, status);
-    _refresh();
+    try {
+      await FeedbackService.resolveFeedback(item, status);
+      _refresh();
+    } catch (e) {
+      debugPrint('Feedback resolve failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.feedbackResolveError),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _addPosition(BuildContext context) async {
@@ -635,7 +651,18 @@ class _PendingFeedbackCard extends StatelessWidget {
               if (item.isImageAttachment)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.network(attachmentUrl!, height: 160, fit: BoxFit.cover),
+                  child: Image.network(
+                    attachmentUrl!,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      alignment: Alignment.center,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(Icons.broken_image_outlined,
+                          color: theme.colorScheme.outline),
+                    ),
+                  ),
                 )
               else
                 OutlinedButton.icon(

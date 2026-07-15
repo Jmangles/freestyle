@@ -24,11 +24,18 @@ class FeedbackService {
             fileOptions: FileOptions(contentType: attachmentMimeType),
           );
     }
-    await _client.from('feedback').insert({
-      'submitted_by': submittedBy,
-      'message': message,
-      if (attachmentPath != null) 'attachment_path': attachmentPath,
-    });
+    try {
+      await _client.from('feedback').insert({
+        'submitted_by': submittedBy,
+        'message': message,
+        if (attachmentPath != null) 'attachment_path': attachmentPath,
+      });
+    } catch (_) {
+      if (attachmentPath != null) {
+        await _client.storage.from(_bucket).remove([attachmentPath]);
+      }
+      rethrow;
+    }
   }
 
   static Future<List<FeedbackItem>> getPendingFeedback() async {

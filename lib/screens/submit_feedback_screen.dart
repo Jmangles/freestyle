@@ -24,7 +24,6 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
   String? _attachmentName;
   String? _attachmentExtension;
   String? _attachmentMimeType;
-  bool _attachmentIsImage = false;
   bool _saving = false;
 
   @override
@@ -33,36 +32,38 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
     super.dispose();
   }
 
-  static const _imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
-
   String? _mimeTypeFromExtension(String extension) => switch (extension) {
         'jpg' || 'jpeg' => 'image/jpeg',
         'png' => 'image/png',
         'webp' => 'image/webp',
         'heic' => 'image/heic',
         'heif' => 'image/heif',
-        'mp4' => 'video/mp4',
-        'mov' => 'video/quicktime',
-        'webm' => 'video/webm',
         _ => null,
       };
 
+  static const _maxAttachmentBytes = 10 * 1024 * 1024;
+
   Future<void> _pickAttachment() async {
-    final file = await _picker.pickMedia();
+    final file = await _picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
     final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > _maxAttachmentBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.attachmentTooLarge),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
     final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : null;
     final mimeType = file.mimeType ?? (extension != null ? _mimeTypeFromExtension(extension) : null);
-    final isImage = mimeType != null
-        ? mimeType.startsWith('image')
-        : _imageExtensions.contains(extension);
-    if (!mounted) return;
     setState(() {
       _attachmentBytes = bytes;
       _attachmentName = file.name;
-      _attachmentExtension = extension ?? (isImage ? 'jpg' : 'mp4');
+      _attachmentExtension = extension ?? 'jpg';
       _attachmentMimeType = mimeType;
-      _attachmentIsImage = isImage;
     });
   }
 
@@ -90,15 +91,25 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.feedbackSubmitted)),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(context.l10n.feedbackSubmitted)),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+          ),
         );
         context.pop();
       }
     } catch (e) {
+      debugPrint('Feedback submit failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.errorWithDetail(e.toString())),
+            content: Text(context.l10n.feedbackSubmitError),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -143,7 +154,6 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
               _AttachmentPreview(
                 bytes: _attachmentBytes!,
                 name: _attachmentName ?? '',
-                isImage: _attachmentIsImage,
                 onRemove: _removeAttachment,
               ),
             const SizedBox(height: 24),
@@ -167,13 +177,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
 class _AttachmentPreview extends StatelessWidget {
   final Uint8List bytes;
   final String name;
-  final bool isImage;
   final VoidCallback onRemove;
 
   const _AttachmentPreview({
     required this.bytes,
     required this.name,
-    required this.isImage,
     required this.onRemove,
   });
 
@@ -181,12 +189,10 @@ class _AttachmentPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: isImage
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
-              )
-            : const Icon(Icons.videocam),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
+        ),
         title: Text(name, overflow: TextOverflow.ellipsis),
         trailing: IconButton(
           icon: const Icon(Icons.close),
