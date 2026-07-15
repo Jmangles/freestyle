@@ -4,7 +4,7 @@
 -- auth.users fires handle_new_user(), which creates the matching profiles
 -- row (username taken from raw_user_meta_data).
 --
--- Throwaway dev credentials - never use in prod. Both use password123.
+-- Throwaway dev credentials - never use in prod. Both use password 123.
 --   dev@local.test    normal user
 --   admin@local.test  editor/admin (flags bit 0 set below)
 
@@ -20,14 +20,14 @@ insert into auth.users (
   ('00000000-0000-0000-0000-000000000000',
    '11111111-1111-1111-1111-111111111111',
    'authenticated', 'authenticated', 'dev@local.test',
-   crypt('password123', gen_salt('bf')), now(),
+   crypt('123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}', '{"username":"dev"}',
    now(), now(),
    '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000',
    '22222222-2222-2222-2222-222222222222',
    'authenticated', 'authenticated', 'admin@local.test',
-   crypt('password123', gen_salt('bf')), now(),
+   crypt('123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}', '{"username":"admin"}',
    now(), now(),
    '', '', '', '')
