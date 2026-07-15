@@ -73,7 +73,7 @@ CREATE TABLE public.tricks (
 
 ## `user_tricks`
 
-Tracks each user's progress on a trick. One row per (user, trick) pair. `consistency` mirrors the `Consistency` enum (0 = Never tried, 1 = Attempting … 6 = Always; values were shifted +1 by `migrate_consistency_never_tried.sql`). `leash_position` mirrors `LeashPosition` (0 = Frontside, 1 = Backside, 2 = Center).
+Tracks each user's progress on a trick. One row per (user, trick) pair. `consistency` mirrors the `Consistency` enum (0 = Never tried, 1 = Attempting … 6 = Always; values were shifted +1 by migration `20260715120000_consistency_never_tried.sql`). `leash_position` mirrors `LeashPosition` (0 = Frontside, 1 = Backside, 2 = Center).
 
 ```sql
 CREATE TABLE public.user_tricks (
