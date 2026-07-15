@@ -56,15 +56,24 @@ nothing that risks getting committed pointed at the wrong project. Omit the
 
 ### Schema source of truth
 
-`supabase/migrations/` is authoritative for the CLI (`db reset` /
-`db push`). `supabase/schema.sql` is the human-readable consolidated
-snapshot of the same schema — keep the two in sync when adding a migration.
-The older loose `add_*.sql` / `migrate_*.sql` files are historical one-offs
-already folded into the baseline migration; kept for reference only.
+`supabase/schemas/` is the declarative desired state — one file per table
+plus `functions.sql` and `rls_and_grants.sql`. Edit those directly;
+they're the human-readable source of truth. `supabase/migrations/` is what
+the CLI actually applies (`db reset` / `db push`) and is generated from the
+schemas by `supabase db diff`. Load order comes from `config.toml` →
+`[db.migrations] schema_paths`, not filenames. The older loose `add_*.sql` / `migrate_*.sql`
+files are historical one-offs already folded into the baseline migration;
+kept for reference only.
 
-Adding a schema change: create a new timestamped file under
-`supabase/migrations/` (`supabase migration new <name>`), then `supabase db
-reset` to verify it applies cleanly locally before it ever reaches prod.
+Adding a schema change:
+
+1. Edit the relevant file(s) in `supabase/schemas/` (or add a new one and
+   register it in `config.toml` → `[db.migrations] schema_paths`, in
+   dependency order — a table before anything referencing it).
+2. `supabase stop` (diff needs the stack down), then `supabase db diff -f
+   <name>` to generate the migration into `supabase/migrations/`.
+3. `supabase db reset` to verify it applies cleanly locally before it ever
+   reaches prod. Commit the schema edit and the generated migration together.
 
 **Prod already has the baseline.** `00000000000000_initial_schema.sql` is a
 snapshot of the schema prod already runs — it is only replayed onto fresh

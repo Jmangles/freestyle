@@ -14,6 +14,22 @@ port = 54322
 shadow_port = 54320
 major_version = 15
 
+# Declarative schema: schemas/ is the desired end state. Edit those files,
+# then `supabase db diff -f <name>` generates the migration. This array is the
+# source of load order - a table must be listed before anything referencing it.
+[db.migrations]
+schema_paths = [
+  "./schemas/positions.sql",
+  "./schemas/profiles.sql",
+  "./schemas/tricks.sql",
+  "./schemas/user_tricks.sql",
+  "./schemas/trick_suggestions.sql",
+  "./schemas/tips.sql",
+  "./schemas/trick_annotations.sql",
+  "./schemas/functions.sql",
+  "./schemas/rls_and_grants.sql",
+]
+
 # Seed runs through the CLI's SQL driver (not psql), so files must be plain
 # SQL - no `\i` / meta-commands. Point directly at the data files.
 # import_tricks2.sql is the fuller catalog (positions + 391 tricks).
