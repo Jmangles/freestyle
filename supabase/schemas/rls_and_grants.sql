@@ -89,7 +89,7 @@ create policy "annotations_delete" on trick_annotations for delete
 grant select                         on positions       to anon, authenticated;
 grant insert, update, delete         on positions       to authenticated;
 grant select                         on tricks          to anon, authenticated;
-grant insert, update                 on tricks          to authenticated;
+grant insert, update, delete         on tricks          to authenticated;
 grant select                         on profiles        to anon, authenticated;
 grant insert, update                 on profiles        to authenticated;
 grant select, insert, update, delete on user_tricks     to authenticated;
