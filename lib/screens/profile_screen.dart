@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/progression_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
+import '../supabase_config.dart';
 import '../theme_controller.dart';
 import '../utils/safe_state.dart';
 import '../widgets/app_dialogs.dart';
@@ -73,6 +74,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
     if (mounted) context.go('/');
   }
 
+  Future<void> _switchDevUser() async {
+    final email = AuthService.currentUser?.email == 'admin@local.test'
+        ? 'dev@local.test'
+        : 'admin@local.test';
+    await AuthService.signIn(email: email, password: '123');
+    if (mounted) context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -80,6 +89,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
       appBar: AppBar(
         title: Text(l10n.profileTitle),
         actions: [
+          if (SupabaseConfig.useLocal)
+            IconButton(
+              icon: const Icon(Icons.swap_horiz),
+              tooltip: 'Switch dev user (local only)',
+              onPressed: _switchDevUser,
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.signOutTooltip,
