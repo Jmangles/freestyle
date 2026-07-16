@@ -231,11 +231,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const AppLogo.big(height: 36),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.feedback_outlined),
-            tooltip: l10n.feedbackTooltip,
-            onPressed: () => context.push('/feedback'),
-          ),
+          if (AuthService.isLoggedIn)
+            IconButton(
+              icon: const Icon(Icons.feedback_outlined),
+              tooltip: l10n.feedbackTooltip,
+              onPressed: () => context.push('/feedback'),
+            ),
           if (_profile?.canEditTricks == true)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined),
