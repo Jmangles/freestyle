@@ -89,6 +89,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signInTooltip => 'Iniciar sesión';
 
   @override
+  String get feedbackTooltip => 'Comentarios';
+
+  @override
   String get submitTrickButton => 'Enviar truco';
 
   @override
@@ -483,6 +486,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statusLandedAtLeastOnce => 'Aterrizado al menos una vez';
 
   @override
+  String get consistencyNeverTried => 'Nunca intentado';
+
+  @override
   String get consistencyOnce => 'Una vez';
 
   @override
@@ -616,6 +622,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get declineButton => 'Rechazar';
+
+  @override
+  String get noPendingFeedback => 'No hay comentarios pendientes.';
+
+  @override
+  String get pendingFeedbackSection => 'Comentarios pendientes';
+
+  @override
+  String get markReviewedButton => 'Marcar como revisado';
+
+  @override
+  String get dismissButton => 'Descartar';
+
+  @override
+  String get viewAttachmentButton => 'Ver adjunto';
 
   @override
   String submittedOnLabel(String date) {
@@ -803,4 +824,42 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteVideoMessage =>
       '¿Eliminar el video guardado de tu dispositivo?';
+
+  @override
+  String get submitFeedbackTitle => 'Enviar comentarios';
+
+  @override
+  String get submitFeedbackButton => 'Enviar comentarios';
+
+  @override
+  String get feedbackMessageLabel =>
+      '¡Ayúdanos a mejorar la app! Envíanos comentarios, ideas o reportes de errores :)';
+
+  @override
+  String get feedbackMessageHint => '¡Haz que esta app sea increíble!';
+
+  @override
+  String get attachFileButton => 'Adjuntar imágenes';
+
+  @override
+  String get downloadButton => 'Descargar';
+
+  @override
+  String get removeAttachmentTooltip => 'Quitar adjunto';
+
+  @override
+  String get feedbackSubmitted =>
+      '¡Muchísimas gracias por tus comentarios! Nos ayudan mucho a mejorar.';
+
+  @override
+  String get attachmentTooLarge =>
+      'Esa imagen es demasiado grande. Elige una de menos de 10 MB.';
+
+  @override
+  String get feedbackSubmitError =>
+      'No se pudo enviar tu comentario. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get feedbackResolveError =>
+      'No se pudo actualizar el comentario. Inténtalo de nuevo.';
 }

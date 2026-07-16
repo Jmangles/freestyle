@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/user_trick.dart';
 
-class ConsistencySelector extends StatelessWidget {
-  final Consistency? selected;
+class ConsistencySelector extends StatefulWidget {
+  final Consistency selected;
   final ValueChanged<Consistency> onChanged;
 
   const ConsistencySelector({
@@ -14,27 +15,274 @@ class ConsistencySelector extends StatelessWidget {
   });
 
   @override
+  State<ConsistencySelector> createState() => _ConsistencySelectorState();
+}
+
+class _ConsistencySelectorState extends State<ConsistencySelector> {
+  static const _thumbRadius = 10.0;
+  static const _overlayRadius = 20.0;
+
+  double? _dragValue;
+
+  int get _maxLevel => Consistency.values.length - 1;
+
+  Consistency get _displayed => _dragValue != null
+      ? Consistency.values[_dragValue!.round()]
+      : widget.selected;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: Consistency.values.map((c) {
-        final isSelected = c == selected;
-        return ChoiceChip(
-          label: Text(c.localizedLabel(context.l10n)),
-          selected: isSelected,
-          onSelected: (_) => onChanged(c),
-          selectedColor: theme.colorScheme.primaryContainer,
-          labelStyle: TextStyle(
-            color: isSelected
-                ? theme.colorScheme.onPrimaryContainer
-                : theme.colorScheme.onSurface,
-            fontWeight:
-                isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        );
-      }).toList(),
+    final brightness = theme.brightness;
+    final displayed = _displayed;
+    final activeColor = displayed.borderColor(brightness);
+    final trackColor = brightness == Brightness.dark
+        ? const Color(0xFF3A3A3A)
+        : Colors.black;
+    final sliderValue = _dragValue ?? widget.selected.index.toDouble();
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final trackInset = _overlayRadius;
+          final trackWidth = constraints.maxWidth - 2 * trackInset;
+          // Same-row neighbours are two ticks apart; sizing labels to that
+          // distance makes them as wide as possible without overlapping.
+          final labelWidth = 2 * trackWidth / _maxLevel;
+          double tickCenter(int level) =>
+              trackInset + trackWidth * level / _maxLevel;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _labelRow(
+                theme,
+                brightness,
+                displayed,
+                tickCenter,
+                labelWidth,
+                levels: [
+                  for (final c in Consistency.values)
+                    if (c.index.isOdd) c
+                ],
+                dotBelowLabel: true,
+              ),
+              SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 8,
+                  trackShape: const RoundedRectSliderTrackShape(),
+                  thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: _thumbRadius),
+                  overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: _overlayRadius),
+                  activeTrackColor: activeColor,
+                  inactiveTrackColor: trackColor,
+                  thumbColor: activeColor,
+                  overlayColor: activeColor.withValues(alpha: 0.2),
+                  tickMarkShape: SliderTickMarkShape.noTickMark,
+                ),
+                child: Slider(
+                  value: sliderValue,
+                  min: 0,
+                  max: _maxLevel.toDouble(),
+                  divisions: _maxLevel,
+                  onChanged: (v) => setState(() => _dragValue = v),
+                  onChangeEnd: (v) {
+                    setState(() => _dragValue = null);
+                    widget.onChanged(Consistency.values[v.round()]);
+                  },
+                ),
+              ),
+              _labelRow(
+                theme,
+                brightness,
+                displayed,
+                tickCenter,
+                labelWidth,
+                levels: [
+                  for (final c in Consistency.values)
+                    if (c.index.isEven) c
+                ],
+                dotBelowLabel: false,
+              ),
+            ],
+          );
+        }),
+      ),
     );
   }
+
+  static const _edgePadding = 4.0;
+
+  Widget _labelRow(
+    ThemeData theme,
+    Brightness brightness,
+    Consistency displayed,
+    double Function(int level) tickCenter,
+    double labelWidth, {
+    required List<Consistency> levels,
+    required bool dotBelowLabel,
+  }) {
+    return SizedBox(
+      height: 30,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (final level in levels)
+            Positioned(
+              left: tickCenter(level.index) - labelWidth / 2,
+              top: 0,
+              bottom: 0,
+              child: SizedBox(
+                width: labelWidth,
+                child: Column(
+                  mainAxisAlignment: dotBelowLabel
+                      ? MainAxisAlignment.end
+                      : MainAxisAlignment.start,
+                  // The first/last labels sit right at the track's edge
+                  // ticks, so centering them here would push the pill past
+                  // the screen edge; they're re-anchored to the container
+                  // edge below instead, and only the dot stays on the tick.
+                  children: level.index == 0 || level.index == _maxLevel
+                      ? [_dot(theme, level, displayed)]
+                      : dotBelowLabel
+                          ? [
+                              _label(theme, brightness, level, displayed),
+                              const SizedBox(height: 4),
+                              _dot(theme, level, displayed),
+                            ]
+                          : [
+                              _dot(theme, level, displayed),
+                              const SizedBox(height: 4),
+                              _label(theme, brightness, level, displayed),
+                            ],
+                ),
+              ),
+            ),
+          if (levels.isNotEmpty && levels.first.index == 0)
+            Positioned(
+              left: _edgePadding,
+              top: dotBelowLabel ? 0 : null,
+              bottom: dotBelowLabel ? null : 0,
+              child: _label(theme, brightness, levels.first, displayed),
+            ),
+          if (levels.isNotEmpty && levels.last.index == _maxLevel)
+            Positioned(
+              right: _edgePadding,
+              top: dotBelowLabel ? 0 : null,
+              bottom: dotBelowLabel ? null : 0,
+              child: _label(theme, brightness, levels.last, displayed),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _label(ThemeData theme, Brightness brightness, Consistency level,
+      Consistency displayed) {
+    final isSelected = level == displayed;
+    final levelColor = level.borderColor(brightness);
+    final pillTextColor =
+        ThemeData.estimateBrightnessForColor(levelColor) == Brightness.dark
+            ? Colors.white
+            : Colors.black87;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: isSelected
+          ? BoxDecoration(
+              color: levelColor,
+              borderRadius: BorderRadius.circular(4),
+            )
+          : null,
+      child: Text(
+        level.localizedLabel(context.l10n),
+        textAlign: TextAlign.center,
+        softWrap: false,
+        overflow: TextOverflow.visible,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? pillTextColor : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _dot(ThemeData theme, Consistency level, Consistency displayed) {
+    final isSelected = level == displayed;
+    return Container(
+      width: 4,
+      height: 4,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isSelected
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.outlineVariant,
+      ),
+    );
+  }
+}
+
+Future<void> showConsistencySheet(
+  BuildContext context, {
+  required String title,
+  required String subtitle,
+  required Consistency selected,
+  required ValueChanged<Consistency> onChanged,
+}) {
+  HapticFeedback.mediumImpact();
+  return showModalBottomSheet(
+    context: context,
+    builder: (ctx) {
+      var current = selected;
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(ctx)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          subtitle,
+                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ConsistencySelector(
+                selected: current,
+                onChanged: (c) {
+                  setSheetState(() => current = c);
+                  onChanged(c);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }

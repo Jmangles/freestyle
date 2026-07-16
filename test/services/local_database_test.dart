@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' show join;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:freestyle_highline/models/approval_status.dart';
@@ -65,6 +69,7 @@ void main() {
           difficultyTier: 2,
           dateSubmitted: DateTime(2024, 1, 1),
           prerequisiteTrickIds: prereqs,
+          baseTrickIds: const [],
           status: ApprovalStatus.approved,
           flags: 0,
         );
@@ -115,6 +120,7 @@ void main() {
         difficultyTier: 3,
         dateSubmitted: DateTime(2024, 1, 1),
         prerequisiteTrickIds: const [],
+        baseTrickIds: const [],
         status: ApprovalStatus.approved,
         flags: 0,
       );
@@ -357,6 +363,89 @@ void main() {
 
     test('getMeta returns null for unknown key', () async {
       expect(await LocalDatabase.getMeta('no_such_key'), isNull);
+    });
+  });
+
+  // ─── v3 → v4 upgrade (consistency shift) ──────────────────────────────────
+
+  group('Upgrade to v4', () {
+    Future<String> createV3DbWithPendingWrites(
+        List<Map<String, dynamic>> writes) async {
+      final dir = await Directory.systemTemp.createTemp('freestyle_db_test');
+      final path = join(dir.path, 'upgrade.db');
+      final db = await databaseFactoryFfi.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: 3,
+          onCreate: (db, _) => db.execute('''
+            CREATE TABLE pending_writes (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              table_name TEXT NOT NULL,
+              operation TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              local_snapshot_at TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              retry_count INTEGER NOT NULL DEFAULT 0
+            )
+          '''),
+        ),
+      );
+      for (final w in writes) {
+        await db.insert('pending_writes', {
+          'table_name': 'user_tricks',
+          'operation': 'upsert',
+          'local_snapshot_at': '2024-01-01T00:00:00.000Z',
+          'created_at': '2024-01-01T00:00:00.000Z',
+          'retry_count': 0,
+          ...w,
+        });
+      }
+      await db.close();
+      return path;
+    }
+
+    test('shifts consistency in preserved pending-write payloads by +1',
+        () async {
+      final path = await createV3DbWithPendingWrites([
+        {
+          'payload':
+              jsonEncode({'user_id': 1, 'trick_id': 2, 'consistency': 3})
+        },
+      ]);
+      await LocalDatabase.resetForTest();
+      await LocalDatabase.init(factory: databaseFactoryFfi, path: path);
+
+      final writes = await LocalDatabase.getPendingWrites();
+      expect(writes.length, 1);
+      final payload =
+          jsonDecode(writes.first['payload'] as String) as Map<String, dynamic>;
+      expect(payload['consistency'], 4);
+    });
+
+    test('leaves payloads without a consistency field untouched', () async {
+      final path = await createV3DbWithPendingWrites([
+        {
+          'payload': jsonEncode({'user_id': 1, 'trick_id': 2})
+        },
+        {
+          'table_name': 'other_table',
+          'payload':
+              jsonEncode({'user_id': 1, 'trick_id': 2, 'consistency': 3})
+        },
+      ]);
+      await LocalDatabase.resetForTest();
+      await LocalDatabase.init(factory: databaseFactoryFfi, path: path);
+
+      final writes = await LocalDatabase.getPendingWrites();
+      expect(writes.length, 2);
+      // Identical created_at makes the order nondeterministic — key by table.
+      final byTable = {
+        for (final w in writes)
+          w['table_name']:
+              jsonDecode(w['payload'] as String) as Map<String, dynamic>
+      };
+      expect(byTable['user_tricks']!['consistency'], isNull);
+      expect(byTable['other_table']!['consistency'], 3);
     });
   });
 }

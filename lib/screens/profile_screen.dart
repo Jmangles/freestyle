@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/profile.dart';
 import '../models/screen_data.dart';
-import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/progression_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
+import '../supabase_config.dart';
 import '../theme_controller.dart';
 import '../utils/safe_state.dart';
 import '../widgets/app_dialogs.dart';
@@ -48,11 +48,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
 
   void _refresh() => setState(() => _future = _load());
 
-  Future<void> _updateConsistency(int trickId, Consistency consistency) async {
-    await UserTricksService.setConsistency(trickId, consistency);
-    _refresh();
-  }
-
   Future<void> _signOut() async {
     final l10n = context.l10n;
     final confirmed = await AppDialogs.confirm(
@@ -67,6 +62,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
     if (mounted) context.go('/');
   }
 
+  Future<void> _switchDevUser() async {
+    final email = AuthService.currentUser?.email == 'admin@local.test'
+        ? 'dev@local.test'
+        : 'admin@local.test';
+    await AuthService.signIn(email: email, password: '123');
+    if (mounted) context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -74,6 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
       appBar: AppBar(
         title: Text(l10n.profileTitle),
         actions: [
+          if (SupabaseConfig.useLocal)
+            IconButton(
+              icon: const Icon(Icons.swap_horiz),
+              tooltip: 'Switch dev user (local only)',
+              onPressed: _switchDevUser,
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.signOutTooltip,
@@ -171,7 +180,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
           ProfileMainCard(
             entries: entries,
             whatsNext: whatsNext,
-            onConsistencyChanged: _updateConsistency,
           ),
         ],
       ),

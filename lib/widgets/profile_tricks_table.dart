@@ -1,57 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/screen_data.dart';
-import '../models/user_trick.dart';
-import 'consistency_selector.dart';
 
-/// Scrollable table of a user's tracked tricks with tap-to-change-consistency.
+/// Scrollable table of a user's tracked tricks.
 class ProfileTricksTable extends StatelessWidget {
   final List<UserTrickEntry> entries;
-  final void Function(int trickId, Consistency consistency) onConsistencyChanged;
 
   const ProfileTricksTable({
     super.key,
     required this.entries,
-    required this.onConsistencyChanged,
   });
-
-  void _showConsistencySheet(BuildContext context, UserTrickEntry entry) {
-    final trick = entry.trick!;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              trick.givenName,
-              style: Theme.of(ctx)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              trick.difficultyLabel,
-              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            ConsistencySelector(
-              selected: entry.userTrick.consistency,
-              onChanged: (c) {
-                Navigator.pop(ctx);
-                onConsistencyChanged(trick.id, c);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +54,7 @@ class ProfileTricksTable extends StatelessWidget {
             final userTrick = entry.userTrick;
             final consistencyColor = userTrick.consistency.borderColor(brightness);
             return InkWell(
-              onTap: () => _showConsistencySheet(context, entry),
+              onTap: () => context.push('/trick/${trick.id}'),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 11),

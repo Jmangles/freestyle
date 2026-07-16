@@ -89,6 +89,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signInTooltip => 'Se connecter';
 
   @override
+  String get feedbackTooltip => 'Retours';
+
+  @override
   String get submitTrickButton => 'Soumettre un trick';
 
   @override
@@ -486,6 +489,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get statusLandedAtLeastOnce => 'Réussi au moins une fois';
 
   @override
+  String get consistencyNeverTried => 'Jamais essayé';
+
+  @override
   String get consistencyOnce => 'Une fois';
 
   @override
@@ -620,6 +626,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get declineButton => 'Refuser';
+
+  @override
+  String get noPendingFeedback => 'Aucun retour en attente.';
+
+  @override
+  String get pendingFeedbackSection => 'Retours en attente';
+
+  @override
+  String get markReviewedButton => 'Marquer comme examiné';
+
+  @override
+  String get dismissButton => 'Rejeter';
+
+  @override
+  String get viewAttachmentButton => 'Voir la pièce jointe';
 
   @override
   String submittedOnLabel(String date) {
@@ -808,4 +829,42 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteVideoMessage =>
       'Supprimer la vidéo enregistrée de votre appareil ?';
+
+  @override
+  String get submitFeedbackTitle => 'Envoyer des retours';
+
+  @override
+  String get submitFeedbackButton => 'Envoyer des retours';
+
+  @override
+  String get feedbackMessageLabel =>
+      'Aidez-nous à améliorer l\'appli ! Envoyez-nous vos retours, idées ou bugs :)';
+
+  @override
+  String get feedbackMessageHint => 'Rendez cette appli géniale !';
+
+  @override
+  String get attachFileButton => 'Joindre des images';
+
+  @override
+  String get downloadButton => 'Télécharger';
+
+  @override
+  String get removeAttachmentTooltip => 'Retirer la pièce jointe';
+
+  @override
+  String get feedbackSubmitted =>
+      'Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !';
+
+  @override
+  String get attachmentTooLarge =>
+      'Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.';
+
+  @override
+  String get feedbackSubmitError =>
+      'Impossible d\'envoyer vos retours. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get feedbackResolveError =>
+      'Impossible de mettre à jour le retour. Veuillez réessayer.';
 }

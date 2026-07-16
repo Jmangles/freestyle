@@ -64,3 +64,10 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Supabase local stack (CLI-managed runtime artifacts; config.toml,
+# migrations/ and seed.sql are committed, everything else is local-only)
+supabase/.branches
+supabase/.temp
+supabase/.env
+supabase/snippets

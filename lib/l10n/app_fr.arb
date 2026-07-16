@@ -30,6 +30,7 @@
   "filterTooltip": "Filtrer",
   "profileTooltip": "Profil",
   "signInTooltip": "Se connecter",
+  "feedbackTooltip": "Retours",
   "submitTrickButton": "Soumettre un trick",
   "failedToLoadTricks": "Échec du chargement des tricks",
   "retryButton": "Réessayer",
@@ -168,6 +169,7 @@
   "statusAttempting": "En apprentissage",
   "statusLandedAtLeastOnce": "Réussi au moins une fois",
 
+  "consistencyNeverTried": "Jamais essayé",
   "consistencyOnce": "Une fois",
   "consistencySometimes": "Parfois",
   "consistencyOften": "Souvent",
@@ -218,6 +220,12 @@
   "noPendingTips": "Aucun conseil en attente.",
   "pendingTipsSection": "Conseils en attente",
   "declineButton": "Refuser",
+
+  "noPendingFeedback": "Aucun retour en attente.",
+  "pendingFeedbackSection": "Retours en attente",
+  "markReviewedButton": "Marquer comme examiné",
+  "dismissButton": "Rejeter",
+  "viewAttachmentButton": "Voir la pièce jointe",
 
   "submittedOnLabel": "Soumis le {date}",
   "@submittedOnLabel": {
@@ -307,5 +315,17 @@
   "lowStorageTitle": "Stockage faible",
   "lowStorageMessage": "Moins de 1 Go de stockage disponible. Continuer quand même ?",
   "continueButton": "Continuer",
-  "deleteVideoMessage": "Supprimer la vidéo enregistrée de votre appareil ?"
+  "deleteVideoMessage": "Supprimer la vidéo enregistrée de votre appareil ?",
+
+  "submitFeedbackTitle": "Envoyer des retours",
+  "submitFeedbackButton": "Envoyer des retours",
+  "feedbackMessageLabel": "Aidez-nous à améliorer l'appli ! Envoyez-nous vos retours, idées ou bugs :)",
+  "feedbackMessageHint": "Rendez cette appli géniale !",
+  "attachFileButton": "Joindre des images",
+  "downloadButton": "Télécharger",
+  "removeAttachmentTooltip": "Retirer la pièce jointe",
+  "feedbackSubmitted": "Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !",
+  "attachmentTooLarge": "Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.",
+  "feedbackSubmitError": "Impossible d'envoyer vos retours. Vérifiez votre connexion et réessayez.",
+  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer."
 }

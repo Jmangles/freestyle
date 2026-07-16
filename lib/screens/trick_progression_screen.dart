@@ -376,7 +376,7 @@ class _TrickCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = DifficultyTier.badgeColors(trick.difficultyTier);
-    final isLanded = userTrick?.consistency.isLanded ?? false;
+    final isLanded = userTrick.effectiveConsistency.isLanded;
     final isViaVariation = !isLanded && landedViaVariation;
 
     final Color bgColor;
