@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
+import '../services/user_tricks_service.dart';
 import '../utils/difficulty_tier.dart';
+import 'consistency_selector.dart';
 
 class TrickCard extends StatelessWidget {
   final Trick trick;
@@ -54,6 +56,7 @@ class TrickCard extends StatelessWidget {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
         },
+        onLongPress: () => _showConsistencySheet(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
@@ -193,6 +196,7 @@ class TrickCard extends StatelessWidget {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
         },
+        onLongPress: () => _showConsistencySheet(context),
       ),
     );
 
@@ -258,6 +262,16 @@ class TrickCard extends StatelessWidget {
           Icon(Icons.download_done, size: 14, color: theme.colorScheme.primary),
         ],
       ],
+    );
+  }
+
+  void _showConsistencySheet(BuildContext context) {
+    showConsistencySheet(
+      context,
+      title: trick.givenName,
+      subtitle: context.l10n.groupDifficulty(trick.difficultyLabel),
+      selected: consistency,
+      onChanged: (c) => UserTricksService.setConsistency(trick.id, c),
     );
   }
 

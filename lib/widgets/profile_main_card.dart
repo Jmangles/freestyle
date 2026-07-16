@@ -3,20 +3,17 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/screen_data.dart';
 import '../models/trick.dart';
-import '../models/user_trick.dart';
 import 'profile_tricks_table.dart';
 
 /// Tabbed card showing "My Tricks" and "What's Next" progression tabs.
 class ProfileMainCard extends StatefulWidget {
   final List<UserTrickEntry> entries;
   final WhatsNextData whatsNext;
-  final void Function(int trickId, Consistency consistency) onConsistencyChanged;
 
   const ProfileMainCard({
     super.key,
     required this.entries,
     required this.whatsNext,
-    required this.onConsistencyChanged,
   });
 
   @override
@@ -140,7 +137,6 @@ class _ProfileMainCardState extends State<ProfileMainCard> {
             if (entries.isNotEmpty)
               ProfileTricksTable(
                 entries: entries,
-                onConsistencyChanged: widget.onConsistencyChanged,
               ),
           ],
 

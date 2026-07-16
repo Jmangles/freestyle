@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/profile.dart';
 import '../models/screen_data.dart';
-import '../models/user_trick.dart';
 import '../services/auth_service.dart';
 import '../services/progression_service.dart';
 import '../services/tricks_service.dart';
@@ -48,17 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
   }
 
   void _refresh() => setState(() => _future = _load());
-
-  Future<void> _updateConsistency(int trickId, Consistency consistency) async {
-    final write = UserTricksService.setConsistency(trickId, consistency);
-    // The optimistic override makes this reload show the new value already.
-    _refresh();
-    try {
-      await write;
-    } finally {
-      _refresh();
-    }
-  }
 
   Future<void> _signOut() async {
     final l10n = context.l10n;
@@ -192,7 +180,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
           ProfileMainCard(
             entries: entries,
             whatsNext: whatsNext,
-            onConsistencyChanged: _updateConsistency,
           ),
         ],
       ),
