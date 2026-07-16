@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/user_trick.dart';
@@ -220,4 +221,68 @@ class _ConsistencySelectorState extends State<ConsistencySelector> {
       ),
     );
   }
+}
+
+Future<void> showConsistencySheet(
+  BuildContext context, {
+  required String title,
+  required String subtitle,
+  required Consistency selected,
+  required ValueChanged<Consistency> onChanged,
+}) {
+  HapticFeedback.mediumImpact();
+  return showModalBottomSheet(
+    context: context,
+    builder: (ctx) {
+      var current = selected;
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(ctx)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          subtitle,
+                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ConsistencySelector(
+                selected: current,
+                onChanged: (c) {
+                  setSheetState(() => current = c);
+                  onChanged(c);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
