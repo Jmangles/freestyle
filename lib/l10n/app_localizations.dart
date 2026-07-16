@@ -256,6 +256,12 @@ abstract class AppLocalizations {
   /// **'Sign In'**
   String get signInTooltip;
 
+  /// No description provided for @feedbackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get feedbackTooltip;
+
   /// No description provided for @submitTrickButton.
   ///
   /// In en, this message translates to:
@@ -1270,6 +1276,36 @@ abstract class AppLocalizations {
   /// **'Decline'**
   String get declineButton;
 
+  /// No description provided for @noPendingFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending feedback.'**
+  String get noPendingFeedback;
+
+  /// No description provided for @pendingFeedbackSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Feedback'**
+  String get pendingFeedbackSection;
+
+  /// No description provided for @markReviewedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Reviewed'**
+  String get markReviewedButton;
+
+  /// No description provided for @dismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismissButton;
+
+  /// No description provided for @viewAttachmentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View Attachment'**
+  String get viewAttachmentButton;
+
   /// No description provided for @submittedOnLabel.
   ///
   /// In en, this message translates to:
@@ -1587,6 +1623,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete the saved video from your device?'**
   String get deleteVideoMessage;
+
+  /// No description provided for @submitFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get submitFeedbackTitle;
+
+  /// No description provided for @submitFeedbackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get submitFeedbackButton;
+
+  /// No description provided for @feedbackMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Help us improve the app! Send us feedback, feature requests, or bug reports :)'**
+  String get feedbackMessageLabel;
+
+  /// No description provided for @feedbackMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please make this app awesome!'**
+  String get feedbackMessageHint;
+
+  /// No description provided for @attachFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach Images'**
+  String get attachFileButton;
+
+  /// No description provided for @downloadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadButton;
+
+  /// No description provided for @removeAttachmentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get removeAttachmentTooltip;
+
+  /// No description provided for @feedbackSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you so much for your feedback — it really helps us improve!'**
+  String get feedbackSubmitted;
+
+  /// No description provided for @attachmentTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That image is too large. Please choose one under 10 MB.'**
+  String get attachmentTooLarge;
+
+  /// No description provided for @feedbackSubmitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your feedback. Please check your connection and try again.'**
+  String get feedbackSubmitError;
+
+  /// No description provided for @feedbackResolveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the feedback. Please try again.'**
+  String get feedbackResolveError;
 }
 
 class _AppLocalizationsDelegate

@@ -35,6 +35,7 @@
   "filterTooltip": "Filter",
   "profileTooltip": "Profile",
   "signInTooltip": "Sign In",
+  "feedbackTooltip": "Feedback",
   "submitTrickButton": "Submit Trick",
   "failedToLoadTricks": "Failed to load tricks",
   "retryButton": "Retry",
@@ -265,6 +266,12 @@
   "pendingTipsSection": "Pending Tips",
   "declineButton": "Decline",
 
+  "noPendingFeedback": "No pending feedback.",
+  "pendingFeedbackSection": "Pending Feedback",
+  "markReviewedButton": "Mark Reviewed",
+  "dismissButton": "Dismiss",
+  "viewAttachmentButton": "View Attachment",
+
   "submittedOnLabel": "Submitted on {date}",
   "@submittedOnLabel": {
     "placeholders": {
@@ -378,5 +385,17 @@
   "lowStorageTitle": "Low storage",
   "lowStorageMessage": "Less than 1 GB of storage is available. Continue anyway?",
   "continueButton": "Continue",
-  "deleteVideoMessage": "Delete the saved video from your device?"
+  "deleteVideoMessage": "Delete the saved video from your device?",
+
+  "submitFeedbackTitle": "Send Feedback",
+  "submitFeedbackButton": "Send Feedback",
+  "feedbackMessageLabel": "Help us improve the app! Send us feedback, feature requests, or bug reports :)",
+  "feedbackMessageHint": "Please make this app awesome!",
+  "attachFileButton": "Attach Images",
+  "downloadButton": "Download",
+  "removeAttachmentTooltip": "Remove attachment",
+  "feedbackSubmitted": "Thank you so much for your feedback — it really helps us improve!",
+  "attachmentTooLarge": "That image is too large. Please choose one under 10 MB.",
+  "feedbackSubmitError": "Couldn't send your feedback. Please check your connection and try again.",
+  "feedbackResolveError": "Couldn't update the feedback. Please try again."
 }

@@ -9,6 +9,7 @@ alter table positions         enable row level security;
 alter table trick_suggestions enable row level security;
 alter table tips              enable row level security;
 alter table trick_annotations enable row level security;
+alter table feedback          enable row level security;
 
 -- Profiles
 create policy "profiles_read"   on profiles for select using (true);
@@ -82,6 +83,48 @@ create policy "annotations_update" on trick_annotations for update
 create policy "annotations_delete" on trick_annotations for delete
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 
+-- Feedback
+create policy "feedback_insert" on feedback for insert
+  with check (submitted_by = (select int_id from profiles where id = auth.uid()));
+create policy "feedback_read_admin" on feedback for select
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+create policy "feedback_update_admin" on feedback for update
+  using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+
+-- Feedback attachments: private bucket, uploads live under "<int_id>/<filename>"
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'feedback-attachments',
+  'feedback-attachments',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/gif']
+)
+on conflict (id) do update set
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create policy "feedback_attachments_insert" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'feedback-attachments'
+    and (storage.foldername(name))[1] = (select int_id::text from profiles where id = auth.uid())
+  );
+
+create policy "feedback_attachments_select" on storage.objects for select to authenticated
+  using (
+    bucket_id = 'feedback-attachments'
+    and (
+      (storage.foldername(name))[1] = (select int_id::text from profiles where id = auth.uid())
+      or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+    )
+  );
+
+create policy "feedback_attachments_delete_admin" on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'feedback-attachments'
+    and exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+  );
+
 -- ============================================================
 -- Grants
 -- ============================================================
@@ -100,4 +143,5 @@ grant update, delete                 on tips            to authenticated;
 grant select                         on trick_annotations to anon, authenticated;
 grant insert, update, delete         on trick_annotations to authenticated;
 grant usage, select on sequence trick_annotations_id_seq to authenticated;
+grant select, insert, update           on feedback          to authenticated;
 grant execute on function get_trick_vote_stats(integer) to anon, authenticated;

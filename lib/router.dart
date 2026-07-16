@@ -12,6 +12,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/submit_trick_screen.dart';
 import 'screens/submit_tip_screen.dart';
+import 'screens/submit_feedback_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/not_found_screen.dart';
@@ -57,6 +58,7 @@ class AppRouter {
         ),
       ),
       GoRoute(path: '/tips/submit', builder: (_, __) => const SubmitTipScreen()),
+      GoRoute(path: '/feedback', builder: (_, __) => const SubmitFeedbackScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       StatefulShellRoute.indexedStack(

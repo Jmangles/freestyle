@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/approval_status.dart';
+import '../models/feedback_item.dart';
 import '../models/screen_data.dart';
 import '../models/tip.dart';
 import '../models/trick.dart';
 import '../models/trick_suggestion.dart';
 import '../services/auth_service.dart';
+import '../services/feedback_service.dart';
 import '../services/tips_service.dart';
 import '../services/tricks_service.dart';
 import '../utils/date_formatters.dart';
@@ -68,17 +71,34 @@ class _AdminScreenState extends State<AdminScreen> {
     final tricksFuture = TricksService.getPendingTricks();
     final suggestionsFuture = TricksService.getPendingSuggestions();
     final tipsFuture = TipsService.getPendingTips();
+    final feedbackFuture = FeedbackService.getPendingFeedback();
     final tricks = await tricksFuture;
     final suggestions = await suggestionsFuture;
     final tips = await tipsFuture;
+    final feedback = await feedbackFuture;
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
+    final feedbackAttachments = <int, List<FeedbackAttachment>>{};
+    for (final f in feedback) {
+      final list = <FeedbackAttachment>[];
+      for (final path in f.attachmentPaths) {
+        try {
+          final url = await FeedbackService.getAttachmentUrl(path);
+          list.add(FeedbackAttachment(path: path, signedUrl: url));
+        } catch (e) {
+          debugPrint('Feedback attachment URL failed for ${f.id}: $e');
+        }
+      }
+      if (list.isNotEmpty) feedbackAttachments[f.id] = list;
+    }
     return AdminData(
       pendingTricks: tricks,
       pendingSuggestions: suggestions,
       originalTricks: originalTricks,
       pendingTips: tips,
+      pendingFeedback: feedback,
+      feedbackAttachments: feedbackAttachments,
       profile: profile,
     );
   }
@@ -108,6 +128,23 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<void> _declineTip(int id) async {
     await TipsService.deleteTip(id);
     _refresh();
+  }
+
+  Future<void> _resolveFeedback(FeedbackItem item, String status) async {
+    try {
+      await FeedbackService.resolveFeedback(item, status);
+      _refresh();
+    } catch (e) {
+      debugPrint('Feedback resolve failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.feedbackResolveError),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _addPosition(BuildContext context) async {
@@ -195,8 +232,10 @@ class _AdminScreenState extends State<AdminScreen> {
     final tricks = snap.data!.pendingTricks;
     final suggestions = snap.data!.pendingSuggestions;
     final tips = snap.data!.pendingTips;
+    final feedback = snap.data!.pendingFeedback;
+    final feedbackAttachments = snap.data!.feedbackAttachments;
 
-    if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty) {
+    if (tricks.isEmpty && suggestions.isEmpty && tips.isEmpty && feedback.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: ListView(
@@ -207,6 +246,8 @@ class _AdminScreenState extends State<AdminScreen> {
             Center(child: Text(l10n.noPendingSuggestions)),
             const SizedBox(height: 8),
             Center(child: Text(l10n.noPendingTips)),
+            const SizedBox(height: 8),
+            Center(child: Text(l10n.noPendingFeedback)),
           ],
         ),
       );
@@ -234,7 +275,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (suggestions.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(l10n.pendingSuggestionsSection,
+        Text('${l10n.pendingSuggestionsSection} (${suggestions.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -252,7 +293,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (tips.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(l10n.pendingTipsSection,
+        Text('${l10n.pendingTipsSection} (${tips.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -273,6 +314,24 @@ class _AdminScreenState extends State<AdminScreen> {
               );
               _refresh();
             },
+          ),
+        ],
+      ],
+      if (feedback.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Text('${l10n.pendingFeedbackSection} (${feedback.length})',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        for (int i = 0; i < feedback.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _PendingFeedbackCard(
+            item: feedback[i],
+            attachments: feedbackAttachments[feedback[i].id] ?? const [],
+            onMarkReviewed: () => _resolveFeedback(feedback[i], 'reviewed'),
+            onDismiss: () => _resolveFeedback(feedback[i], 'dismissed'),
           ),
         ],
       ],
@@ -546,6 +605,95 @@ class _PendingTipCard extends StatelessWidget {
                       onPressed: onDecline,
                       icon: const Icon(Icons.close, size: 18),
                       label: Text(l10n.declineButton),
+                      style: _rejectButtonStyle(theme),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingFeedbackCard extends StatelessWidget {
+  final FeedbackItem item;
+  final List<FeedbackAttachment> attachments;
+  final VoidCallback onMarkReviewed;
+  final VoidCallback onDismiss;
+
+  const _PendingFeedbackCard({
+    required this.item,
+    required this.attachments,
+    required this.onMarkReviewed,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Card(
+      child: ExpansionTile(
+        title: Text(item.message,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(l10n.submittedDate(formatShortDate(item.createdAt))),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.message),
+                for (final attachment in attachments) ...[
+                  const SizedBox(height: 12),
+                  if (attachment.isImage)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        attachment.signedUrl,
+                        height: 160,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 160,
+                          alignment: Alignment.center,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.broken_image_outlined,
+                              color: theme.colorScheme.outline),
+                        ),
+                      ),
+                    ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse(FeedbackService.downloadUrl(
+                            attachment.signedUrl, attachment.path)),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.download, size: 18),
+                      label: Text(l10n.downloadButton),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                OverflowBar(
+                  spacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: onMarkReviewed,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(l10n.markReviewedButton),
+                      style: _approveButtonStyle(theme),
+                    ),
+                    FilledButton.icon(
+                      onPressed: onDismiss,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: Text(l10n.dismissButton),
                       style: _rejectButtonStyle(theme),
                     ),
                   ],

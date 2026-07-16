@@ -27,8 +27,9 @@ GoTrue, PostgREST, Studio) in Docker. Nothing here touches the prod project.
 
 The repo already tracks everything the CLI needs — `supabase/config.toml`
 and `supabase/migrations/` — so no `supabase init` is required. Seed data
-(the trick catalog) loads from `supabase/import_tricks2.sql`, wired via
-`config.toml` → `[db.seed] sql_paths`.
+(the trick catalog and dev users) loads from `supabase/seed_tricks.sql` and
+`supabase/seed_users.sql`, wired via `config.toml` → `[db.seed] sql_paths`.
+`seed_tricks.sql` is regenerated from prod by `scripts/refresh-seed.sh`.
 
 1. `supabase start` — boots the stack and prints the local API URL, DB URL,
    and Studio URL. Defaults:

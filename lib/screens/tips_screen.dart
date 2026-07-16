@@ -106,6 +106,11 @@ class _TipsScreenState extends State<TipsScreen> {
       appBar: AppBar(
         title: Text(l10n.tipsNavLabel),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.feedback_outlined),
+            tooltip: l10n.feedbackTooltip,
+            onPressed: () => context.push('/feedback'),
+          ),
           if (_profile?.canEditTricks == true)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined),

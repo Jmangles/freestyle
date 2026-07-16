@@ -89,6 +89,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInTooltip => 'Sign In';
 
   @override
+  String get feedbackTooltip => 'Feedback';
+
+  @override
   String get submitTrickButton => 'Submit Trick';
 
   @override
@@ -618,6 +621,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get declineButton => 'Decline';
 
   @override
+  String get noPendingFeedback => 'No pending feedback.';
+
+  @override
+  String get pendingFeedbackSection => 'Pending Feedback';
+
+  @override
+  String get markReviewedButton => 'Mark Reviewed';
+
+  @override
+  String get dismissButton => 'Dismiss';
+
+  @override
+  String get viewAttachmentButton => 'View Attachment';
+
+  @override
   String submittedOnLabel(String date) {
     return 'Submitted on $date';
   }
@@ -798,4 +816,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteVideoMessage => 'Delete the saved video from your device?';
+
+  @override
+  String get submitFeedbackTitle => 'Send Feedback';
+
+  @override
+  String get submitFeedbackButton => 'Send Feedback';
+
+  @override
+  String get feedbackMessageLabel =>
+      'Help us improve the app! Send us feedback, feature requests, or bug reports :)';
+
+  @override
+  String get feedbackMessageHint => 'Please make this app awesome!';
+
+  @override
+  String get attachFileButton => 'Attach Images';
+
+  @override
+  String get downloadButton => 'Download';
+
+  @override
+  String get removeAttachmentTooltip => 'Remove attachment';
+
+  @override
+  String get feedbackSubmitted =>
+      'Thank you so much for your feedback — it really helps us improve!';
+
+  @override
+  String get attachmentTooLarge =>
+      'That image is too large. Please choose one under 10 MB.';
+
+  @override
+  String get feedbackSubmitError =>
+      'Couldn\'t send your feedback. Please check your connection and try again.';
+
+  @override
+  String get feedbackResolveError =>
+      'Couldn\'t update the feedback. Please try again.';
 }

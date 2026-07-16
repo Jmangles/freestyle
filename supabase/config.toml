@@ -26,6 +26,7 @@ schema_paths = [
   "./schemas/trick_suggestions.sql",
   "./schemas/tips.sql",
   "./schemas/trick_annotations.sql",
+  "./schemas/feedback.sql",
   "./schemas/functions.sql",
   "./schemas/rls_and_grants.sql",
 ]
