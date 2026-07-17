@@ -1,0 +1,7 @@
+recommendation,score,legacy_id,legacy_name,suggested_new_id,suggested_new_name,confirmed_new_id
+reject,0.875,10181,Korean to Feet,122,Korean 720 to feet,
+reject,0.865,10161,180 Super Sonic Mount,210,Rocket Front Belly Roll to Feet,
+reject,0.857,10180,Sofa to Feet,172,Sofa 360 to Feet,
+reject,0.842,10253,NH Backflip,430,Back Roll from Feet to Feet,
+reject,0.818,10187,Chest Bounce,498,Sit Bounce,
+reject,0.818,10192,Soup Bounce,410,Sofa Bounce,

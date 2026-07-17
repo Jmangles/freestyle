@@ -1,0 +1,7 @@
+legacy_id,legacy_name,start,end,difficulty,closest_new_name
+10183,Chest to Feet,CHEST,STAND,3,
+10184,Sit to Feet,SIT,STAND,2,Orbital to Feet
+10186,Back Bounce,STAND,BACK,3,Crook Bounce
+10190,Belly Bounce,EXPOSURE,BELLY,3,Belly to Feet
+10191,Soup to Feet,SOUP,STAND,2,
+10247,Double Drop Knee Almighty,DOUBLE DROP KNEE,EXPOSURE,999,Double Drop Knee Roll
