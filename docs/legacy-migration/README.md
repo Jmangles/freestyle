@@ -52,28 +52,88 @@ confirmation.
 
 ## Files
 
-- **`trick_id_map.csv`** (250) – confident matches, safe to apply as-is.
+- **`trick_id_map.csv`** (252) – confident matches, safe to apply as-is.
   `legacy_id,new_id,tier,legacy_name,new_name`.
-- **`trick_id_map_review.csv`** (6) – fuzzy candidates a human who knows the
-  tricks still has to judge. All 6 currently carry a `reject` recommendation
-  (the suggested match is a coincidence or a genuinely different trick, e.g.
-  `Korean to Feet` ≠ `Korean 720 to feet`, `NH Backflip` ≠ `Back Roll from Feet
-  to Feet`). Record any decision in `overrides.csv`, not here — this file is
-  regenerated.
-- **`trick_id_map_none.csv`** (6) – legacy tricks with no equivalent in the new
-  catalog (`Chest to Feet`, `Soup to Feet`, `Sit to Feet`, `Back Bounce`,
-  `Belly Bounce`, `Double Drop Knee Almighty`). Progress on these can't be
-  mapped; decide whether to drop it silently or surface it to the user.
+- **`trick_id_map_review.csv`** (0) – fuzzy candidates a human who knows the
+  tricks still has to judge. Currently empty: every legacy trick is either
+  mapped or explicitly recorded as having no equivalent. Record any decision in
+  `overrides.csv`, not here — this file is regenerated.
+- **`trick_id_map_none.csv`** (10) – legacy tricks with no equivalent in the new
+  catalog: `Chest to Feet`, `Soup to Feet`, `Chest Bounce`, `Soup Bounce`,
+  `Back Bounce`, `Belly Bounce`, `Double Drop Knee Almighty`, plus the three
+  superseded bounces below. Progress on these can't be mapped; decide whether
+  to drop it silently or surface it to the user.
 - **`overrides.csv`** – durable human decisions, read back by the generator and
   applied over the automatic tiers. `legacy_id,new_id,note`: a filled `new_id`
   forces a confident (`confirmed`) match; a blank `new_id` forces
   "no equivalent". This is the one file you hand-edit.
 
 Every one of the 262 legacy tricks lands in exactly one of the map / review /
-none files.
+none files, and no two legacy tricks map to the same new id.
+
+## Bounces: legacy pairs vs one new trick
+
+The legacy catalog split a bounce into an entry (`X Bounce`, STAND→X) and an
+exit (`X to Feet`, X→STAND). This app has a single round-trip trick per
+position (`Korean Bounce` 305, `Sit Bounce` 498, `Sofa Bounce` 410, all
+STAND→STAND / EXPO→EXPO). Only the exit is mapped onto it; the legacy entry is
+dropped, keeping the map one-to-one on `new_id`. Progress a user tracked on
+`Korean/Sit/Sofa Bounce` but not on the matching `to Feet` is lost — accepted
+trade-off. `Chest` and `Soup` have no bounce trick here at all, so both halves
+stay unmapped.
 Custom tricks a user authored themselves (Dexie `userTricks` with an
 auto-increment id, not in the predefined catalog) are out of scope — they have
 no counterpart here and would need to be re-created as new tricks if kept.
+
+## The legacy Dexie database
+
+From `src/services/db.js` on branch `main`:
+
+- database name **`db`** (`new Dexie("db")`), current schema version **8**
+- tables: `versions`, `predefinedTricks`, `userTricks`, `predefinedCombos`,
+  `userCombos`
+
+Progress lives in **`userTricks`**, keyed by the same id as the predefined
+trick it belongs to. Two things make it awkward to read:
+
+- **rows are sparse.** The v7 upgrade deletes every attribute that equals the
+  predefined trick's value, so a `userTricks` row holds only what the user
+  changed. Read `stickFrequency` from the `userTricks` row and treat a missing
+  field as "not tracked" — the old app reconstructs a trick as
+  `{...predefinedTrick, ...userTrick}`.
+- **`deleted: true`** marks a trick the user hid; skip those rows.
+
+Ids ≥ 10000 are predefined tricks (mappable via `trick_id_map.csv`); the
+`++id` auto-increment gives user-authored tricks small ids, so the two are
+easy to tell apart. `boostSkill` and both combo tables have no counterpart in
+this app.
+
+An importer should open the DB **through Dexie with the same version chain**
+rather than raw IndexedDB. A browser that hasn't loaded the old app in a long
+time can sit at an older schema version, and the v5/v6 upgrades still have to
+run (they shift `stickFrequency` 5 and 6 up by one) before the values below
+mean what they say.
+
+## Consistency values
+
+Legacy `stickFrequency` is an index into `stickFrequencies` in
+`src/services/enums.js` (8 values); this app's `Consistency` enum has 7 — it
+has no `Rarely`, so that folds into `Sometimes`.
+
+| legacy | name | → new | name |
+|---|---|---|---|
+| 0 | Never tried | 0 | neverTried |
+| 1 | Work in progress | 1 | attempting |
+| 2 | Once | 2 | once |
+| 3 | **Rarely** | 3 | **sometimes** |
+| 4 | Sometimes | 3 | sometimes |
+| 5 | Often | 4 | often |
+| 6 | Generally | 5 | generally |
+| 7 | Always | 6 | always |
+
+So: identity up to 2, `3 → 3`, and `legacy - 1` from 4 upward. `user_tricks.consistency`
+is `check (consistency between 0 and 6)`, so any out-of-range legacy value must
+be clamped, not inserted.
 
 ## Regenerating
 
@@ -98,8 +158,8 @@ one-time importer would:
 
 1. open the legacy Dexie DB, read the user's `userTricks` rows (their tracked
    progress: `stickFrequency`, `boostSkill`, etc.), keyed by predefined id;
-2. translate each legacy id via `trick_id_map.csv` (+ any confirmed review
-   rows); skip / report ids in `trick_id_map_none.csv` and custom user tricks;
+2. translate each legacy id via `trick_id_map.csv`; skip / report ids in
+   `trick_id_map_none.csv` and custom user tricks;
 3. write the translated progress into this app's tables for the signed-in
    profile, then mark the import done.
 

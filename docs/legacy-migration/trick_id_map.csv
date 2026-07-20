@@ -143,6 +143,7 @@ legacy_id,new_id,tier,legacy_name,new_name
 10158,434,exact,FS 360 Barrel Roll,FS 360 Barrel Roll
 10159,235,exact,Makako to Feet,Makako to Feet
 10160,257,exact,Despedido to Feet,Despedido to Feet
+10161,212,confirmed,180 Super Sonic Mount,180 Supersonic
 10162,435,exact,360 Almighty Flip,360 Almighty Flip
 10163,213,exact,Reverse Super Sonic Mount,Reverse Super Sonic Mount
 10164,275,exact,Triple Back Yoda Roll,Triple Back Yoda Roll
@@ -161,10 +162,10 @@ legacy_id,new_id,tier,legacy_name,new_name
 10177,331,exact,Full Flare from Korean,Full Flare from Korean
 10178,184,exact,Almighty from Sofa,Back Almighty from Sofa
 10179,156,exact,Belly to Feet,Belly to Feet
+10180,410,confirmed,Sofa to Feet,Sofa Bounce
+10181,305,confirmed,Korean to Feet,Korean Bounce
 10182,486,exact,Back to Feet,Back to Feet
-10185,305,exact,Korean Bounce,Korean Bounce
-10188,498,exact,Sit Bounce,Sit Bounce
-10189,410,exact,Sofa Bounce,Sofa Bounce
+10184,498,confirmed,Sit to Feet,Sit Bounce
 10193,200,exact,Double Shoulder Roll to Feet,Double Shoulder Roll to Feet
 10194,248,exact,Leash to Feet,Leash to Feet
 10195,247,exact,Reverse Whatever,Reverse Whatever
@@ -221,6 +222,7 @@ legacy_id,new_id,tier,legacy_name,new_name
 10250,390,exact,Front Sofa Roll Rewind to Mini-Cube,Front Sofa Roll Rewind to Mini-Cube
 10251,501,exact,Reverse Rocket Mount 360,Reverse Rocket Mount 360
 10252,97,exact,Sushi Backflip,Sushi Backflip
+10253,98,confirmed,NH Backflip,No-Hands Backflip
 10255,78,exact,Batman,360 Rocket (over Bat-Hang)
 10256,349,confirmed,Shark Bite,Rocket Line Bite
 10257,24,exact,Antihero to Sofa Roll to Feet,Double Darth Vader
