@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/layout_constants.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
+import '../models/legacy_import.dart';
 import '../models/profile.dart';
 import '../models/trick.dart';
 import '../models/trick_filter.dart';
@@ -15,9 +16,11 @@ import '../widgets/app_logo.dart';
 import '../widgets/empty_state.dart';
 import '../models/user_trick.dart';
 import '../services/auth_service.dart';
+import '../services/legacy_import_service.dart';
 import '../services/tricks_service.dart';
 import '../services/user_tricks_service.dart';
 import '../widgets/filter_sheet.dart';
+import '../widgets/legacy_import_prompt.dart';
 import '../widgets/sort_sheet.dart';
 import '../video/offline_video_service.dart';
 import '../widgets/trick_card.dart';
@@ -47,6 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
   late final StreamSubscription _authSub;
   late final RealtimeChannel _tricksChannel;
   bool _loadInProgress = false;
+  LegacyScan? _legacyScan;
+  bool _legacyImportRunning = false;
+  // Set when the user asked to import while signed out, so signing in resumes
+  // the import instead of making them find the banner again.
+  bool _legacyImportPending = false;
 
   @override
   void initState() {
@@ -57,8 +65,17 @@ class _HomeScreenState extends State<HomeScreen> {
     UserTricksService.consistencyOverrides
         .addListener(_onConsistencyOverridesChanged);
     _load(initial: true);
+    _scanForLegacyProgress();
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       _load(); // guard inside _load() prevents concurrent runs
+      if (!AuthService.isLoggedIn) return;
+      if (_legacyImportPending) {
+        _runLegacyImport();
+      } else if (_legacyScan == null) {
+        // Signing in is the moment the import becomes possible, so bring the
+        // prompt back even for someone who dismissed it while signed out.
+        _scanForLegacyProgress();
+      }
     });
     _tricksChannel = Supabase.instance.client
         .channel('public:tricks')
@@ -170,6 +187,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _refresh() => _load();
+
+  Future<void> _scanForLegacyProgress() async {
+    final scan = await LegacyImportService.scan();
+    if (scan == null || !mounted) return;
+    setState(() => _legacyScan = scan);
+
+    if (await LegacyImportService.promptSeen() || !mounted) return;
+    await LegacyImportService.markPromptSeen();
+    if (!mounted) return;
+    if (await showLegacyImportDialog(context, scan)) _runLegacyImport();
+  }
+
+  Future<void> _runLegacyImport() async {
+    final scan = _legacyScan;
+    if (scan == null || _legacyImportRunning) return;
+
+    if (!AuthService.isLoggedIn) {
+      _legacyImportPending = true;
+      context.push('/login');
+      return;
+    }
+
+    setState(() => _legacyImportRunning = true);
+    final imported = await runLegacyImport(context, scan);
+    _legacyImportPending = false;
+    if (!mounted) return;
+    setState(() {
+      _legacyImportRunning = false;
+      if (imported) _legacyScan = null;
+    });
+    if (imported) _load();
+  }
 
   Widget _buildTrickCard(Trick trick, {bool listMode = false, bool compact = false}) {
     return RepaintBoundary(
@@ -299,6 +348,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
+        if (_legacyScan != null)
+          LegacyImportBanner(
+            scan: _legacyScan!,
+            busy: _legacyImportRunning,
+            onImport: _runLegacyImport,
+            onDismiss: () => setState(() => _legacyScan = null),
+          ),
         _ControlBar(
           sorter: _sorter,
           gridSize: _gridSize,

@@ -865,4 +865,48 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get feedbackResolveError =>
       'No se pudo actualizar el comentario. Inténtalo de nuevo.';
+
+  @override
+  String get legacyImportTitle => '¡Bienvenido de nuevo!';
+
+  @override
+  String legacyImportFound(int count) {
+    return 'Encontramos progreso de la antigua app Highline Freestyle en este dispositivo: $count trucos.';
+  }
+
+  @override
+  String legacyImportUntransferable(int count) {
+    return '$count trucos ya no existen en esta app y no se pueden transferir.';
+  }
+
+  @override
+  String get legacyImportSignInHint =>
+      'Crea una cuenta e inicia sesión para conservar tus datos antiguos: por ahora solo existen en este navegador.';
+
+  @override
+  String get legacyImportButton => 'Importar mi progreso';
+
+  @override
+  String get legacyImportSignInButton => 'Crear cuenta o iniciar sesión';
+
+  @override
+  String get legacyImportLaterButton => 'Ahora no';
+
+  @override
+  String legacyImportBanner(int count) {
+    return 'Progreso de la antigua app encontrado: $count trucos';
+  }
+
+  @override
+  String legacyImportSucceeded(int count) {
+    return 'Se importaron $count trucos.';
+  }
+
+  @override
+  String get legacyImportNothingNew =>
+      'Todo lo de la antigua app ya estaba registrado aquí.';
+
+  @override
+  String get legacyImportFailed =>
+      'La importación falló. Tus datos antiguos siguen intactos: inténtalo de nuevo.';
 }

@@ -14,7 +14,7 @@
 # seed_tricks.sql:           this repo's supabase/seed_tricks.sql (the new catalog)
 # out_dir:                   where the three CSVs are written
 
-import os, re, io, csv, sys, difflib
+import os, re, io, csv, sys, json, difflib
 
 if len(sys.argv) != 4:
     sys.exit(__doc__)
@@ -201,6 +201,16 @@ write_csv('trick_id_map_none.csv',
     [[L['id'], L['tech'] or L['alias'] or '', L['start'] or '', L['end'] or '', L['diff'] or '',
       (r['technical_name'] or r['given_name']) if r else '']
      for L,r,s in sorted(none, key=lambda x:x[0]['id'])])
+
+# The app ships the same mapping as a bundled asset, so the importer never has
+# to parse CSV at runtime.
+asset = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     'assets', 'legacy', 'trick_id_map.json')
+if os.path.isdir(os.path.dirname(asset)):
+    with open(asset, 'w', encoding='utf-8') as f:
+        json.dump({str(L['id']): int(r['id']) for L, r, _ in sorted(mapped, key=lambda x: x[0]['id'])},
+                  f, indent=0, sort_keys=True)
+        f.write('\n')
 
 exact_n = sum(1 for _,_,t in mapped if t == 'exact')
 rule_n = sum(1 for _,_,t in mapped if t == 'rule')

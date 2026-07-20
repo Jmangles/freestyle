@@ -108,11 +108,11 @@ Ids ≥ 10000 are predefined tricks (mappable via `trick_id_map.csv`); the
 easy to tell apart. `boostSkill` and both combo tables have no counterpart in
 this app.
 
-An importer should open the DB **through Dexie with the same version chain**
-rather than raw IndexedDB. A browser that hasn't loaded the old app in a long
-time can sit at an older schema version, and the v5/v6 upgrades still have to
-run (they shift `stickFrequency` 5 and 6 up by one) before the values below
-mean what they say.
+A browser that hasn't loaded the old app in a long time can sit at an older
+schema version, where `stickFrequency` still holds pre-v5 values. The importer
+reads the store raw — opening without a version, so no upgrade is triggered and
+the legacy data is never rewritten — and applies the v5 shift (5 and 6 move up
+by one) itself when the database reports a version below 5.
 
 ## Consistency values
 
@@ -149,19 +149,36 @@ python3 tools/build_legacy_trick_map.py \
 `seed_tricks.sql` is regenerated from prod by `scripts/refresh-seed.sh`; rerun
 the mapping after the catalog changes so new tricks pick up matches.
 
-## How recovery consumes this
+## The importer
 
 IndexedDB survives a DNS repoint because the browser keys storage by **origin
 string**, not by which server answers — so the new app, served at the same
-`www.highline-freestyle.com` origin, can read the old app's Dexie database. A
-one-time importer would:
+`www.highline-freestyle.com` origin, reads the old app's Dexie database
+directly. `lib/services/legacy_import_service_web.dart` does that (no-op stub
+on every other platform, since the legacy app was browser-only):
 
-1. open the legacy Dexie DB, read the user's `userTricks` rows (their tracked
-   progress: `stickFrequency`, `boostSkill`, etc.), keyed by predefined id;
-2. translate each legacy id via `trick_id_map.csv`; skip / report ids in
-   `trick_id_map_none.csv` and custom user tricks;
-3. write the translated progress into this app's tables for the signed-in
-   profile, then mark the import done.
+1. **Gate** – only on a `highline-freestyle.com` host, and only while the
+   `legacy_import_done` pref is unset.
+2. **Scan** – open IndexedDB `db` without a version (so no Dexie upgrade is
+   triggered), read `userTricks`, skip `deleted` rows and `stickFrequency` 0,
+   split the rest into importable / untransferable / custom-trick counts.
+   Opening a database that doesn't exist creates an empty one; that gets
+   deleted again right away.
+3. **Prompt** – `HomeScreen` shows a dialog once (`legacy_import_prompt_seen`),
+   then a dismissible banner; `ProfileScreen` keeps a permanent card until the
+   import has run. Signed-out users are sent to `/login` and the import resumes
+   automatically once the auth state flips.
+4. **Import** – translate ids through the bundled `assets/legacy/trick_id_map.json`,
+   map `stickFrequency` to `Consistency`, read the profile's existing
+   `user_tricks` and write only where the legacy value is **higher**, in
+   upserts of 200 rows. Difficulty is not imported: this app takes difficulty
+   from the catalog, and legacy per-user difficulty edits have no counterpart.
+   `boostSkill`, both combo tables, and per-user catalog edits are dropped.
+5. **Finish** – set `legacy_import_done`, report counts, leave the legacy
+   database in place so a bad import stays recoverable.
+
+The JSON asset is written by the same generator that writes the CSVs; a test
+(`test/models/legacy_import_test.dart`) asserts the two stay in sync.
 
 Caveats: only same-origin browser-tab users are covered (not native/installed
 builds, different sandbox); non-persisted IndexedDB is evictable (Safari/ITP

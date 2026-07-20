@@ -11,6 +11,7 @@ import '../supabase_config.dart';
 import '../theme_controller.dart';
 import '../utils/safe_state.dart';
 import '../widgets/app_dialogs.dart';
+import '../widgets/legacy_import_prompt.dart';
 import '../widgets/profile_main_card.dart';
 import '../widgets/profile_stats_card.dart';
 
@@ -173,6 +174,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
             ),
           ),
           const SizedBox(height: 20),
+          LegacyImportCard(onImported: _refresh),
           if (entries.isNotEmpty) ...[
             Card(child: ProfileStatsCard(entries: entries)),
             const SizedBox(height: 12),

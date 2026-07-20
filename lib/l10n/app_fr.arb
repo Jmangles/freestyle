@@ -328,5 +328,17 @@
   "feedbackSubmitted": "Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !",
   "attachmentTooLarge": "Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.",
   "feedbackSubmitError": "Impossible d'envoyer vos retours. Vérifiez votre connexion et réessayez.",
-  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer."
+  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer.",
+
+  "legacyImportTitle": "Bon retour !",
+  "legacyImportFound": "Nous avons trouvé la progression de l'ancienne app Highline Freestyle sur cet appareil : {count} tricks.",
+  "legacyImportUntransferable": "{count} tricks n'existent plus dans cette app et ne peuvent pas être transférés.",
+  "legacyImportSignInHint": "Créez un compte et connectez-vous pour conserver vos anciennes données — elles n'existent que dans ce navigateur.",
+  "legacyImportButton": "Importer ma progression",
+  "legacyImportSignInButton": "Créer un compte ou se connecter",
+  "legacyImportLaterButton": "Pas maintenant",
+  "legacyImportBanner": "Progression de l'ancienne app trouvée : {count} tricks",
+  "legacyImportSucceeded": "{count} tricks importés.",
+  "legacyImportNothingNew": "Tout ce qui venait de l'ancienne app était déjà enregistré ici.",
+  "legacyImportFailed": "L'importation a échoué. Vos anciennes données sont intactes — réessayez."
 }
