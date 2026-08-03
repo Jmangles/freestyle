@@ -398,5 +398,37 @@
   "feedbackSubmitted": "Thank you so much for your feedback — it really helps us improve!",
   "attachmentTooLarge": "That image is too large. Please choose one under 10 MB.",
   "feedbackSubmitError": "Couldn't send your feedback. Please check your connection and try again.",
-  "feedbackResolveError": "Couldn't update the feedback. Please try again."
+  "feedbackResolveError": "Couldn't update the feedback. Please try again.",
+
+  "legacyImportTitle": "Welcome back!",
+  "legacyImportFound": "We found progress from the old Highline Freestyle app on this device: {count} tricks.",
+  "@legacyImportFound": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "legacyImportUntransferable": "{count} tricks no longer exist in this app and can't be transferred.",
+  "@legacyImportUntransferable": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "legacyImportSignInHint": "Create an account and log in to keep your old data — it only lives in this browser right now.",
+  "legacyImportButton": "Import my progress",
+  "legacyImportSignInButton": "Create account or sign in",
+  "legacyImportLaterButton": "Not now",
+  "legacyImportBanner": "Progress from the old app found: {count} tricks",
+  "@legacyImportBanner": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "legacyImportSucceeded": "Imported {count} tricks.",
+  "@legacyImportSucceeded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "legacyImportNothingNew": "Everything from the old app was already tracked here.",
+  "legacyImportFailed": "Import failed. Your old data is untouched — please try again."
 }

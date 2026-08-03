@@ -31,6 +31,7 @@ dependencies:
   device_info_plus: ^10.0.0
   flutter_svg: ^2.0.10
   image_picker: ^1.1.2
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +47,7 @@ flutter:
   assets:
     - assets/logos/
     - assets/img/
+    - assets/legacy/
 
 # Native app icons, generated from the padded HF monogram master.
 # Regenerate with: dart run flutter_launcher_icons

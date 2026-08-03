@@ -1,0 +1,11 @@
+legacy_id,legacy_name,start,end,difficulty,closest_new_name
+10183,Chest to Feet,CHEST,STAND,3,
+10185,Korean Bounce,STAND,KOREAN,2,
+10186,Back Bounce,STAND,BACK,3,Crook Bounce
+10187,Chest Bounce,STAND,CHEST,2,
+10188,Sit Bounce,STAND,SIT,3,
+10189,Sofa Bounce,EXPOSURE,SOFA,3,
+10190,Belly Bounce,EXPOSURE,BELLY,3,Belly to Feet
+10191,Soup to Feet,SOUP,STAND,2,
+10192,Soup Bounce,STAND,SOUP,2,
+10247,Double Drop Knee Almighty,DOUBLE DROP KNEE,EXPOSURE,999,Double Drop Knee Roll

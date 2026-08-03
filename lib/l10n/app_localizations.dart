@@ -1695,6 +1695,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the feedback. Please try again.'**
   String get feedbackResolveError;
+
+  /// No description provided for @legacyImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back!'**
+  String get legacyImportTitle;
+
+  /// No description provided for @legacyImportFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We found progress from the old Highline Freestyle app on this device: {count} tricks.'**
+  String legacyImportFound(int count);
+
+  /// No description provided for @legacyImportUntransferable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tricks no longer exist in this app and can\'t be transferred.'**
+  String legacyImportUntransferable(int count);
+
+  /// No description provided for @legacyImportSignInHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account and log in to keep your old data — it only lives in this browser right now.'**
+  String get legacyImportSignInHint;
+
+  /// No description provided for @legacyImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import my progress'**
+  String get legacyImportButton;
+
+  /// No description provided for @legacyImportSignInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account or sign in'**
+  String get legacyImportSignInButton;
+
+  /// No description provided for @legacyImportLaterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get legacyImportLaterButton;
+
+  /// No description provided for @legacyImportBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress from the old app found: {count} tricks'**
+  String legacyImportBanner(int count);
+
+  /// No description provided for @legacyImportSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} tricks.'**
+  String legacyImportSucceeded(int count);
+
+  /// No description provided for @legacyImportNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything from the old app was already tracked here.'**
+  String get legacyImportNothingNew;
+
+  /// No description provided for @legacyImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed. Your old data is untouched — please try again.'**
+  String get legacyImportFailed;
 }
 
 class _AppLocalizationsDelegate
