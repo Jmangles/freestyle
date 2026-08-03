@@ -167,6 +167,7 @@ class UserTricksService {
 
   static Future<void> setConsistency(
       int trickId, Consistency consistency) async {
+    if (!AuthService.isLoggedIn) return;
     _addConsistencyOverride(trickId, consistency);
     try {
       await _writeConsistency(trickId, consistency);
