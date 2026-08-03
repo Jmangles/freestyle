@@ -7,11 +7,11 @@ import 'package:freestyle_highline/models/user_trick.dart';
 
 void main() {
   group('legacy stickFrequency -> Consistency', () {
-    test('maps every legacy level, folding Rarely into Sometimes', () {
+    test('maps every legacy level one-to-one', () {
       expect(consistencyFromStickFrequency(0), Consistency.neverTried);
       expect(consistencyFromStickFrequency(1), Consistency.attempting);
       expect(consistencyFromStickFrequency(2), Consistency.once);
-      expect(consistencyFromStickFrequency(3), Consistency.sometimes); // Rarely
+      expect(consistencyFromStickFrequency(3), Consistency.rarely);
       expect(consistencyFromStickFrequency(4), Consistency.sometimes);
       expect(consistencyFromStickFrequency(5), Consistency.often);
       expect(consistencyFromStickFrequency(6), Consistency.generally);
@@ -24,9 +24,16 @@ void main() {
       expect(consistencyFromStickFrequency(999), Consistency.neverTried);
     });
 
+    // Fails if a Consistency value is added without revisiting the mapping —
+    // the failure mode that adding `rarely` would otherwise have caused.
+    test('covers every Consistency value', () {
+      expect(legacyConsistencyByStickFrequency.length,
+          Consistency.values.length);
+    });
+
     test('never produces a consistency the DB constraint rejects', () {
       for (final index in legacyConsistencyByStickFrequency) {
-        expect(index, inInclusiveRange(0, 6));
+        expect(index, inInclusiveRange(0, Consistency.values.length - 1));
       }
     });
   });

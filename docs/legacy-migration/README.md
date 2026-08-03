@@ -112,28 +112,34 @@ A browser that hasn't loaded the old app in a long time can sit at an older
 schema version, where `stickFrequency` still holds pre-v5 values. The importer
 reads the store raw — opening without a version, so no upgrade is triggered and
 the legacy data is never rewritten — and applies the v5 shift (5 and 6 move up
-by one) itself when the database reports a version below 5.
+by one) itself when the database reports a version below 5. This is the legacy
+Dexie version, unrelated to `LocalDatabase._kVersion` in this app.
 
 ## Consistency values
 
 Legacy `stickFrequency` is an index into `stickFrequencies` in
-`src/services/enums.js` (8 values); this app's `Consistency` enum has 7 — it
-has no `Rarely`, so that folds into `Sometimes`.
+`src/services/enums.js` (8 values). This app's `Consistency` enum also has 8
+since migration `20260803120000_consistency_rarely.sql` inserted `rarely` at
+index 3, so the two line up one-to-one.
 
 | legacy | name | → new | name |
 |---|---|---|---|
 | 0 | Never tried | 0 | neverTried |
 | 1 | Work in progress | 1 | attempting |
 | 2 | Once | 2 | once |
-| 3 | **Rarely** | 3 | **sometimes** |
-| 4 | Sometimes | 3 | sometimes |
-| 5 | Often | 4 | often |
-| 6 | Generally | 5 | generally |
-| 7 | Always | 6 | always |
+| 3 | Rarely | 3 | rarely |
+| 4 | Sometimes | 4 | sometimes |
+| 5 | Often | 5 | often |
+| 6 | Generally | 6 | generally |
+| 7 | Always | 7 | always |
 
-So: identity up to 2, `3 → 3`, and `legacy - 1` from 4 upward. `user_tricks.consistency`
-is `check (consistency between 0 and 6)`, so any out-of-range legacy value must
-be clamped, not inserted.
+So: identity. `user_tricks.consistency` is `check (consistency between 0 and 7)`,
+so any out-of-range legacy value must be clamped, not inserted.
+
+Before `rarely` existed the mapping folded legacy `Rarely` into `Sometimes` and
+subtracted one from everything above it. Adding a `Consistency` value silently
+invalidates this table — `legacy_import_test.dart` asserts the mapping covers
+every enum value so that a future addition fails the build instead.
 
 ## Regenerating
 
