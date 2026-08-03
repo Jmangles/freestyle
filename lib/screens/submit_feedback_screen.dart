@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../services/auth_service.dart';
 import '../services/feedback_service.dart';
+import '../widgets/attachment_picker.dart';
 
 class SubmitFeedbackScreen extends StatefulWidget {
   const SubmitFeedbackScreen({super.key});
@@ -20,7 +19,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
   final _messageCtrl = TextEditingController();
   final _picker = ImagePicker();
 
-  final List<_PickedAttachment> _attachments = [];
+  final List<PickedAttachment> _attachments = [];
   bool _saving = false;
 
   @override
@@ -29,42 +28,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
     super.dispose();
   }
 
-  String? _mimeTypeFromExtension(String extension) => switch (extension) {
-        'jpg' || 'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-        'heic' => 'image/heic',
-        'heif' => 'image/heif',
-        _ => null,
-      };
-
-  static const _maxAttachmentBytes = 10 * 1024 * 1024;
-
   Future<void> _pickAttachments() async {
-    final files = await _picker.pickMultiImage();
-    if (files.isEmpty) return;
-    var skippedTooLarge = false;
-    final picked = <_PickedAttachment>[];
-    for (final file in files) {
-      final bytes = await file.readAsBytes();
-      if (bytes.length > _maxAttachmentBytes) {
-        skippedTooLarge = true;
-        continue;
-      }
-      final extension =
-          file.name.contains('.') ? file.name.split('.').last.toLowerCase() : null;
-      final mimeType =
-          file.mimeType ?? (extension != null ? _mimeTypeFromExtension(extension) : null);
-      picked.add(_PickedAttachment(
-        bytes: bytes,
-        name: file.name,
-        extension: extension ?? 'jpg',
-        mimeType: mimeType,
-      ));
-    }
+    final picked = await pickImageAttachments(_picker);
     if (!mounted) return;
-    setState(() => _attachments.addAll(picked));
-    if (skippedTooLarge) {
+    setState(() => _attachments.addAll(picked.attachments));
+    if (picked.skippedTooLarge) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.attachmentTooLarge),
@@ -87,13 +55,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
       await FeedbackService.submitFeedback(
         message: _messageCtrl.text.trim(),
         submittedBy: profile.intId,
-        attachments: _attachments
-            .map((a) => FeedbackAttachmentUpload(
-                  bytes: a.bytes,
-                  extension: a.extension,
-                  mimeType: a.mimeType,
-                ))
-            .toList(),
+        attachments: [for (final a in _attachments) a.toUpload()],
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +128,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
             ),
             for (int i = 0; i < _attachments.length; i++) ...[
               const SizedBox(height: 8),
-              _AttachmentPreview(
+              AttachmentPreview(
                 bytes: _attachments[i].bytes,
                 name: _attachments[i].name,
                 onRemove: () => _removeAttachment(i),
@@ -188,48 +150,4 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
       ),
     );
   }
-}
-
-class _AttachmentPreview extends StatelessWidget {
-  final Uint8List bytes;
-  final String name;
-  final VoidCallback onRemove;
-
-  const _AttachmentPreview({
-    required this.bytes,
-    required this.name,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
-        ),
-        title: Text(name, overflow: TextOverflow.ellipsis),
-        trailing: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: context.l10n.removeAttachmentTooltip,
-          onPressed: onRemove,
-        ),
-      ),
-    );
-  }
-}
-
-class _PickedAttachment {
-  final Uint8List bytes;
-  final String name;
-  final String extension;
-  final String? mimeType;
-
-  const _PickedAttachment({
-    required this.bytes,
-    required this.name,
-    required this.extension,
-    this.mimeType,
-  });
 }

@@ -169,3 +169,51 @@ CREATE TABLE public.trick_suggestions (
   )
 );
 ```
+[38;5;66m[m[38;5;32m    1 [m[38;5;66m[m
+[38;5;32m    2 [m[38;5;66m---[m
+[38;5;32m    3 [m[38;5;66m[m
+[38;5;32m    4 [m[38;5;66m## `feedback`[m
+[38;5;32m    5 [m[38;5;66m[m
+[38;5;32m    6 [m[38;5;66mThread head for in-app feedback. One row per conversation between a user and the admins; the messages themselves live in `feedback_messages`, including the user's first one.[m
+[38;5;32m    7 [m[38;5;66m[m
+[38;5;32m    8 [m[38;5;66m`status` drives who the thread is waiting on: `new` (an admin needs to answer), `answered` (the user may reply), `reviewed` / `dismissed` (terminal — the thread goes read-only and its attachments are deleted from storage). Users never write `status` directly; the `bump_feedback_thread` trigger moves it on every new message.[m
+[38;5;32m    9 [m[38;5;66m[m
+[38;5;32m   10 [m[38;5;66m`user_last_read_at` backs the unread badge and is set through `mark_feedback_read()`, since users have no UPDATE grant here.[m
+[38;5;32m   11 [m[38;5;66m[m
+[38;5;32m   12 [m[38;5;66m```sql[m
+[38;5;32m   13 [m[38;5;66mCREATE TABLE public.feedback ([m
+[38;5;32m   14 [m[38;5;66m  id                INTEGER     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,[m
+[38;5;32m   15 [m[38;5;66m  submitted_by      INTEGER     REFERENCES profiles (int_id) ON DELETE SET NULL,[m
+[38;5;32m   16 [m[38;5;66m  status            TEXT        NOT NULL DEFAULT 'new',[m
+[38;5;32m   17 [m[38;5;66m  user_last_read_at TIMESTAMPTZ,[m
+[38;5;32m   18 [m[38;5;66m  last_message_at   TIMESTAMPTZ NOT NULL DEFAULT now(),[m
+[38;5;32m   19 [m[38;5;66m  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),[m
+[38;5;32m   20 [m[38;5;66m[m
+[38;5;32m   21 [m[38;5;66m  CONSTRAINT feedback_status_check CHECK ([m
+[38;5;32m   22 [m[38;5;66m    status IN ('new', 'answered', 'reviewed', 'dismissed')[m
+[38;5;32m   23 [m[38;5;66m  )[m
+[38;5;32m   24 [m[38;5;66m);[m
+[38;5;32m   25 [m[38;5;66m```[m
+[38;5;32m   26 [m[38;5;66m[m
+[38;5;32m   27 [m[38;5;66m---[m
+[38;5;32m   28 [m[38;5;66m[m
+[38;5;32m   29 [m[38;5;66m## `feedback_messages`[m
+[38;5;32m   30 [m[38;5;66m[m
+[38;5;32m   31 [m[38;5;66mOne message in a feedback thread, from either side. A message is an admin reply when its `author_id` differs from the thread's `submitted_by`. `attachment_paths` point into the private `feedback-attachments` bucket, stored under `<int_id>/`.[m
+[38;5;32m   32 [m[38;5;66m[m
+[38;5;32m   33 [m[38;5;66m```sql[m
+[38;5;32m   34 [m[38;5;66mCREATE TABLE public.feedback_messages ([m
+[38;5;32m   35 [m[38;5;66m  id               INTEGER     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,[m
+[38;5;32m   36 [m[38;5;66m  feedback_id      INTEGER     NOT NULL REFERENCES feedback (id) ON DELETE CASCADE,[m
+[38;5;32m   37 [m[38;5;66m  author_id        INTEGER     REFERENCES profiles (int_id) ON DELETE SET NULL,[m
+[38;5;32m   38 [m[38;5;66m  body             TEXT        NOT NULL,[m
+[38;5;32m   39 [m[38;5;66m  attachment_paths TEXT[],[m
+[38;5;32m   40 [m[38;5;66m  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),[m
+[38;5;32m   41 [m[38;5;66m[m
+[38;5;32m   42 [m[38;5;66m  CONSTRAINT feedback_messages_body_check CHECK ([m
+[38;5;32m   43 [m[38;5;66m    char_length(body) >= 1 AND char_length(body) <= 2000[m
+[38;5;32m   44 [m[38;5;66m  )[m
+[38;5;32m   45 [m[38;5;66m);[m
+[38;5;32m   46 [m[38;5;66m```[m
+[38;5;32m   47 [m[38;5;66m[m
+[38;5;32m   48 [m[38;5;66mRelated functions: `submit_feedback(text, text[])` opens a thread and its first message in one transaction, `mark_feedback_read(integer)` clears the unread marker, `unread_feedback_count()` feeds the badge.[m

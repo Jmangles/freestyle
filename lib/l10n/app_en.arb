@@ -397,5 +397,42 @@
   "feedbackSubmitted": "Thank you so much for your feedback — it really helps us improve!",
   "attachmentTooLarge": "That image is too large. Please choose one under 10 MB.",
   "feedbackSubmitError": "Couldn't send your feedback. Please check your connection and try again.",
-  "feedbackResolveError": "Couldn't update the feedback. Please try again."
+  "feedbackResolveError": "Couldn't update the feedback. Please try again.",
+
+  "myFeedbackTitle": "Your Feedback",
+  "newFeedbackTooltip": "Send new feedback",
+  "noFeedbackYet": "You haven't sent any feedback yet.",
+  "feedbackStatusNew": "Waiting for a reply",
+  "feedbackStatusAnswered": "Replied",
+  "feedbackStatusReviewed": "Resolved",
+  "feedbackStatusDismissed": "Closed",
+  "feedbackThreadTitle": "Feedback #{id}",
+  "@feedbackThreadTitle": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "feedbackReplyHint": "Write a reply…",
+  "feedbackSendReply": "Send",
+  "feedbackReplySent": "Reply sent.",
+  "feedbackReplyError": "Couldn't send your reply. Please check your connection and try again.",
+  "feedbackThreadClosed": "This conversation is closed. Send new feedback if you need anything else.",
+  "feedbackFromYou": "You",
+  "feedbackFromTeam": "Team",
+  "feedbackUnreadBadge": "{count} unread",
+  "@feedbackUnreadBadge": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "feedbackLoadError": "Couldn't load your feedback. Please check your connection and try again.",
+  "feedbackFrom": "From {user}",
+  "@feedbackFrom": {
+    "placeholders": {
+      "user": { "type": "String" }
+    }
+  },
+  "feedbackUnknownUser": "deleted account",
+  "feedbackAdminReplyHint": "Reply to this user…",
+  "feedbackAwaitingUser": "Waiting on the user"
 }

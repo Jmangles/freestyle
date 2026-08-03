@@ -173,6 +173,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
             ),
           ),
           const SizedBox(height: 20),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.forum_outlined),
+              title: Text(l10n.myFeedbackTitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/feedback/mine'),
+            ),
+          ),
+          const SizedBox(height: 12),
           if (entries.isNotEmpty) ...[
             Card(child: ProfileStatsCard(entries: entries)),
             const SizedBox(height: 12),

@@ -854,4 +854,76 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get feedbackResolveError =>
       'Couldn\'t update the feedback. Please try again.';
+
+  @override
+  String get myFeedbackTitle => 'Your Feedback';
+
+  @override
+  String get newFeedbackTooltip => 'Send new feedback';
+
+  @override
+  String get noFeedbackYet => 'You haven\'t sent any feedback yet.';
+
+  @override
+  String get feedbackStatusNew => 'Waiting for a reply';
+
+  @override
+  String get feedbackStatusAnswered => 'Replied';
+
+  @override
+  String get feedbackStatusReviewed => 'Resolved';
+
+  @override
+  String get feedbackStatusDismissed => 'Closed';
+
+  @override
+  String feedbackThreadTitle(int id) {
+    return 'Feedback #$id';
+  }
+
+  @override
+  String get feedbackReplyHint => 'Write a reply…';
+
+  @override
+  String get feedbackSendReply => 'Send';
+
+  @override
+  String get feedbackReplySent => 'Reply sent.';
+
+  @override
+  String get feedbackReplyError =>
+      'Couldn\'t send your reply. Please check your connection and try again.';
+
+  @override
+  String get feedbackThreadClosed =>
+      'This conversation is closed. Send new feedback if you need anything else.';
+
+  @override
+  String get feedbackFromYou => 'You';
+
+  @override
+  String get feedbackFromTeam => 'Team';
+
+  @override
+  String feedbackUnreadBadge(int count) {
+    return '$count unread';
+  }
+
+  @override
+  String get feedbackLoadError =>
+      'Couldn\'t load your feedback. Please check your connection and try again.';
+
+  @override
+  String feedbackFrom(String user) {
+    return 'From $user';
+  }
+
+  @override
+  String get feedbackUnknownUser => 'deleted account';
+
+  @override
+  String get feedbackAdminReplyHint => 'Reply to this user…';
+
+  @override
+  String get feedbackAwaitingUser => 'Waiting on the user';
 }

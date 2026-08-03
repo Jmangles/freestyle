@@ -10,6 +10,7 @@ alter table trick_suggestions enable row level security;
 alter table tips              enable row level security;
 alter table trick_annotations enable row level security;
 alter table feedback          enable row level security;
+alter table feedback_messages enable row level security;
 
 -- Profiles
 create policy "profiles_read"   on profiles for select using (true);
@@ -83,13 +84,41 @@ create policy "annotations_update" on trick_annotations for update
 create policy "annotations_delete" on trick_annotations for delete
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 
--- Feedback
+-- Feedback: submitter reads their own threads, admins read all. Status moves
+-- through the bump_feedback_thread trigger, so users get no update grant.
 create policy "feedback_insert" on feedback for insert
   with check (submitted_by = (select int_id from profiles where id = auth.uid()));
+create policy "feedback_read_own" on feedback for select
+  using (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "feedback_read_admin" on feedback for select
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 create policy "feedback_update_admin" on feedback for update
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+
+-- Feedback messages: the thread owner may post while the thread is open,
+-- admins any time.
+create policy "feedback_messages_read" on feedback_messages for select
+  using (
+    exists (
+      select 1 from feedback f
+      where f.id = feedback_id
+        and f.submitted_by = (select int_id from profiles where id = auth.uid())
+    )
+    or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+  );
+create policy "feedback_messages_insert" on feedback_messages for insert
+  with check (
+    author_id = (select int_id from profiles where id = auth.uid())
+    and (
+      exists (
+        select 1 from feedback f
+        where f.id = feedback_id
+          and f.submitted_by = author_id
+          and f.status in ('new', 'answered')
+      )
+      or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+    )
+  );
 
 -- Feedback attachments: private bucket, uploads live under "<int_id>/<filename>"
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -144,4 +173,8 @@ grant select                         on trick_annotations to anon, authenticated
 grant insert, update, delete         on trick_annotations to authenticated;
 grant usage, select on sequence trick_annotations_id_seq to authenticated;
 grant select, insert, update           on feedback          to authenticated;
+grant select, insert                   on feedback_messages to authenticated;
 grant execute on function get_trick_vote_stats(integer) to anon, authenticated;
+grant execute on function submit_feedback(text, text[]) to authenticated;
+grant execute on function mark_feedback_read(integer) to authenticated;
+grant execute on function unread_feedback_count() to authenticated;
