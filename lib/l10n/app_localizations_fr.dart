@@ -867,4 +867,76 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get feedbackResolveError =>
       'Impossible de mettre à jour le retour. Veuillez réessayer.';
+
+  @override
+  String get myFeedbackTitle => 'Vos retours';
+
+  @override
+  String get newFeedbackTooltip => 'Envoyer un nouveau retour';
+
+  @override
+  String get noFeedbackYet => 'Vous n\'avez encore envoyé aucun retour.';
+
+  @override
+  String get feedbackStatusNew => 'En attente d\'une réponse';
+
+  @override
+  String get feedbackStatusAnswered => 'Répondu';
+
+  @override
+  String get feedbackStatusReviewed => 'Résolu';
+
+  @override
+  String get feedbackStatusDismissed => 'Clôturé';
+
+  @override
+  String feedbackThreadTitle(int id) {
+    return 'Retour n° $id';
+  }
+
+  @override
+  String get feedbackReplyHint => 'Écrire une réponse…';
+
+  @override
+  String get feedbackSendReply => 'Envoyer';
+
+  @override
+  String get feedbackReplySent => 'Réponse envoyée.';
+
+  @override
+  String get feedbackReplyError =>
+      'Impossible d\'envoyer votre réponse. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get feedbackThreadClosed =>
+      'Cette conversation est clôturée. Envoyez un nouveau retour si vous avez besoin d\'autre chose.';
+
+  @override
+  String get feedbackFromYou => 'Vous';
+
+  @override
+  String get feedbackFromTeam => 'Équipe';
+
+  @override
+  String feedbackUnreadBadge(int count) {
+    return '$count non lus';
+  }
+
+  @override
+  String get feedbackLoadError =>
+      'Impossible de charger vos retours. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String feedbackFrom(String user) {
+    return 'De $user';
+  }
+
+  @override
+  String get feedbackUnknownUser => 'compte supprimé';
+
+  @override
+  String get feedbackAdminReplyHint => 'Répondre à cet utilisateur…';
+
+  @override
+  String get feedbackAwaitingUser => 'En attente de l\'utilisateur';
 }

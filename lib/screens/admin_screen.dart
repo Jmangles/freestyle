@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../l10n/enum_localizations.dart';
 import '../models/approval_status.dart';
@@ -13,6 +12,7 @@ import '../services/feedback_service.dart';
 import '../services/tips_service.dart';
 import '../services/tricks_service.dart';
 import '../utils/date_formatters.dart';
+import '../widgets/feedback_message_list.dart';
 import 'submit_tip_screen.dart';
 import 'submit_trick_screen.dart';
 
@@ -79,19 +79,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final trickIds = suggestions.map((s) => s.trickId).toSet().toList();
     final origList = await TricksService.getTricksByIds(trickIds);
     final originalTricks = {for (final t in origList) t.id: t};
-    final feedbackAttachments = <int, List<FeedbackAttachment>>{};
-    for (final f in feedback) {
-      final list = <FeedbackAttachment>[];
-      for (final path in f.attachmentPaths) {
-        try {
-          final url = await FeedbackService.getAttachmentUrl(path);
-          list.add(FeedbackAttachment(path: path, signedUrl: url));
-        } catch (e) {
-          debugPrint('Feedback attachment URL failed for ${f.id}: $e');
-        }
-      }
-      if (list.isNotEmpty) feedbackAttachments[f.id] = list;
-    }
+    final feedbackAttachments = await FeedbackService.signAttachments(feedback);
     return AdminData(
       pendingTricks: tricks,
       pendingSuggestions: suggestions,
@@ -140,6 +128,29 @@ class _AdminScreenState extends State<AdminScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.feedbackResolveError),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _replyToFeedback(FeedbackItem item, String body) async {
+    final profile = await AuthService.getCurrentProfile();
+    if (profile == null) return;
+    try {
+      await FeedbackService.postMessage(
+        feedbackId: item.id,
+        authorId: profile.intId,
+        body: body,
+      );
+      _refresh();
+    } catch (e) {
+      debugPrint('Feedback reply failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.feedbackReplyError),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -329,7 +340,9 @@ class _AdminScreenState extends State<AdminScreen> {
           if (i > 0) const SizedBox(height: 12),
           _PendingFeedbackCard(
             item: feedback[i],
-            attachments: feedbackAttachments[feedback[i].id] ?? const [],
+            attachments: feedbackAttachments,
+            adminId: profile!.intId,
+            onReply: (body) => _replyToFeedback(feedback[i], body),
             onMarkReviewed: () => _resolveFeedback(feedback[i], 'reviewed'),
             onDismiss: () => _resolveFeedback(feedback[i], 'dismissed'),
           ),
@@ -618,80 +631,111 @@ class _PendingTipCard extends StatelessWidget {
   }
 }
 
-class _PendingFeedbackCard extends StatelessWidget {
+class _PendingFeedbackCard extends StatefulWidget {
   final FeedbackItem item;
-  final List<FeedbackAttachment> attachments;
+  final Map<int, List<FeedbackAttachment>> attachments;
+  final int adminId;
+  final Future<void> Function(String body) onReply;
   final VoidCallback onMarkReviewed;
   final VoidCallback onDismiss;
 
   const _PendingFeedbackCard({
     required this.item,
     required this.attachments,
+    required this.adminId,
+    required this.onReply,
     required this.onMarkReviewed,
     required this.onDismiss,
   });
 
   @override
+  State<_PendingFeedbackCard> createState() => _PendingFeedbackCardState();
+}
+
+class _PendingFeedbackCardState extends State<_PendingFeedbackCard> {
+  final _replyCtrl = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _replyCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final body = _replyCtrl.text.trim();
+    if (body.isEmpty) return;
+    setState(() => _sending = true);
+    await widget.onReply(body);
+    if (mounted) {
+      _replyCtrl.clear();
+      setState(() => _sending = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final item = widget.item;
+    final submitter = item.submitterUsername ?? l10n.feedbackUnknownUser;
     return Card(
       child: ExpansionTile(
-        title: Text(item.message,
+        title: Text(item.firstMessage?.body ?? '',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(l10n.submittedDate(formatShortDate(item.createdAt))),
+        subtitle: Text(
+          '${l10n.feedbackFrom(submitter)} · '
+          '${l10n.submittedDate(formatShortDate(item.createdAt))}',
+        ),
+        trailing: item.isAwaitingUser
+            ? Chip(
+                label: Text(l10n.feedbackAwaitingUser),
+                visualDensity: VisualDensity.compact,
+              )
+            : null,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.message),
-                for (final attachment in attachments) ...[
-                  const SizedBox(height: 12),
-                  if (attachment.isImage)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        attachment.signedUrl,
-                        height: 160,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 160,
-                          alignment: Alignment.center,
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: Icon(Icons.broken_image_outlined,
-                              color: theme.colorScheme.outline),
-                        ),
-                      ),
-                    ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => launchUrl(
-                        Uri.parse(FeedbackService.downloadUrl(
-                            attachment.signedUrl, attachment.path)),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      icon: const Icon(Icons.download, size: 18),
-                      label: Text(l10n.downloadButton),
-                    ),
+                FeedbackMessageList(
+                  thread: item,
+                  attachments: widget.attachments,
+                  viewerId: widget.adminId,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _replyCtrl,
+                  minLines: 2,
+                  maxLines: 5,
+                  maxLength: 2000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: l10n.feedbackAdminReplyHint,
+                    border: const OutlineInputBorder(),
+                    counterText: '',
                   ),
-                ],
+                ),
                 const SizedBox(height: 12),
                 OverflowBar(
                   spacing: 8,
                   children: [
                     FilledButton.icon(
-                      onPressed: onMarkReviewed,
+                      onPressed: _sending ? null : _send,
+                      icon: const Icon(Icons.send, size: 18),
+                      label: Text(l10n.feedbackSendReply),
+                    ),
+                    FilledButton.icon(
+                      onPressed: widget.onMarkReviewed,
                       icon: const Icon(Icons.check, size: 18),
                       label: Text(l10n.markReviewedButton),
                       style: _approveButtonStyle(theme),
                     ),
                     FilledButton.icon(
-                      onPressed: onDismiss,
+                      onPressed: widget.onDismiss,
                       icon: const Icon(Icons.close, size: 18),
                       label: Text(l10n.dismissButton),
                       style: _rejectButtonStyle(theme),
@@ -705,5 +749,4 @@ class _PendingFeedbackCard extends StatelessWidget {
       ),
     );
   }
-
 }

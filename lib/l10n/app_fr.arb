@@ -327,5 +327,27 @@
   "feedbackSubmitted": "Merci beaucoup pour vos retours — ils nous aident vraiment à nous améliorer !",
   "attachmentTooLarge": "Cette image est trop volumineuse. Choisissez-en une de moins de 10 Mo.",
   "feedbackSubmitError": "Impossible d'envoyer vos retours. Vérifiez votre connexion et réessayez.",
-  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer."
+  "feedbackResolveError": "Impossible de mettre à jour le retour. Veuillez réessayer.",
+
+  "myFeedbackTitle": "Vos retours",
+  "newFeedbackTooltip": "Envoyer un nouveau retour",
+  "noFeedbackYet": "Vous n'avez encore envoyé aucun retour.",
+  "feedbackStatusNew": "En attente d'une réponse",
+  "feedbackStatusAnswered": "Répondu",
+  "feedbackStatusReviewed": "Résolu",
+  "feedbackStatusDismissed": "Clôturé",
+  "feedbackThreadTitle": "Retour n° {id}",
+  "feedbackReplyHint": "Écrire une réponse…",
+  "feedbackSendReply": "Envoyer",
+  "feedbackReplySent": "Réponse envoyée.",
+  "feedbackReplyError": "Impossible d'envoyer votre réponse. Vérifiez votre connexion et réessayez.",
+  "feedbackThreadClosed": "Cette conversation est clôturée. Envoyez un nouveau retour si vous avez besoin d'autre chose.",
+  "feedbackFromYou": "Vous",
+  "feedbackFromTeam": "Équipe",
+  "feedbackUnreadBadge": "{count} non lus",
+  "feedbackLoadError": "Impossible de charger vos retours. Vérifiez votre connexion et réessayez.",
+  "feedbackFrom": "De {user}",
+  "feedbackUnknownUser": "compte supprimé",
+  "feedbackAdminReplyHint": "Répondre à cet utilisateur…",
+  "feedbackAwaitingUser": "En attente de l'utilisateur"
 }

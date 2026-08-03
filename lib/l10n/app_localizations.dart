@@ -1689,6 +1689,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the feedback. Please try again.'**
   String get feedbackResolveError;
+
+  /// No description provided for @myFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Feedback'**
+  String get myFeedbackTitle;
+
+  /// No description provided for @newFeedbackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send new feedback'**
+  String get newFeedbackTooltip;
+
+  /// No description provided for @noFeedbackYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t sent any feedback yet.'**
+  String get noFeedbackYet;
+
+  /// No description provided for @feedbackStatusNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a reply'**
+  String get feedbackStatusNew;
+
+  /// No description provided for @feedbackStatusAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Replied'**
+  String get feedbackStatusAnswered;
+
+  /// No description provided for @feedbackStatusReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get feedbackStatusReviewed;
+
+  /// No description provided for @feedbackStatusDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get feedbackStatusDismissed;
+
+  /// No description provided for @feedbackThreadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback #{id}'**
+  String feedbackThreadTitle(int id);
+
+  /// No description provided for @feedbackReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a reply…'**
+  String get feedbackReplyHint;
+
+  /// No description provided for @feedbackSendReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get feedbackSendReply;
+
+  /// No description provided for @feedbackReplySent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply sent.'**
+  String get feedbackReplySent;
+
+  /// No description provided for @feedbackReplyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your reply. Please check your connection and try again.'**
+  String get feedbackReplyError;
+
+  /// No description provided for @feedbackThreadClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is closed. Send new feedback if you need anything else.'**
+  String get feedbackThreadClosed;
+
+  /// No description provided for @feedbackFromYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get feedbackFromYou;
+
+  /// No description provided for @feedbackFromTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get feedbackFromTeam;
+
+  /// No description provided for @feedbackUnreadBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unread'**
+  String feedbackUnreadBadge(int count);
+
+  /// No description provided for @feedbackLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your feedback. Please check your connection and try again.'**
+  String get feedbackLoadError;
+
+  /// No description provided for @feedbackFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {user}'**
+  String feedbackFrom(String user);
+
+  /// No description provided for @feedbackUnknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'deleted account'**
+  String get feedbackUnknownUser;
+
+  /// No description provided for @feedbackAdminReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to this user…'**
+  String get feedbackAdminReplyHint;
+
+  /// No description provided for @feedbackAwaitingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting on the user'**
+  String get feedbackAwaitingUser;
 }
 
 class _AppLocalizationsDelegate

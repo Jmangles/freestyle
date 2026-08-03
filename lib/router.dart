@@ -13,6 +13,8 @@ import 'screens/auth/reset_password_screen.dart';
 import 'screens/submit_trick_screen.dart';
 import 'screens/submit_tip_screen.dart';
 import 'screens/submit_feedback_screen.dart';
+import 'screens/my_feedback_screen.dart';
+import 'screens/feedback_thread_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/not_found_screen.dart';
@@ -59,6 +61,13 @@ class AppRouter {
       ),
       GoRoute(path: '/tips/submit', builder: (_, __) => const SubmitTipScreen()),
       GoRoute(path: '/feedback', builder: (_, __) => const SubmitFeedbackScreen()),
+      GoRoute(path: '/feedback/mine', builder: (_, __) => const MyFeedbackScreen()),
+      GoRoute(
+        path: '/feedback/mine/:id',
+        builder: (_, state) => FeedbackThreadScreen(
+          feedbackId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
       GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       StatefulShellRoute.indexedStack(

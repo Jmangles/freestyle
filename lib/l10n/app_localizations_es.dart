@@ -862,4 +862,76 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get feedbackResolveError =>
       'No se pudo actualizar el comentario. Inténtalo de nuevo.';
+
+  @override
+  String get myFeedbackTitle => 'Tus comentarios';
+
+  @override
+  String get newFeedbackTooltip => 'Enviar un comentario nuevo';
+
+  @override
+  String get noFeedbackYet => 'Todavía no has enviado ningún comentario.';
+
+  @override
+  String get feedbackStatusNew => 'Esperando respuesta';
+
+  @override
+  String get feedbackStatusAnswered => 'Respondido';
+
+  @override
+  String get feedbackStatusReviewed => 'Resuelto';
+
+  @override
+  String get feedbackStatusDismissed => 'Cerrado';
+
+  @override
+  String feedbackThreadTitle(int id) {
+    return 'Comentario n.º $id';
+  }
+
+  @override
+  String get feedbackReplyHint => 'Escribe una respuesta…';
+
+  @override
+  String get feedbackSendReply => 'Enviar';
+
+  @override
+  String get feedbackReplySent => 'Respuesta enviada.';
+
+  @override
+  String get feedbackReplyError =>
+      'No se pudo enviar tu respuesta. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get feedbackThreadClosed =>
+      'Esta conversación está cerrada. Envía un comentario nuevo si necesitas algo más.';
+
+  @override
+  String get feedbackFromYou => 'Tú';
+
+  @override
+  String get feedbackFromTeam => 'Equipo';
+
+  @override
+  String feedbackUnreadBadge(int count) {
+    return '$count sin leer';
+  }
+
+  @override
+  String get feedbackLoadError =>
+      'No se pudieron cargar tus comentarios. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String feedbackFrom(String user) {
+    return 'De $user';
+  }
+
+  @override
+  String get feedbackUnknownUser => 'cuenta eliminada';
+
+  @override
+  String get feedbackAdminReplyHint => 'Responder a este usuario…';
+
+  @override
+  String get feedbackAwaitingUser => 'Esperando al usuario';
 }
