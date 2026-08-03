@@ -12,7 +12,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 # Declarative schema: schemas/ is the desired end state. Edit those files,
 # then `supabase db diff -f <name>` generates the migration. This array is the

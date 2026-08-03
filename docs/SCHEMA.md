@@ -73,7 +73,7 @@ CREATE TABLE public.tricks (
 
 ## `user_tricks`
 
-Tracks each user's progress on a trick. One row per (user, trick) pair. `consistency` mirrors the `Consistency` enum (0 = Never tried, 1 = Attempting … 6 = Always; values were shifted +1 by migration `20260715120000_consistency_never_tried.sql`). `leash_position` mirrors `LeashPosition` (0 = Frontside, 1 = Backside, 2 = Center).
+Tracks each user's progress on a trick. One row per (user, trick) pair. `consistency` mirrors the `Consistency` enum (0 = Never tried, 1 = Attempting, 2 = Once, 3 = Rarely … 7 = Always; all values were shifted +1 by migration `20260715120000_consistency_never_tried.sql`, then values ≥ 3 shifted +1 again by `20260803120000_consistency_rarely.sql`). `leash_position` mirrors `LeashPosition` (0 = Frontside, 1 = Backside, 2 = Center).
 
 ```sql
 CREATE TABLE public.user_tricks (
@@ -88,7 +88,7 @@ CREATE TABLE public.user_tricks (
   video_end       SMALLINT,
 
   CONSTRAINT user_tricks_user_id_trick_id_key UNIQUE (user_id, trick_id),
-  CONSTRAINT user_tricks_consistency_check    CHECK (consistency     >= 0 AND consistency     <= 6),
+  CONSTRAINT user_tricks_consistency_check    CHECK (consistency     >= 0 AND consistency     <= 7),
   CONSTRAINT user_tricks_difficulty_vote_check CHECK (difficulty_vote >= 1 AND difficulty_vote <= 30),
   CONSTRAINT user_tricks_leash_position_check CHECK (leash_position  >= 0 AND leash_position  <= 2)
 );

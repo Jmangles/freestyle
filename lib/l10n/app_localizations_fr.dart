@@ -495,6 +495,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get consistencyOnce => 'Une fois';
 
   @override
+  String get consistencyRarely => 'Rarement';
+
+  @override
   String get consistencySometimes => 'Parfois';
 
   @override

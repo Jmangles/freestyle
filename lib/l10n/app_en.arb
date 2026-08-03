@@ -206,6 +206,7 @@
 
   "consistencyNeverTried": "Never tried",
   "consistencyOnce": "Once",
+  "consistencyRarely": "Rarely",
   "consistencySometimes": "Sometimes",
   "consistencyOften": "Often",
   "consistencyGenerally": "Generally",

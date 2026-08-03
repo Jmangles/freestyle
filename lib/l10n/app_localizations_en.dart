@@ -490,6 +490,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get consistencyOnce => 'Once';
 
   @override
+  String get consistencyRarely => 'Rarely';
+
+  @override
   String get consistencySometimes => 'Sometimes';
 
   @override

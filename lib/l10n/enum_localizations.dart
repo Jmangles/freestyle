@@ -36,6 +36,7 @@ extension ConsistencyL10n on Consistency {
         Consistency.neverTried => l10n.consistencyNeverTried,
         Consistency.attempting => l10n.statusAttempting,
         Consistency.once => l10n.consistencyOnce,
+        Consistency.rarely => l10n.consistencyRarely,
         Consistency.sometimes => l10n.consistencySometimes,
         Consistency.often => l10n.consistencyOften,
         Consistency.generally => l10n.consistencyGenerally,
