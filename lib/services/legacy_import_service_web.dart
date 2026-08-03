@@ -29,6 +29,11 @@ class LegacyImportService {
   // catalog (10000+) can be mapped onto this app's tricks.
   static const _firstPredefinedId = 10000;
 
+  // Dexie opens IndexedDB at its own schema version times ten, so its v5 is
+  // native version 50. Comparing against 5 would never match any real database.
+  static const _dexieNativeVersionFactor = 10;
+  static const _stickFrequencyShiftDexieVersion = 5;
+
   static Map<int, int>? _trickIdMap;
 
   static Future<bool> isDone() async =>
@@ -46,7 +51,7 @@ class LegacyImportService {
 
     final legacy = await _readLegacyUserTricks();
     if (legacy == null) return null;
-    final (rows, schemaVersion) = legacy;
+    final (rows, dexieVersion) = legacy;
 
     final map = await _loadTrickIdMap();
     final consistencies = <int, Consistency>{};
@@ -68,7 +73,8 @@ class LegacyImportService {
       // inserted. A browser that never reopened the old app after that release
       // still holds pre-shift values, and we read the store directly instead
       // of letting Dexie run its upgrades.
-      if (schemaVersion < 5 && (stickFrequency == 5 || stickFrequency == 6)) {
+      if (dexieVersion < _stickFrequencyShiftDexieVersion &&
+          (stickFrequency == 5 || stickFrequency == 6)) {
         stickFrequency++;
       }
       if (stickFrequency <= 0) continue;
@@ -148,9 +154,10 @@ class LegacyImportService {
     };
   }
 
-  // Returns the rows of the legacy `userTricks` store plus the schema version
-  // the database is actually at, or null when this browser has no legacy data.
-  static Future<(List<Map>, int)?> _readLegacyUserTricks() async {
+  // Returns the rows of the legacy `userTricks` store plus the Dexie schema
+  // version the database is actually at, or null when this browser has no
+  // legacy data.
+  static Future<(List<Map>, double)?> _readLegacyUserTricks() async {
     web.IDBDatabase? db;
     try {
       // Opening without a version never triggers a Dexie upgrade, but it does
@@ -172,7 +179,7 @@ class LegacyImportService {
       return ([
         for (final row in rows.dartify() as List)
           if (row is Map) row
-      ], db.version);
+      ], db.version / _dexieNativeVersionFactor);
     } catch (e, st) {
       debugPrint('LegacyImportService.scan: $e\n$st');
       return null;

@@ -112,8 +112,14 @@ A browser that hasn't loaded the old app in a long time can sit at an older
 schema version, where `stickFrequency` still holds pre-v5 values. The importer
 reads the store raw — opening without a version, so no upgrade is triggered and
 the legacy data is never rewritten — and applies the v5 shift (5 and 6 move up
-by one) itself when the database reports a version below 5. This is the legacy
-Dexie version, unrelated to `LocalDatabase._kVersion` in this app.
+by one) itself when the database reports a Dexie version below 5. This is the
+legacy Dexie version, unrelated to `LocalDatabase._kVersion` in this app.
+
+Dexie does not use its own version number as the IndexedDB version: it opens at
+`Math.round(verno * 10)` (`src/classes/dexie/dexie-open.ts`) and divides by ten
+on the way back out. So `IDBDatabase.version` reads **80** for a current legacy
+database and **40** for a pre-v5 one, and the importer must divide before
+comparing — testing `version < 5` against the raw native number matches nothing.
 
 ## Consistency values
 
