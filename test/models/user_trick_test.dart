@@ -38,7 +38,9 @@ void main() {
           Consistency.neverTried);
       expect(UserTrick.fromJson({...base(), 'consistency': 1}).consistency,
           Consistency.attempting);
-      expect(UserTrick.fromJson({...base(), 'consistency': 6}).consistency,
+      expect(UserTrick.fromJson({...base(), 'consistency': 3}).consistency,
+          Consistency.rarely);
+      expect(UserTrick.fromJson({...base(), 'consistency': 7}).consistency,
           Consistency.always);
     });
 
@@ -49,16 +51,18 @@ void main() {
   });
 
   group('Consistency', () {
-    test('index range matches the db check constraint 0..6', () {
-      expect(Consistency.values.length, 7);
+    test('index range matches the db check constraint 0..7', () {
+      expect(Consistency.values.length, 8);
       expect(Consistency.neverTried.index, 0);
-      expect(Consistency.always.index, 6);
+      expect(Consistency.rarely.index, 3);
+      expect(Consistency.always.index, 7);
     });
 
     test('neverTried and attempting are not landed, once and above are', () {
       expect(Consistency.neverTried.isLanded, isFalse);
       expect(Consistency.attempting.isLanded, isFalse);
       expect(Consistency.once.isLanded, isTrue);
+      expect(Consistency.rarely.isLanded, isTrue);
       expect(Consistency.always.isLanded, isTrue);
     });
   });

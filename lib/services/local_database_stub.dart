@@ -14,8 +14,10 @@ class LocalDatabase {
   LocalDatabase._();
 
   // v4: Consistency gained neverTried at index 0, shifting all stored values
-  // +1 (matching supabase/migrate_consistency_never_tried.sql).
-  static const int _kVersion = 4;
+  // +1 (matching supabase/migrations/20260715120000_consistency_never_tried.sql).
+  // v5: Consistency gained rarely at index 3, shifting values >= 3 by +1
+  // (matching supabase/migrations/20260803120000_consistency_rarely.sql).
+  static const int _kVersion = 5;
   static Database? _db;
 
   static Database get _instance {
@@ -63,21 +65,26 @@ class LocalDatabase {
       try {
         // Drop id so AUTOINCREMENT assigns a fresh one.
         final write = Map<String, dynamic>.from(row)..remove('id');
-        if (oldV < 4) _shiftConsistencyPayload(write);
+        // Applied in schema order so a pre-v4 payload picks up both shifts.
+        if (oldV < 4) _shiftConsistencyPayload(write, atOrAbove: 0);
+        if (oldV < 5) _shiftConsistencyPayload(write, atOrAbove: 3);
         await db.insert('pending_writes', write);
       } catch (_) {}
     }
   }
 
-  // Pre-v4 payloads carry consistency ints in the old 0..5 scheme; they must
-  // be shifted +1 before they flush to the migrated server, or every queued
+  // Outdated payloads carry consistency ints in an older index scheme; they
+  // must be shifted before they flush to the migrated server, or every queued
   // offline write would land one level too low.
-  static void _shiftConsistencyPayload(Map<String, dynamic> write) {
+  static void _shiftConsistencyPayload(
+    Map<String, dynamic> write, {
+    required int atOrAbove,
+  }) {
     if (write['table_name'] != 'user_tricks') return;
     final payload = jsonDecode(write['payload'] as String);
     if (payload is! Map<String, dynamic>) return;
     final consistency = payload['consistency'];
-    if (consistency is! int) return;
+    if (consistency is! int || consistency < atOrAbove) return;
     payload['consistency'] = consistency + 1;
     write['payload'] = jsonEncode(payload);
   }

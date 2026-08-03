@@ -171,6 +171,7 @@
 
   "consistencyNeverTried": "Nunca intentado",
   "consistencyOnce": "Una vez",
+  "consistencyRarely": "Rara vez",
   "consistencySometimes": "A veces",
   "consistencyOften": "Con frecuencia",
   "consistencyGenerally": "Generalmente",

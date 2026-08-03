@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 enum Consistency {
-  // Stored in the DB as the enum index (0..6). Changing the order or adding
+  // Stored in the DB as the enum index (0..7). Changing the order or adding
   // values anywhere but the end requires a server + local-cache migration —
-  // see supabase/migrate_consistency_never_tried.sql.
+  // see supabase/migrations/20260803120000_consistency_rarely.sql.
   neverTried('Never tried'),
   attempting('Attempting'),
   once('Once'),
+  rarely('Rarely'),
   sometimes('Sometimes'),
   often('Often'),
   generally('Generally'),
@@ -21,6 +22,7 @@ enum Consistency {
     Consistency.neverTried => 1.5,
     Consistency.attempting => 1.5,
     Consistency.once => 1.5,
+    Consistency.rarely => 1.5,
     Consistency.sometimes => 2.0,
     Consistency.often => 2.0,
     Consistency.generally => 2.0,
@@ -34,8 +36,9 @@ enum Consistency {
       return switch (this) {
         Consistency.neverTried => const Color(0xFF757575), // grey-600
         Consistency.attempting =>   const Color(0xFF9E9E9E),   // gray
-        Consistency.once =>    const Color(0xFFFF7043),   // deep-orange-400
-        Consistency.sometimes => const Color(0xFFFFD54F), // amber-300
+        Consistency.once =>    const Color(0xFFEF5350),   // red-400
+        Consistency.rarely =>  const Color(0xFFFF9800),   // orange-500
+        Consistency.sometimes => const Color(0xFFFFEB3B), // yellow-500
         Consistency.often =>   const Color(0xFF8BC34A),   // light-green-500
         Consistency.generally => const Color(0xFF4DB6AC), // teal-300
         Consistency.always =>  const Color(0xFF64B5F6),   // blue-300
@@ -44,7 +47,8 @@ enum Consistency {
     return switch (this) {
       Consistency.neverTried => const Color(0xFFBDBDBD), // grey-400
       Consistency.attempting =>   const Color(0xFF9E9E9E),   // gray
-      Consistency.once =>    const Color(0xFFE65100),   // orange
+      Consistency.once =>    const Color(0xFFC62828),   // red-800
+      Consistency.rarely =>  const Color(0xFFEF6C00),   // orange-800
       Consistency.sometimes => const Color(0xFFF9A825), // yellow/amber
       Consistency.often =>   const Color(0xFF558B2F),   // green
       Consistency.generally => const Color(0xFF00796B), // teal
@@ -58,8 +62,9 @@ enum Consistency {
       return switch (this) {
         Consistency.neverTried => null,
         Consistency.attempting =>   const Color(0xFF1C1C1C),   // dark gray
-        Consistency.once =>    const Color(0xFF1E1A16),   // subtle orange tint
-        Consistency.sometimes => const Color(0xFF1E1D17), // subtle yellow tint
+        Consistency.once =>    const Color(0xFF1F1718),   // subtle red tint
+        Consistency.rarely =>  const Color(0xFF201A14),   // subtle orange tint
+        Consistency.sometimes => const Color(0xFF1F1E15), // subtle yellow tint
         Consistency.often =>   const Color(0xFF191D16),   // subtle green tint
         Consistency.generally => const Color(0xFF161D1D), // subtle teal tint
         Consistency.always =>  const Color(0xFF161A1F),   // subtle blue tint
@@ -68,8 +73,9 @@ enum Consistency {
     return switch (this) {
       Consistency.neverTried => null,
       Consistency.attempting =>   const Color(0xFFEEEEEE),   // light gray
-      Consistency.once =>    const Color(0xFFFFF3E0),   // light orange
-      Consistency.sometimes => const Color(0xFFFFFDE7), // light yellow
+      Consistency.once =>    const Color(0xFFFFEBEE),   // light red
+      Consistency.rarely =>  const Color(0xFFFFF0DC),   // light orange
+      Consistency.sometimes => const Color(0xFFFDFBD4), // light yellow
       Consistency.often =>   const Color(0xFFF1F8E9),   // light green
       Consistency.generally => const Color(0xFFE0F2F1), // light teal
       Consistency.always =>  const Color(0xFFE3F2FD),   // light blue
@@ -83,6 +89,7 @@ enum Consistency {
       Consistency.neverTried => null,
       Consistency.attempting =>   null,
       Consistency.once =>    const Color(0xFF94A3B8), // slate-400
+      Consistency.rarely =>  const Color(0xFF94A3B8), // slate-400
       Consistency.sometimes => const Color(0xFF94A3B8), // slate-400
       Consistency.often =>   const Color(0xFFE2E8F0), // slate-200
       Consistency.generally => const Color(0xFFFFFFFF),

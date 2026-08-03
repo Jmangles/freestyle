@@ -492,6 +492,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get consistencyOnce => 'Una vez';
 
   @override
+  String get consistencyRarely => 'Rara vez';
+
+  @override
   String get consistencySometimes => 'A veces';
 
   @override

@@ -1024,6 +1024,12 @@ abstract class AppLocalizations {
   /// **'Once'**
   String get consistencyOnce;
 
+  /// No description provided for @consistencyRarely.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely'**
+  String get consistencyRarely;
+
   /// No description provided for @consistencySometimes.
   ///
   /// In en, this message translates to:

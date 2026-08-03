@@ -366,17 +366,17 @@ void main() {
     });
   });
 
-  // ─── v3 → v4 upgrade (consistency shift) ──────────────────────────────────
+  // ─── consistency-shift upgrades (v3 → v4 → v5) ────────────────────────────
 
-  group('Upgrade to v4', () {
-    Future<String> createV3DbWithPendingWrites(
-        List<Map<String, dynamic>> writes) async {
+  group('Consistency shift upgrades', () {
+    Future<String> createOldDbWithPendingWrites(
+        int version, List<Map<String, dynamic>> writes) async {
       final dir = await Directory.systemTemp.createTemp('freestyle_db_test');
       final path = join(dir.path, 'upgrade.db');
       final db = await databaseFactoryFfi.openDatabase(
         path,
         options: OpenDatabaseOptions(
-          version: 3,
+          version: version,
           onCreate: (db, _) => db.execute('''
             CREATE TABLE pending_writes (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -404,12 +404,11 @@ void main() {
       return path;
     }
 
-    test('shifts consistency in preserved pending-write payloads by +1',
-        () async {
-      final path = await createV3DbWithPendingWrites([
+    Future<int?> consistencyAfterUpgrade(int fromVersion, int stored) async {
+      final path = await createOldDbWithPendingWrites(fromVersion, [
         {
           'payload':
-              jsonEncode({'user_id': 1, 'trick_id': 2, 'consistency': 3})
+              jsonEncode({'user_id': 1, 'trick_id': 2, 'consistency': stored})
         },
       ]);
       await LocalDatabase.resetForTest();
@@ -419,11 +418,25 @@ void main() {
       expect(writes.length, 1);
       final payload =
           jsonDecode(writes.first['payload'] as String) as Map<String, dynamic>;
-      expect(payload['consistency'], 4);
+      return payload['consistency'] as int?;
+    }
+
+    test('v3 payloads take both shifts, in schema order', () async {
+      // 3 (old "sometimes") → +1 for neverTried → 4 → +1 for rarely → 5.
+      expect(await consistencyAfterUpgrade(3, 3), 5);
+      // 1 (old "once") → 2, below the rarely threshold, so no second shift.
+      expect(await consistencyAfterUpgrade(3, 1), 2);
+    });
+
+    test('v4 payloads take only the rarely shift', () async {
+      expect(await consistencyAfterUpgrade(4, 3), 4);
+      expect(await consistencyAfterUpgrade(4, 6), 7);
+      expect(await consistencyAfterUpgrade(4, 2), 2);
+      expect(await consistencyAfterUpgrade(4, 0), 0);
     });
 
     test('leaves payloads without a consistency field untouched', () async {
-      final path = await createV3DbWithPendingWrites([
+      final path = await createOldDbWithPendingWrites(3, [
         {
           'payload': jsonEncode({'user_id': 1, 'trick_id': 2})
         },
