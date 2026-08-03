@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations_extension.dart';
 import '../models/trick.dart';
 import '../models/user_trick.dart';
+import '../services/auth_service.dart';
 import '../services/user_tricks_service.dart';
 import '../utils/difficulty_tier.dart';
 import 'consistency_selector.dart';
@@ -56,7 +57,9 @@ class TrickCard extends StatelessWidget {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
         },
-        onLongPress: () => _showConsistencySheet(context),
+        onLongPress: AuthService.isLoggedIn
+            ? () => _showConsistencySheet(context)
+            : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
@@ -196,7 +199,9 @@ class TrickCard extends StatelessWidget {
           await context.push('/trick/${trick.id}');
           onReturn?.call();
         },
-        onLongPress: () => _showConsistencySheet(context),
+        onLongPress: AuthService.isLoggedIn
+            ? () => _showConsistencySheet(context)
+            : null,
       ),
     );
 
