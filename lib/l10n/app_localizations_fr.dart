@@ -536,7 +536,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune modification détectée — modifiez au moins un champ pour suggérer.';
 
   @override
-  String get pendingSuggestionsSection => 'Suggestions en attente';
+  String get pendingTricksSection => 'Figures en attente';
+
+  @override
+  String get pendingEditsSection => 'Modifications en attente';
 
   @override
   String get noPendingSuggestions => 'Aucune suggestion en attente.';

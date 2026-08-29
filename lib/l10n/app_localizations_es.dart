@@ -533,7 +533,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se detectaron cambios — edita al menos un campo para sugerir.';
 
   @override
-  String get pendingSuggestionsSection => 'Sugerencias pendientes';
+  String get pendingTricksSection => 'Trucos pendientes';
+
+  @override
+  String get pendingEditsSection => 'Ediciones pendientes';
 
   @override
   String get noPendingSuggestions => 'No hay sugerencias pendientes.';

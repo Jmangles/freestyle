@@ -530,7 +530,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No changes detected — edit at least one field to suggest.';
 
   @override
-  String get pendingSuggestionsSection => 'Pending Suggestions';
+  String get pendingTricksSection => 'Pending Tricks';
+
+  @override
+  String get pendingEditsSection => 'Pending Edits';
 
   @override
   String get noPendingSuggestions => 'No pending suggestions.';

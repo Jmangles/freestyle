@@ -221,7 +221,8 @@
   "suggestChangesButton": "Suggest Changes",
   "suggestionSubmittedForReview": "Suggestion submitted for review!",
   "suggestionNoChanges": "No changes detected — edit at least one field to suggest.",
-  "pendingSuggestionsSection": "Pending Suggestions",
+  "pendingTricksSection": "Pending Tricks",
+  "pendingEditsSection": "Pending Edits",
   "noPendingSuggestions": "No pending suggestions.",
   "forTrickLabel": "For: {name}",
   "@forTrickLabel": {

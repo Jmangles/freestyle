@@ -1102,11 +1102,17 @@ abstract class AppLocalizations {
   /// **'No changes detected — edit at least one field to suggest.'**
   String get suggestionNoChanges;
 
-  /// No description provided for @pendingSuggestionsSection.
+  /// No description provided for @pendingTricksSection.
   ///
   /// In en, this message translates to:
-  /// **'Pending Suggestions'**
-  String get pendingSuggestionsSection;
+  /// **'Pending Tricks'**
+  String get pendingTricksSection;
+
+  /// No description provided for @pendingEditsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Edits'**
+  String get pendingEditsSection;
 
   /// No description provided for @noPendingSuggestions.
   ///

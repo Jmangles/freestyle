@@ -186,7 +186,8 @@
   "suggestChangesButton": "Suggérer des modifications",
   "suggestionSubmittedForReview": "Suggestion soumise pour révision !",
   "suggestionNoChanges": "Aucune modification détectée — modifiez au moins un champ pour suggérer.",
-  "pendingSuggestionsSection": "Suggestions en attente",
+  "pendingTricksSection": "Figures en attente",
+  "pendingEditsSection": "Modifications en attente",
   "noPendingSuggestions": "Aucune suggestion en attente.",
   "forTrickLabel": "Pour : {name}",
 

@@ -255,6 +255,12 @@ class _AdminScreenState extends State<AdminScreen> {
 
     final items = <Widget>[
       if (tricks.isNotEmpty) ...[
+        Text('${l10n.pendingTricksSection} (${tricks.length})',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
         for (int i = 0; i < tricks.length; i++) ...[
           if (i > 0) const SizedBox(height: 12),
           _PendingTrickCard(
@@ -275,7 +281,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ],
       if (suggestions.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text('${l10n.pendingSuggestionsSection} (${suggestions.length})',
+        Text('${l10n.pendingEditsSection} (${suggestions.length})',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
