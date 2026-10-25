@@ -84,6 +84,17 @@ conflict). When first linking migrations to the prod project, mark it as
 already-applied so only *future* migrations push:
 `supabase migration repair --status applied 00000000000000`.
 
+## Feedback Security Regression Tests
+
+Run `bash scripts/test-feedback-security.sh` with PostgreSQL tools (`initdb`,
+`pg_ctl`, `psql`) and Python 3 on PATH. It creates a disposable PostgreSQL
+instance using a private Unix socket, applies the feedback thread migrations
+to a minimal supporting fixture, and tests attachment isolation, server-owned
+timestamps, unread counts, and closed-thread inserts (including concurrent
+closure). It never connects to the development or production database.
+This targeted harness does not replace testing sign-in and attachment uploads
+against the full local Supabase stack.
+
 ## Flutter Web Should Use Port 8080
 
 The VS Code launch configs and the local Supabase auth redirect URLs

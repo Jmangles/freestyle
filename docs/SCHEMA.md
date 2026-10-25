@@ -169,3 +169,52 @@ CREATE TABLE public.trick_suggestions (
   )
 );
 ```
+
+---
+
+## `feedback`
+
+Thread head for in-app feedback. One row per conversation between a user and the admins; the messages themselves live in `feedback_messages`, including the user's first one.
+
+`status` drives who the thread is waiting on: `new` (an admin needs to answer), `answered` (the user may reply), `reviewed` / `dismissed` (terminal — the thread goes read-only and its attachments are deleted from storage). Users never write `status` directly; the `bump_feedback_thread` trigger moves it on every new message.
+
+`user_last_read_at` backs the unread badge and is set through `mark_feedback_read()`, since ordinary users cannot update these rows directly. Admins share `admin_last_read_at`.
+
+```sql
+CREATE TABLE public.feedback (
+  id                INTEGER     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  submitted_by      INTEGER     REFERENCES profiles (int_id) ON DELETE SET NULL,
+  status            TEXT        NOT NULL DEFAULT 'new',
+  user_last_read_at TIMESTAMPTZ,
+  admin_last_read_at TIMESTAMPTZ,
+  last_message_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT feedback_status_check CHECK (
+    status IN ('new', 'answered', 'reviewed', 'dismissed')
+  )
+);
+```
+
+---
+
+## `feedback_messages`
+
+One message in a feedback thread, from either side. Both users and admins can attach images (admin replies are no longer text-only). A message is an admin reply when its `author_id` differs from the thread's `submitted_by`. `attachment_paths` point into the private `feedback-attachments` bucket, stored under the uploader's `<int_id>/`. The thread owner can read admin uploads referenced by messages in their thread, but cannot read uploads from other threads. Closed threads reject all replies server-side. Message `created_at` is always assigned by the server after locking the thread; client-supplied timestamps are ignored.
+
+```sql
+CREATE TABLE public.feedback_messages (
+  id               INTEGER     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  feedback_id      INTEGER     NOT NULL REFERENCES feedback (id) ON DELETE CASCADE,
+  author_id        INTEGER     REFERENCES profiles (int_id) ON DELETE SET NULL,
+  body             TEXT        NOT NULL,
+  attachment_paths TEXT[],
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT feedback_messages_body_check CHECK (
+    char_length(body) >= 1 AND char_length(body) <= 2000
+  )
+);
+```
+
+Related functions: `submit_feedback(text, text[])` opens a thread and its first message in one transaction, `mark_feedback_read(integer)` clears the unread marker, `unread_feedback_count()` feeds the badge.

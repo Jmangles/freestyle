@@ -10,6 +10,7 @@ alter table trick_suggestions enable row level security;
 alter table tips              enable row level security;
 alter table trick_annotations enable row level security;
 alter table feedback          enable row level security;
+alter table feedback_messages enable row level security;
 
 -- Profiles
 create policy "profiles_read"   on profiles for select using (true);
@@ -83,13 +84,40 @@ create policy "annotations_update" on trick_annotations for update
 create policy "annotations_delete" on trick_annotations for delete
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 
--- Feedback
+-- Feedback: submitter reads their own threads, admins read all. Status moves
+-- through the bump_feedback_thread trigger, so users get no update grant.
 create policy "feedback_insert" on feedback for insert
   with check (submitted_by = (select int_id from profiles where id = auth.uid()));
+create policy "feedback_read_own" on feedback for select
+  using (submitted_by = (select int_id from profiles where id = auth.uid()));
 create policy "feedback_read_admin" on feedback for select
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
 create policy "feedback_update_admin" on feedback for update
   using (exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1));
+
+-- Feedback messages: owners and admins may post only while the thread is open.
+create policy "feedback_messages_read" on feedback_messages for select
+  using (
+    exists (
+      select 1 from feedback f
+      where f.id = feedback_id
+        and f.submitted_by = (select int_id from profiles where id = auth.uid())
+    )
+    or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+  );
+create policy "feedback_messages_insert" on feedback_messages for insert
+  with check (
+    author_id = (select int_id from profiles where id = auth.uid())
+    and exists (
+      select 1 from feedback f
+      where f.id = feedback_id
+        and f.status in ('new', 'answered')
+        and (
+          f.submitted_by = author_id
+          or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+        )
+    )
+  );
 
 -- Feedback attachments: private bucket, uploads live under "<int_id>/<filename>"
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -110,12 +138,22 @@ create policy "feedback_attachments_insert" on storage.objects for insert to aut
     and (storage.foldername(name))[1] = (select int_id::text from profiles where id = auth.uid())
   );
 
+-- Admin replies support attachments too. Only the owner of the receiving
+-- thread gains access, and only when the message author owns the upload path.
+-- A user cannot gain access by referencing another author's private object.
 create policy "feedback_attachments_select" on storage.objects for select to authenticated
   using (
     bucket_id = 'feedback-attachments'
     and (
       (storage.foldername(name))[1] = (select int_id::text from profiles where id = auth.uid())
       or exists (select 1 from profiles where id = auth.uid() and (flags & 1) = 1)
+      or exists (
+        select 1 from feedback_messages m
+        join feedback f on f.id = m.feedback_id
+        where f.submitted_by = (select int_id from profiles where id = auth.uid())
+          and storage.objects.name = any(m.attachment_paths)
+          and (storage.foldername(storage.objects.name))[1] = m.author_id::text
+      )
     )
   );
 
@@ -144,4 +182,9 @@ grant select                         on trick_annotations to anon, authenticated
 grant insert, update, delete         on trick_annotations to authenticated;
 grant usage, select on sequence trick_annotations_id_seq to authenticated;
 grant select, insert, update           on feedback          to authenticated;
+grant select, insert                   on feedback_messages to authenticated;
 grant execute on function get_trick_vote_stats(integer) to anon, authenticated;
+grant execute on function submit_feedback(text, text[]) to authenticated;
+grant execute on function mark_feedback_read(integer) to authenticated;
+grant execute on function unread_feedback_count() to authenticated;
+grant execute on function admin_unread_feedback_count() to authenticated;
