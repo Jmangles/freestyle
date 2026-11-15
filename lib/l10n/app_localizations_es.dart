@@ -981,4 +981,99 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'Esperando al usuario';
+
+  @override
+  String get addToListButton => 'Añadir a lista';
+
+  @override
+  String get addToListTitle => 'Añadir a lista';
+
+  @override
+  String get newListButton => 'Nueva lista';
+
+  @override
+  String get listNameLabel => 'Nombre de la lista';
+
+  @override
+  String get createButton => 'Crear';
+
+  @override
+  String get noListsYet => 'Aún no tienes listas.';
+
+  @override
+  String get loginToUseLists =>
+      'Inicia sesión o crea una cuenta para usar listas';
+
+  @override
+  String get removeFromListTitle => 'Quitar de la lista';
+
+  @override
+  String removeFromListConfirm(String trick, String list) {
+    return '¿Seguro que quieres quitar $trick de $list?';
+  }
+
+  @override
+  String get yesButton => 'Sí';
+
+  @override
+  String get noButton => 'No';
+
+  @override
+  String get myListsTitle => 'Mis listas';
+
+  @override
+  String listTrickCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count trucos',
+      one: '1 truco',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listEmptyMessage =>
+      'Aún no hay trucos en esta lista. Añádelos desde su página de detalle.';
+
+  @override
+  String get renameListTitle => 'Renombrar lista';
+
+  @override
+  String get deleteListTitle => 'Eliminar lista';
+
+  @override
+  String deleteListConfirm(String list) {
+    return '¿Eliminar la lista \"$list\"? Los trucos en sí no se ven afectados.';
+  }
+
+  @override
+  String get removeFromListTooltip => 'Quitar de la lista';
+
+  @override
+  String get sortCustom => 'Personalizado';
+
+  @override
+  String get sortDifficulty => 'Dificultad';
+
+  @override
+  String get sortChecked => 'Completado';
+
+  @override
+  String get sortDateAdded => 'Fecha de adición';
+
+  @override
+  String get sortReverseTooltip => 'Invertir orden';
+
+  @override
+  String get niceTitle => '¡Bien!';
+
+  @override
+  String get niceSubtitle => '¿Con qué frecuencia lo clavas?';
+
+  @override
+  String get confirmButton => 'Confirmar';
+
+  @override
+  String get toListsButton => 'A las listas';
 }

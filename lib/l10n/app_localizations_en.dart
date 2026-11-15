@@ -973,4 +973,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'Waiting on the user';
+
+  @override
+  String get addToListButton => 'Add to list';
+
+  @override
+  String get addToListTitle => 'Add to list';
+
+  @override
+  String get newListButton => 'New list';
+
+  @override
+  String get listNameLabel => 'List name';
+
+  @override
+  String get createButton => 'Create';
+
+  @override
+  String get noListsYet => 'You don\'t have any lists yet.';
+
+  @override
+  String get loginToUseLists => 'Log in or create an account to use lists';
+
+  @override
+  String get removeFromListTitle => 'Remove from list';
+
+  @override
+  String removeFromListConfirm(String trick, String list) {
+    return 'Do you really want to remove $trick from $list?';
+  }
+
+  @override
+  String get yesButton => 'Yes';
+
+  @override
+  String get noButton => 'No';
+
+  @override
+  String get myListsTitle => 'My lists';
+
+  @override
+  String listTrickCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tricks',
+      one: '1 trick',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listEmptyMessage =>
+      'No tricks in this list yet. Add tricks from their detail page.';
+
+  @override
+  String get renameListTitle => 'Rename list';
+
+  @override
+  String get deleteListTitle => 'Delete list';
+
+  @override
+  String deleteListConfirm(String list) {
+    return 'Delete the list \"$list\"? The tricks themselves are not affected.';
+  }
+
+  @override
+  String get removeFromListTooltip => 'Remove from list';
+
+  @override
+  String get sortCustom => 'Custom';
+
+  @override
+  String get sortDifficulty => 'Difficulty';
+
+  @override
+  String get sortChecked => 'Checked';
+
+  @override
+  String get sortDateAdded => 'Date added';
+
+  @override
+  String get sortReverseTooltip => 'Reverse order';
+
+  @override
+  String get niceTitle => 'Nice!';
+
+  @override
+  String get niceSubtitle => 'How often do you stick it?';
+
+  @override
+  String get confirmButton => 'Confirm';
+
+  @override
+  String get toListsButton => 'To Lists';
 }

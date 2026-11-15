@@ -1887,6 +1887,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting on the user'**
   String get feedbackAwaitingUser;
+
+  /// No description provided for @addToListButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to list'**
+  String get addToListButton;
+
+  /// No description provided for @addToListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to list'**
+  String get addToListTitle;
+
+  /// No description provided for @newListButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New list'**
+  String get newListButton;
+
+  /// No description provided for @listNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'List name'**
+  String get listNameLabel;
+
+  /// No description provided for @createButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createButton;
+
+  /// No description provided for @noListsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have any lists yet.'**
+  String get noListsYet;
+
+  /// No description provided for @loginToUseLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in or create an account to use lists'**
+  String get loginToUseLists;
+
+  /// No description provided for @removeFromListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get removeFromListTitle;
+
+  /// No description provided for @removeFromListConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to remove {trick} from {list}?'**
+  String removeFromListConfirm(String trick, String list);
+
+  /// No description provided for @yesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yesButton;
+
+  /// No description provided for @noButton.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get noButton;
+
+  /// No description provided for @myListsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My lists'**
+  String get myListsTitle;
+
+  /// No description provided for @listTrickCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 trick} other{{count} tricks}}'**
+  String listTrickCount(int count);
+
+  /// No description provided for @listEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No tricks in this list yet. Add tricks from their detail page.'**
+  String get listEmptyMessage;
+
+  /// No description provided for @renameListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename list'**
+  String get renameListTitle;
+
+  /// No description provided for @deleteListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete list'**
+  String get deleteListTitle;
+
+  /// No description provided for @deleteListConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the list \"{list}\"? The tricks themselves are not affected.'**
+  String deleteListConfirm(String list);
+
+  /// No description provided for @removeFromListTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get removeFromListTooltip;
+
+  /// No description provided for @sortCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get sortCustom;
+
+  /// No description provided for @sortDifficulty.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficulty'**
+  String get sortDifficulty;
+
+  /// No description provided for @sortChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked'**
+  String get sortChecked;
+
+  /// No description provided for @sortDateAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Date added'**
+  String get sortDateAdded;
+
+  /// No description provided for @sortReverseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse order'**
+  String get sortReverseTooltip;
+
+  /// No description provided for @niceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice!'**
+  String get niceTitle;
+
+  /// No description provided for @niceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How often do you stick it?'**
+  String get niceSubtitle;
+
+  /// No description provided for @confirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmButton;
+
+  /// No description provided for @toListsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'To Lists'**
+  String get toListsButton;
 }
 
 class _AppLocalizationsDelegate
