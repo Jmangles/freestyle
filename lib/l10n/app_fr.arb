@@ -361,5 +361,6 @@
   "feedbackFrom": "De {user}",
   "feedbackUnknownUser": "compte supprimé",
   "feedbackAdminReplyHint": "Répondre à cet utilisateur…",
-  "feedbackAwaitingUser": "En attente de l'utilisateur"
+  "feedbackAwaitingUser": "En attente de l'utilisateur",
+  "loginToLogConsistency": "Connectez-vous ou créez un compte pour enregistrer votre fréquence de stick"
 }
