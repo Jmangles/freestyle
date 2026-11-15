@@ -1887,6 +1887,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting on the user'**
   String get feedbackAwaitingUser;
+
+  /// No description provided for @loginToLogConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in or create an account to log your stick frequency'**
+  String get loginToLogConsistency;
 }
 
 class _AppLocalizationsDelegate

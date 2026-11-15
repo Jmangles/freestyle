@@ -142,6 +142,55 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
     );
   }
 
+  Future<void> _showLoginPrompt() {
+    final l10n = context.l10n;
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        content: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Right padding keeps the text clear of the close button.
+                Padding(
+                  padding: const EdgeInsets.only(right: 24),
+                  child: Text(l10n.loginToLogConsistency),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: IconButton.filled(
+                    icon: const Icon(Icons.login),
+                    tooltip: l10n.signInTooltip,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(120, 44),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.push('/login');
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: -12,
+              right: -12,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: l10n.closeButton,
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _setConsistency(Consistency c) async {
     if (_data != null) {
       final existing = _data!.userTrick;
@@ -545,16 +594,30 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
             ),
           ],
 
-          if (AuthService.isLoggedIn) ...[
-            const Divider(height: 28),
-            Text(l10n.myConsistencyLabel,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+          const Divider(height: 28),
+          Text(l10n.myConsistencyLabel,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (AuthService.isLoggedIn)
             ConsistencySelector(
               selected: userTrick.effectiveConsistency,
               onChanged: _setConsistency,
+            )
+          else
+            // Logged-out users see the slider parked at its default; touching
+            // it explains how to unlock it instead of moving it.
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (_) => _showLoginPrompt(),
+              child: AbsorbPointer(
+                child: ConsistencySelector(
+                  selected: Consistency.values.first,
+                  onChanged: (_) {},
+                ),
+              ),
             ),
+          if (AuthService.isLoggedIn) ...[
             if (userTrick != null && userTrick.consistency.isLanded) ...[
               const SizedBox(height: 20),
               Text(l10n.landedDetailsLabel,

@@ -986,4 +986,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'En attente de l\'utilisateur';
+
+  @override
+  String get loginToLogConsistency =>
+      'Connectez-vous ou créez un compte pour enregistrer votre fréquence de stick';
 }
