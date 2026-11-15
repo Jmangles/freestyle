@@ -12,6 +12,7 @@ import '../theme_controller.dart';
 import '../utils/safe_state.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/legacy_import_prompt.dart';
+import '../widgets/profile_lists_card.dart';
 import '../widgets/profile_main_card.dart';
 import '../widgets/profile_stats_card.dart';
 
@@ -184,6 +185,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SafeStateMixin {
               onTap: () => context.push('/feedback/mine'),
             ),
           ),
+          const SizedBox(height: 12),
+          const ProfileListsCard(),
           const SizedBox(height: 12),
           if (entries.isNotEmpty) ...[
             Card(child: ProfileStatsCard(entries: entries)),

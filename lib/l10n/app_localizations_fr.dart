@@ -986,4 +986,99 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'En attente de l\'utilisateur';
+
+  @override
+  String get addToListButton => 'Ajouter à une liste';
+
+  @override
+  String get addToListTitle => 'Ajouter à une liste';
+
+  @override
+  String get newListButton => 'Nouvelle liste';
+
+  @override
+  String get listNameLabel => 'Nom de la liste';
+
+  @override
+  String get createButton => 'Créer';
+
+  @override
+  String get noListsYet => 'Vous n\'avez pas encore de liste.';
+
+  @override
+  String get loginToUseLists =>
+      'Connectez-vous ou créez un compte pour utiliser les listes';
+
+  @override
+  String get removeFromListTitle => 'Retirer de la liste';
+
+  @override
+  String removeFromListConfirm(String trick, String list) {
+    return 'Voulez-vous vraiment retirer $trick de $list ?';
+  }
+
+  @override
+  String get yesButton => 'Oui';
+
+  @override
+  String get noButton => 'Non';
+
+  @override
+  String get myListsTitle => 'Mes listes';
+
+  @override
+  String listTrickCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tricks',
+      one: '1 trick',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listEmptyMessage =>
+      'Aucun trick dans cette liste. Ajoutez-en depuis leur page de détail.';
+
+  @override
+  String get renameListTitle => 'Renommer la liste';
+
+  @override
+  String get deleteListTitle => 'Supprimer la liste';
+
+  @override
+  String deleteListConfirm(String list) {
+    return 'Supprimer la liste « $list » ? Les tricks eux-mêmes ne sont pas affectés.';
+  }
+
+  @override
+  String get removeFromListTooltip => 'Retirer de la liste';
+
+  @override
+  String get sortCustom => 'Personnalisé';
+
+  @override
+  String get sortDifficulty => 'Difficulté';
+
+  @override
+  String get sortChecked => 'Coché';
+
+  @override
+  String get sortDateAdded => 'Date d\'ajout';
+
+  @override
+  String get sortReverseTooltip => 'Inverser l\'ordre';
+
+  @override
+  String get niceTitle => 'Bien joué !';
+
+  @override
+  String get niceSubtitle => 'À quelle fréquence le réussissez-vous ?';
+
+  @override
+  String get confirmButton => 'Confirmer';
+
+  @override
+  String get toListsButton => 'Vers les listes';
 }

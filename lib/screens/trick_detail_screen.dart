@@ -19,11 +19,13 @@ import '../utils/network_utils.dart';
 import '../utils/safe_state.dart';
 import '../utils/video_link.dart';
 import '../utils/youtube_utils.dart';
+import '../widgets/add_to_list_dialog.dart';
 import '../widgets/app_dialogs.dart';
 import '../video/offline_video_service.dart';
 import '../widgets/back_home_leading.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/landed_details_section.dart';
+import '../widgets/login_prompt_dialog.dart';
 import '../widgets/vote_pie_chart.dart';
 import '../widgets/youtube_loop_player.dart';
 import 'submit_trick_screen.dart';
@@ -544,6 +546,18 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
               ],
             ),
           ],
+
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => AuthService.isLoggedIn
+                  ? showAddToListDialog(context, trick)
+                  : showLoginPromptDialog(context, l10n.loginToUseLists),
+              icon: const Icon(Icons.playlist_add),
+              label: Text(l10n.addToListButton),
+            ),
+          ),
 
           if (AuthService.isLoggedIn) ...[
             const Divider(height: 28),

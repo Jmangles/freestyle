@@ -17,6 +17,7 @@ import 'screens/my_feedback_screen.dart';
 import 'screens/feedback_thread_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/trick_list_screen.dart';
 import 'screens/not_found_screen.dart';
 import 'video/bunny_video_provider.dart';
 import 'widgets/main_shell.dart';
@@ -77,6 +78,11 @@ class AppRouter {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(
+        path: '/lists/:id',
+        builder: (_, state) =>
+            TrickListScreen(listId: int.parse(state.pathParameters['id']!)),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
