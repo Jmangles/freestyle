@@ -609,7 +609,7 @@ class _TrickDetailScreenState extends State<TrickDetailScreen>
             // it explains how to unlock it instead of moving it.
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (_) => _showLoginPrompt(),
+              onTap: _showLoginPrompt,
               child: AbsorbPointer(
                 child: ConsistencySelector(
                   selected: Consistency.values.first,
