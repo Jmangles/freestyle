@@ -973,4 +973,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'Waiting on the user';
+
+  @override
+  String get loginToLogConsistency =>
+      'Log in or create an account to log your stick frequency';
 }

@@ -981,4 +981,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedbackAwaitingUser => 'Esperando al usuario';
+
+  @override
+  String get loginToLogConsistency =>
+      'Inicia sesión o crea una cuenta para registrar tu frecuencia de stick';
 }
